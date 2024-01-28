@@ -23,6 +23,14 @@ It was created as an answer to deeply recursive Pyanodon recipes, which the tool
 
 Among other things YAFC has Never Enough Items, which is FNEI on steroids. In addition to showing the recipes, it shows which ones you probably want to use, and how much.
 
+## Getting Started
+1. Go to the [releases page](https://github.com/have-fun-was-taken/yafc-ce/releases)
+2. Download the zip file for your given OSX
+3. Extract the zip file to your preferred location on your computer
+4. If on OSX/Linux, make sure to make `YAFC` executable via `chmod +x ./YAFC`
+5. Run either `./YAFC` or `./YAFC.exe` (Windows) to start YAFC
+6. Once YAFC is opened, make sure to find your mod folder location.  Refer to the [wiki](https://wiki.factorio.com/Application_directory#Locations) for your given OS
+
 ## Project features
 - Works with any combination of mods for Factorio 0.17+.
 - Multiple pages, the Undo button (Ctrl+Z).
