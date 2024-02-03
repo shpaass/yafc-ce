@@ -23,12 +23,15 @@ It was created as an answer to deeply recursive Pyanodon recipes, which the tool
 
 Among other things YAFC has Never Enough Items, which is FNEI on steroids. In addition to showing the recipes, it shows which ones you probably want to use, and how much.
 
-## Getting Started
+## **[Download YAFC and Getting Started](https://github.com/have-fun-was-taken/yafc-ce/releases)**
+
+YAFC is a desktop app. Windows build is the most tested, but OSX and Linux are there too. See [Linux and OSX installation instructions](/Docs/LinuxOsxInstall.md).
+
 1. Go to the [releases page](https://github.com/have-fun-was-taken/yafc-ce/releases)
-2. Download the zip file for your given OSX
+2. Download the zip file for your given OS
 3. Extract the zip file to your preferred location on your computer
 4. If on OSX/Linux, make sure to make `YAFC` executable via `chmod +x ./YAFC`
-5. Run either `./YAFC` or `./YAFC.exe` (Windows) to start YAFC
+5. Run either `./YAFC` or `./YAFC.exe` (OS dependent) to start YAFC
 6. Once YAFC is opened, make sure to find your mod folder location.  Refer to the [wiki](https://wiki.factorio.com/Application_directory#Locations) for your given OS
 
 ## Project features
@@ -63,9 +66,6 @@ For Seablock specifically, please check [this](https://github.com/ShadowTheAge/y
 
 For mod authors: You can detect YAFC by checking the `data.data_crawler` variable during the data stage. It will be equal to `yafc a.b.c.d` where `a.b.c.d` is yafc version. For instance, `yafc 0.5.4.0`.
 	
-## **[Download YAFC](https://github.com/have-fun-was-taken/yafc-ce/releases)**
-
-YAFC is a desktop app. Windows build is the most tested, but OSX and Linux are there too. See [Linux and OSX installation instructions](/Docs/LinuxOsxInstall.md).
 
 ## License
 - [GNU GPL 3.0](/LICENSE)
