@@ -13,7 +13,7 @@ Yes, we have their approval.
 Yet Another Factorio Calculator or YAFC is a planner and analyser. The main goal of YAFC is to help with heavily modded Factorio games.
 
 <details>
-<summary>Expand to have a quick glance at what YAFC can do</summary>
+<summary>Expand to see what YAFC can do</summary>
 <IMG src="/Docs/Media/Main.gif"  alt="Main.gif"/>
 </details>
 
@@ -66,6 +66,10 @@ For Seablock specifically, please check [this](https://github.com/ShadowTheAge/y
 
 For mod authors: You can detect YAFC by checking the `data.data_crawler` variable during the data stage. It will be equal to `yafc a.b.c.d` where `a.b.c.d` is yafc version. For instance, `yafc 0.5.4.0`.
 	
+
+## Contributing
+
+Want to make a Pull Request to YAFC? Great! Please check out the [Contributor's Guide](Docs/ContributorsGuide.md) to make sure the review process of your PR is smooth.
 
 ## License
 - [GNU GPL 3.0](/LICENSE)
