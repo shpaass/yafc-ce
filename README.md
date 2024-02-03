@@ -30,7 +30,7 @@ YAFC is a desktop app. Windows build is the most tested, but OSX and Linux are t
 1. Navigate to the [Releases](https://github.com/have-fun-was-taken/yafc-ce/releases),
 2. Download the zip file for your given OS,
 3. Extract the zip file to your preferred location,
-5. Run either `./YAFC` or `./YAFC.exe` (OS dependent) to start YAFC
+4. Run either `./YAFC` or `./YAFC.exe` (OS-dependent),
 6. Once YAFC is opened, make sure to find your mod folder location.  Refer to the [wiki](https://wiki.factorio.com/Application_directory#Locations) for your given OS
 
 ## Project features
