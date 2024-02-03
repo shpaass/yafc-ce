@@ -23,7 +23,7 @@ It was created as an answer to deeply recursive Pyanodon recipes, which the tool
 
 Among other things YAFC has Never Enough Items, which is FNEI on steroids. In addition to showing the recipes, it shows which ones you probably want to use, and how much.
 
-## **[Download YAFC and Getting Started](https://github.com/have-fun-was-taken/yafc-ce/releases)**
+## Getting Started
 
 YAFC is a desktop app. Windows build is the most tested, but OSX and Linux are there too. See [Linux and OSX installation instructions](/Docs/LinuxOsxInstall.md).
 
