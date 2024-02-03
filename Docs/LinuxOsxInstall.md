@@ -17,7 +17,7 @@
 There is an AUR package for yafc-ce: [`factorio-yafc-ce-git`](https://aur.archlinux.org/packages/factorio-yafc-ce-git) 
 Once the package is installed, it can be run with `factorio-yafc`. Note that at least dotnet 6 or later is required.
 
-### Debian (and Debian based distributions)
+### Debian (and Debian-based distributions)
 - Download the latest release from this repo.
 - [Install dotnet core (v6.0 or later)](https://learn.microsoft.com/en-us/dotnet/core/install/linux-debian)
 - Install SDL2:
