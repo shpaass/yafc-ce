@@ -26,7 +26,7 @@ Once the package is installed, it can be run with `factorio-yafc`. Note that at 
   - `sudo apt-get install libsdl2-ttf-2.0-0`
   - For reference, have following libraries: SDL2-2.0.so.0, SDL2_ttf-2.0.so.0, SDL2_image-2.0.so.0
 - Make sure you have OpenGL available
-- Make `YAFC is executable with `chmod +x YAFC`
+- Make `YAFC` executable with `chmod +x YAFC`
 - Use the `YAFC` executable to run.
 
 ### Other
