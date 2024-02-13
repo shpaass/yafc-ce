@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace YAFC.Model {
     public class Project : ModelObject {
@@ -102,19 +103,17 @@ namespace YAFC.Model {
             return proj;
         }
 
-        public void Save(string fileName) {
+        public async Task Save(string fileName) {
             if (lastSavedVersion == projectVersion && fileName == attachedFileName) {
                 return;
             }
-
             using (MemoryStream ms = new MemoryStream()) {
-                using (Utf8JsonWriter writer = new Utf8JsonWriter(ms, JsonUtils.DefaultWriterOptions)) {
+                await using (Utf8JsonWriter writer = new Utf8JsonWriter(ms, JsonUtils.DefaultWriterOptions)) {
                     SerializationMap<Project>.SerializeToJson(this, writer);
                 }
-
                 ms.Position = 0;
-                using FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
-                ms.CopyTo(fs);
+                await using FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write);
+                await ms.CopyToAsync(fs);
             }
             attachedFileName = fileName;
             lastSavedVersion = projectVersion;

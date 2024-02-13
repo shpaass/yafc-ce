@@ -600,7 +600,7 @@ namespace YAFC {
             string path = await new FilesystemScreen("Save project", "Save project as", "Save", string.IsNullOrEmpty(project.attachedFileName) ? null : Path.GetDirectoryName(project.attachedFileName),
                 FilesystemScreen.Mode.SelectOrCreateFile, "project", this, null, "yafc");
             if (path != null) {
-                project.Save(path);
+                await project.Save(path);
                 Preferences.Instance.AddProject(path, DataUtils.dataPath, DataUtils.modsPath, DataUtils.expensiveRecipes);
                 return true;
             }
@@ -608,13 +608,14 @@ namespace YAFC {
             return false;
         }
 
-        private Task<bool> SaveProject() {
-            if (!string.IsNullOrEmpty(project.attachedFileName)) {
-                project.Save(project.attachedFileName);
-                return Task.FromResult(true);
+        private async Task<bool> SaveProject() {
+            if (!string.IsNullOrEmpty(project.attachedFileName))
+            {
+                await project.Save(project.attachedFileName);
+                return true;
             }
 
-            return SaveProjectAs();
+            return await SaveProjectAs();
         }
 
         private async void LoadProjectLight() {
