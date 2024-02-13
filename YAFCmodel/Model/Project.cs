@@ -194,6 +194,7 @@ namespace YAFC.Model {
         public HashSet<FactorioObject> sourceResources { get; } = new HashSet<FactorioObject>();
         public HashSet<FactorioObject> favourites { get; } = new HashSet<FactorioObject>();
         public Technology targetTechnology { get; set; }
+        public bool enableAutosave { get; set; } = true;
 
         protected internal override void AfterDeserialize() {
             base.AfterDeserialize();

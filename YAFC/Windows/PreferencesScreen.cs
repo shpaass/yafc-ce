@@ -73,6 +73,13 @@ namespace YAFC {
                 gui.Rebuild();
             }, width: 25f);
 
+            using (gui.EnterRow()) {
+                gui.BuildText("Autosave project:", topOffset: 0.25f);
+                if (gui.BuildCheckBox("enable", prefs.enableAutosave, out bool newAutosave)) {
+                    prefs.RecordUndo().enableAutosave = newAutosave;
+                }
+            }
+
             if (gui.BuildButton("Done")) {
                 Close();
             }
