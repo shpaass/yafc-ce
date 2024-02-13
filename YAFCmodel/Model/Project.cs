@@ -103,8 +103,24 @@ namespace YAFC.Model {
             return proj;
         }
 
+        public static void QueueAutosave() {
+            if (current.preferences.enableAutosave && !string.IsNullOrEmpty(current.attachedFileName)) {
+                /*
+                 * We must wait for the save method to finish before we can continue. This
+                 * prevents possible changes to the project while it's being saved.
+                 *
+                 * This solution is by far not ideal, but as long as we don't have
+                 * proper async/await support in the UI, it's the best we can do.
+                 *
+                 * - 2024-02-13, shihan42
+                 */
+                var saveTask = current.Save(current.attachedFileName);
+                saveTask.Wait();
+            }
+        }
+
         public async Task Save(string fileName) {
-            if (lastSavedVersion == projectVersion && fileName == attachedFileName) {
+            if (lastSavedVersion == projectVersion && fileName == attachedFileName)
                 return;
             }
             using (MemoryStream ms = new MemoryStream()) {
