@@ -114,13 +114,13 @@ namespace YAFC.Model {
                  *
                  * - 2024-02-13, shihan42
                  */
-                var saveTask = current.Save(current.attachedFileName);
+                Task saveTask = current.Save(current.attachedFileName);
                 saveTask.Wait();
             }
         }
 
         public async Task Save(string fileName) {
-            if (lastSavedVersion == projectVersion && fileName == attachedFileName)
+            if (lastSavedVersion == projectVersion && fileName == attachedFileName) {
                 return;
             }
             using (MemoryStream ms = new MemoryStream()) {
