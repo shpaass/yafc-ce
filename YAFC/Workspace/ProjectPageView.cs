@@ -58,7 +58,8 @@ namespace YAFC {
             else
                 gui.AllocateRect(contentWidth, headerHeight);
 
-            base.Build(gui, visibleSize.Y - headerHeight);
+            // 50% visible height gets added to the content height to enable scrolling past the last row
+            base.Build(gui, visibleSize.Y - headerHeight, 0.5f);
         }
 
         protected override Vector2 MeasureContent(Rect rect, ImGui gui) {

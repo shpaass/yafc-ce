@@ -22,7 +22,7 @@ namespace YAFC.UI {
 
         protected abstract void PositionContent(ImGui gui, Rect viewport);
 
-        public void Build(ImGui gui, float height) {
+        public void Build(ImGui gui, float height, float heightPaddingFactor = 0f) {
             this.gui = gui;
             this.height = height;
             var rect = gui.statePosition;
@@ -33,6 +33,9 @@ namespace YAFC.UI {
                 var innerRect = rect;
                 innerRect.Width = width;
                 contentSize = MeasureContent(innerRect, gui);
+                if (contentSize.Y > height) {
+                    contentSize.Y += height * heightPaddingFactor;
+                }
                 maxScroll = Vector2.Max(contentSize - new Vector2(innerRect.Width, height), Vector2.Zero);
                 var realHeight = collapsible ? MathF.Min(contentSize.Y, height) : height;
                 innerRect.Height = rect.Height = realHeight;
