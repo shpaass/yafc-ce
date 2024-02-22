@@ -13,6 +13,9 @@ namespace YAFC.UI {
         private float height;
         private ImGui gui;
         public const float ScrollbarSize = 1f;
+
+        // Padding to add at the bottom of the scroll area to be able to scroll past the
+        // last item; needs useBottomPadding to be set to true in method Build()
         private const float BottomPaddingInPixels = 100f;
 
         protected Scrollable(bool vertical, bool horizontal, bool collapsible) {
