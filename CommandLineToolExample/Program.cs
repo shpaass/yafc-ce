@@ -14,8 +14,8 @@ namespace CommandLineToolExample {
             }
             YafcLib.Init();
             YafcLib.RegisterDefaultAnalysis(); // Register analysis to get cost, milestones, accessibility, etc information. Skip if you just need data. 
-            var factorioPath = args[0];
-            var errorCollector = new ErrorCollector();
+            string factorioPath = args[0];
+            ErrorCollector errorCollector = new ErrorCollector();
             Project project;
             try {
                 // Load YAFC project.
@@ -31,14 +31,14 @@ namespace CommandLineToolExample {
             }
             if (errorCollector.severity != ErrorSeverity.None) {
                 // Some non-critical errors were found while loading project, for example missing recipe or analysis warnings
-                foreach (var (error, _) in errorCollector.GetArrErrors()) {
+                foreach ((string error, ErrorSeverity _) in errorCollector.GetArrErrors()) {
                     Console.Error.WriteLine(error);
                 }
 
             }
 
             // To confirm project loading, enumerate all objects
-            foreach (var obj in Database.objects.all) {
+            foreach (FactorioObject obj in Database.objects.all) {
                 Console.WriteLine(obj.locName);
             }
         }

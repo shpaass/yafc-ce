@@ -43,15 +43,17 @@ namespace YAFC.Parser {
         }
 
         private Special CreateSpecialObject(bool isPower, string name, string locName, string locDescr, string icon, string signal) {
-            var obj = GetObject<Special>(name);
+            Special obj = GetObject<Special>(name);
             obj.virtualSignal = signal;
             obj.factorioType = "special";
             obj.locName = locName;
             obj.locDescr = locDescr;
             obj.iconSpec = new FactorioIconPart { path = icon }.SingleElementArray();
             obj.power = isPower;
-            if (isPower)
+            if (isPower) {
                 obj.fuelValue = 1f;
+            }
+
             return obj;
         }
 
@@ -83,46 +85,57 @@ namespace YAFC.Parser {
             laborEntityEnergy = new EntityEnergy { type = EntityEnergyType.Labor, effectivity = float.PositiveInfinity };
         }
 
-        private T GetObject<T>(string name) where T : FactorioObject, new() => GetObject<T, T>(name);
+        private T GetObject<T>(string name) where T : FactorioObject, new() {
+            return GetObject<T, T>(name);
+        }
 
         private TActual GetObject<TNominal, TActual>(string name) where TNominal : FactorioObject where TActual : TNominal, new() {
-            var key = (typeof(TNominal), name);
-            if (registeredObjects.TryGetValue(key, out FactorioObject existing))
+            (Type, string name) key = (typeof(TNominal), name);
+            if (registeredObjects.TryGetValue(key, out FactorioObject existing)) {
                 return (TActual)existing;
-            var newItem = new TActual { name = name };
+            }
+
+            TActual newItem = new TActual { name = name };
             allObjects.Add(newItem);
             registeredObjects[key] = newItem;
             return newItem;
         }
 
         private int Skip(int from, FactorioObjectSortOrder sortOrder) {
-            for (; from < allObjects.Count; from++)
-                if (allObjects[from].sortingOrder != sortOrder)
+            for (; from < allObjects.Count; from++) {
+                if (allObjects[from].sortingOrder != sortOrder) {
                     break;
+                }
+            }
+
             return from;
         }
 
         private void ExportBuiltData() {
             Database.rootAccessible = rootAccessible.ToArray();
             Database.objectsByTypeName = allObjects.ToDictionary(x => x.typeDotName = x.type + "." + x.name);
-            foreach (var alias in formerAliases)
-                Database.objectsByTypeName.TryAdd(alias.Key, alias.Value);
+            foreach (KeyValuePair<string, FactorioObject> alias in formerAliases) {
+                _ = Database.objectsByTypeName.TryAdd(alias.Key, alias.Value);
+            }
+
             Database.allSciencePacks = sciencePacks.ToArray();
             Database.voidEnergy = voidEnergy;
             Database.electricity = electricity;
             Database.electricityGeneration = generatorProduction;
             Database.heat = heat;
             Database.character = character;
-            var firstSpecial = 0;
-            var firstItem = Skip(firstSpecial, FactorioObjectSortOrder.SpecialGoods);
-            var firstFluid = Skip(firstItem, FactorioObjectSortOrder.Items);
-            var firstRecipe = Skip(firstFluid, FactorioObjectSortOrder.Fluids);
-            var firstMechanics = Skip(firstRecipe, FactorioObjectSortOrder.Recipes);
-            var firstTechnology = Skip(firstMechanics, FactorioObjectSortOrder.Mechanics);
-            var firstEntity = Skip(firstTechnology, FactorioObjectSortOrder.Technologies);
-            var last = Skip(firstEntity, FactorioObjectSortOrder.Entities);
-            if (last != allObjects.Count)
+            int firstSpecial = 0;
+            int firstItem = Skip(firstSpecial, FactorioObjectSortOrder.SpecialGoods);
+            int firstFluid = Skip(firstItem, FactorioObjectSortOrder.Items);
+            int firstRecipe = Skip(firstFluid, FactorioObjectSortOrder.Fluids);
+            int firstMechanics = Skip(firstRecipe, FactorioObjectSortOrder.Recipes);
+            int firstTechnology = Skip(firstMechanics, FactorioObjectSortOrder.Mechanics);
+            int firstEntity = Skip(firstTechnology, FactorioObjectSortOrder.Technologies);
+            int last = Skip(firstEntity, FactorioObjectSortOrder.Entities);
+            if (last != allObjects.Count) {
                 throw new Exception("Something is not right");
+            }
+
             Database.objects = new FactorioIdRange<FactorioObject>(0, last, allObjects);
             Database.specials = new FactorioIdRange<Special>(firstSpecial, firstItem, allObjects);
             Database.items = new FactorioIdRange<Item>(firstItem, firstFluid, allObjects);
@@ -145,94 +158,118 @@ namespace YAFC.Parser {
         }
 
         private bool IsBarrelingRecipe(Recipe barreling, Recipe unbarreling) {
-            var product = barreling.products[0];
-            if (product.probability != 1f)
+            Product product = barreling.products[0];
+            if (product.probability != 1f) {
                 return false;
-            var barrel = product.goods as Item;
-            if (barrel == null)
-                return false;
-            if (unbarreling.ingredients.Length != 1)
-                return false;
-            var ingredient = unbarreling.ingredients[0];
-            if (ingredient.variants != null || ingredient.goods != barrel || ingredient.amount != product.amount)
-                return false;
-            if (unbarreling.products.Length != barreling.ingredients.Length)
-                return false;
-            if (barrel.miscSources.Length != 0 || barrel.fuelValue != 0f || barrel.placeResult != null || barrel.module != null)
-                return false;
-            foreach (var (testProduct, testIngredient) in unbarreling.products.Zip(barreling.ingredients)) {
-                if (testProduct.probability != 1f || testProduct.goods != testIngredient.goods || testIngredient.variants != null || testProduct.amount != testIngredient.amount)
-                    return false;
             }
-            if (unbarreling.IsProductivityAllowed() || barreling.IsProductivityAllowed())
-                return false;
 
-            return true;
+            if (product.goods is not Item barrel) {
+                return false;
+            }
+
+            if (unbarreling.ingredients.Length != 1) {
+                return false;
+            }
+
+            Ingredient ingredient = unbarreling.ingredients[0];
+            if (ingredient.variants != null || ingredient.goods != barrel || ingredient.amount != product.amount) {
+                return false;
+            }
+
+            if (unbarreling.products.Length != barreling.ingredients.Length) {
+                return false;
+            }
+
+            if (barrel.miscSources.Length != 0 || barrel.fuelValue != 0f || barrel.placeResult != null || barrel.module != null) {
+                return false;
+            }
+
+            foreach ((Product testProduct, Ingredient testIngredient) in unbarreling.products.Zip(barreling.ingredients)) {
+                if (testProduct.probability != 1f || testProduct.goods != testIngredient.goods || testIngredient.variants != null || testProduct.amount != testIngredient.amount) {
+                    return false;
+                }
+            }
+            return !unbarreling.IsProductivityAllowed() && !barreling.IsProductivityAllowed();
         }
 
         private void CalculateMaps() {
-            var itemUsages = new DataBucket<Goods, Recipe>();
-            var itemProduction = new DataBucket<Goods, Recipe>();
-            var miscSources = new DataBucket<Goods, FactorioObject>();
-            var entityPlacers = new DataBucket<Entity, Item>();
-            var recipeUnlockers = new DataBucket<Recipe, Technology>();
+            DataBucket<Goods, Recipe> itemUsages = new DataBucket<Goods, Recipe>();
+            DataBucket<Goods, Recipe> itemProduction = new DataBucket<Goods, Recipe>();
+            DataBucket<Goods, FactorioObject> miscSources = new DataBucket<Goods, FactorioObject>();
+            DataBucket<Entity, Item> entityPlacers = new DataBucket<Entity, Item>();
+            DataBucket<Recipe, Technology> recipeUnlockers = new DataBucket<Recipe, Technology>();
             // Because actual recipe availibility may be different than just "all recipes from that category" because of item slot limit and fluid usage restriction, calculate it here
-            var actualRecipeCrafters = new DataBucket<RecipeOrTechnology, EntityCrafter>();
-            var usageAsFuel = new DataBucket<Goods, Entity>();
-            var allRecipes = new List<Recipe>();
-            var allMechanics = new List<Mechanics>();
+            DataBucket<RecipeOrTechnology, EntityCrafter> actualRecipeCrafters = new DataBucket<RecipeOrTechnology, EntityCrafter>();
+            DataBucket<Goods, Entity> usageAsFuel = new DataBucket<Goods, Entity>();
+            List<Recipe> allRecipes = new List<Recipe>();
+            List<Mechanics> allMechanics = new List<Mechanics>();
 
             // step 1 - collect maps
 
-            foreach (var o in allObjects) {
+            foreach (FactorioObject o in allObjects) {
                 switch (o) {
                     case Technology technology:
-                        foreach (var recipe in technology.unlockRecipes)
+                        foreach (Recipe recipe in technology.unlockRecipes) {
                             recipeUnlockers.Add(recipe, technology);
+                        }
+
                         break;
                     case Recipe recipe:
                         allRecipes.Add(recipe);
-                        foreach (var product in recipe.products) {
-                            if (product.amount > 0)
+                        foreach (Product product in recipe.products) {
+                            if (product.amount > 0) {
                                 itemProduction.Add(product.goods, recipe);
-                        }
-
-                        foreach (var ingredient in recipe.ingredients) {
-                            if (ingredient.variants == null)
-                                itemUsages.Add(ingredient.goods, recipe);
-                            else {
-                                ingredient.goods = ingredient.variants[0];
-                                foreach (var variant in ingredient.variants)
-                                    itemUsages.Add(variant, recipe);
                             }
                         }
-                        if (recipe is Mechanics mechanics)
+
+                        foreach (Ingredient ingredient in recipe.ingredients) {
+                            if (ingredient.variants == null) {
+                                itemUsages.Add(ingredient.goods, recipe);
+                            }
+                            else {
+                                ingredient.goods = ingredient.variants[0];
+                                foreach (Goods variant in ingredient.variants) {
+                                    itemUsages.Add(variant, recipe);
+                                }
+                            }
+                        }
+                        if (recipe is Mechanics mechanics) {
                             allMechanics.Add(mechanics);
+                        }
+
                         break;
                     case Item item:
-                        if (placeResults.TryGetValue(item, out var placeResultStr)) {
+                        if (placeResults.TryGetValue(item, out string placeResultStr)) {
                             item.placeResult = GetObject<Entity>(placeResultStr);
                             entityPlacers.Add(item.placeResult, item);
                         }
-                        if (item.fuelResult != null)
+                        if (item.fuelResult != null) {
                             miscSources.Add(item.fuelResult, item);
+                        }
+
                         break;
                     case Entity entity:
-                        foreach (var product in entity.loot)
+                        foreach (Product product in entity.loot) {
                             miscSources.Add(product.goods, entity);
+                        }
+
                         if (entity is EntityCrafter crafter) {
                             crafter.recipes = recipeCrafters.GetRaw(crafter).SelectMany(x => recipeCategories.GetRaw(x).Where(y => y.CanFit(crafter.itemInputs, crafter.fluidInputs, crafter.inputs))).ToArray();
-                            foreach (var recipe in crafter.recipes)
+                            foreach (RecipeOrTechnology recipe in crafter.recipes) {
                                 actualRecipeCrafters.Add(recipe, crafter, true);
+                            }
                         }
                         if (entity.energy != null && entity.energy != voidEntityEnergy) {
-                            var fuelList = fuelUsers.GetRaw(entity).SelectMany(fuels.GetRaw);
-                            if (entity.energy.type == EntityEnergyType.FluidHeat)
+                            IEnumerable<Goods> fuelList = fuelUsers.GetRaw(entity).SelectMany(fuels.GetRaw);
+                            if (entity.energy.type == EntityEnergyType.FluidHeat) {
                                 fuelList = fuelList.Where(x => x is Fluid f && entity.energy.acceptedTemperature.Contains(f.temperature) && f.temperature > entity.energy.workingTemperature.min);
-                            var fuelListArr = fuelList.ToArray();
+                            }
+
+                            Goods[] fuelListArr = fuelList.ToArray();
                             entity.energy.fuels = fuelListArr;
-                            foreach (var fuel in fuelListArr)
+                            foreach (Goods fuel in fuelListArr) {
                                 usageAsFuel.Add(fuel, entity);
+                            }
                         }
                         break;
                 }
@@ -247,7 +284,7 @@ namespace YAFC.Parser {
 
             // step 2 - fill maps
 
-            foreach (var o in allObjects) {
+            foreach (FactorioObject o in allObjects) {
                 switch (o) {
                     case RecipeOrTechnology recipeOrTechnology:
                         if (recipeOrTechnology is Recipe recipe) {
@@ -261,14 +298,13 @@ namespace YAFC.Parser {
                         goods.production = itemProduction.GetArray(goods);
                         goods.miscSources = miscSources.GetArray(goods);
                         if (o is Item item) {
-                            if (item.placeResult != null)
+                            if (item.placeResult != null) {
                                 item.FallbackLocalization(item.placeResult, "An item to build");
+                            }
                         }
                         else if (o is Fluid fluid && fluid.variants != null) {
-                            var temperatureDescr = "Temperature: " + fluid.temperature + "°";
-                            if (fluid.locDescr == null)
-                                fluid.locDescr = temperatureDescr;
-                            else fluid.locDescr = temperatureDescr + "\n" + fluid.locDescr;
+                            string temperatureDescr = "Temperature: " + fluid.temperature + "°";
+                            fluid.locDescr = fluid.locDescr == null ? temperatureDescr : temperatureDescr + "\n" + fluid.locDescr;
                         }
 
                         goods.fuelFor = usageAsFuel.GetArray(goods);
@@ -279,24 +315,28 @@ namespace YAFC.Parser {
                 }
             }
 
-            foreach (var mechanic in allMechanics) {
+            foreach (Mechanics mechanic in allMechanics) {
                 mechanic.locName = mechanic.source.locName + " " + mechanic.locName;
                 mechanic.locDescr = mechanic.source.locDescr;
                 mechanic.iconSpec = mechanic.source.iconSpec;
             }
 
             // step 3 - detect barreling/unbarreling and voiding recipes
-            foreach (var recipe in allRecipes) {
-                if (recipe.specialType != FactorioObjectSpecialType.Normal)
+            foreach (Recipe recipe in allRecipes) {
+                if (recipe.specialType != FactorioObjectSpecialType.Normal) {
                     continue;
+                }
+
                 if (recipe.products.Length == 0) {
                     recipe.specialType = FactorioObjectSpecialType.Voiding;
                     continue;
                 }
-                if (recipe.products.Length != 1 || recipe.ingredients.Length == 0)
+                if (recipe.products.Length != 1 || recipe.ingredients.Length == 0) {
                     continue;
+                }
+
                 if (recipe.products[0].goods is Item barrel) {
-                    foreach (var usage in barrel.usages) {
+                    foreach (Recipe usage in barrel.usages) {
                         if (IsBarrelingRecipe(recipe, usage)) {
                             recipe.specialType = FactorioObjectSpecialType.Barreling;
                             usage.specialType = FactorioObjectSpecialType.Unbarreling;
@@ -306,23 +346,24 @@ namespace YAFC.Parser {
                 }
             }
 
-            foreach (var any in allObjects) {
-                if (any.locName == null)
-                    any.locName = any.name;
+            foreach (FactorioObject any in allObjects) {
+                any.locName ??= any.name;
             }
 
-            foreach (var (_, list) in fluidVariants) {
-                foreach (var fluid in list) {
+            foreach ((string _, List<Fluid> list) in fluidVariants) {
+                foreach (Fluid fluid in list) {
                     fluid.locName += " " + fluid.temperature + "°";
                 }
             }
         }
 
         private Recipe CreateSpecialRecipe(FactorioObject production, string category, string hint) {
-            var fullName = category + (category.EndsWith(".") ? "" : ".") + production.name;
-            if (registeredObjects.TryGetValue((typeof(Mechanics), fullName), out var recipeRaw))
+            string fullName = category + (category.EndsWith(".") ? "" : ".") + production.name;
+            if (registeredObjects.TryGetValue((typeof(Mechanics), fullName), out FactorioObject recipeRaw)) {
                 return recipeRaw as Recipe;
-            var recipe = GetObject<Mechanics>(fullName);
+            }
+
+            Mechanics recipe = GetObject<Mechanics>(fullName);
             recipe.time = 1f;
             recipe.factorioType = SpecialNames.FakeRecipe;
             recipe.name = fullName;
@@ -349,17 +390,20 @@ namespace YAFC.Parser {
             /// </summary>
             /// <param name="addExtraItems">Function to provide extra items, *must not* return null.</param>
             public void Seal(Func<TKey, IEnumerable<TValue>> addExtraItems = null) {
-                if (isSealed)
+                if (isSealed) {
                     throw new InvalidOperationException("Data bucket is already sealed");
+                }
 
-                if (addExtraItems != null)
+                if (addExtraItems != null) {
                     defaultList = addExtraItems;
+                }
 
                 KeyValuePair<TKey, IList<TValue>>[] values = storage.ToArray();
                 foreach ((TKey key, IList<TValue> value) in values) {
-                    if (value is not List<TValue> list)
+                    if (value is not List<TValue> list) {
                         // Unexpected type, (probably) never happens
                         continue;
+                    }
 
                     // Add the extra values to the list when provided before storing the complete array.
                     IEnumerable<TValue> completeList = addExtraItems != null ? list.Concat(addExtraItems(key)) : list;
@@ -372,27 +416,33 @@ namespace YAFC.Parser {
             }
 
             public void Add(TKey key, TValue value, bool checkUnique = false) {
-                if (isSealed)
+                if (isSealed) {
                     throw new InvalidOperationException("Data bucket is sealed");
-                if (key == null)
+                }
+
+                if (key == null) {
                     return;
-                if (!storage.TryGetValue(key, out var list))
+                }
+
+                if (!storage.TryGetValue(key, out IList<TValue> list)) {
                     storage[key] = new List<TValue> { value };
-                else if (!checkUnique || !list.Contains(value))
+                }
+                else if (!checkUnique || !list.Contains(value)) {
                     list.Add(value);
+                }
             }
 
             public TValue[] GetArray(TKey key) {
-                if (!storage.TryGetValue(key, out var list))
-                    return defaultList(key).ToArray();
-                return list is TValue[] value ? value : list.ToArray();
+                return !storage.TryGetValue(key, out global::System.Collections.Generic.IList<TValue> list) ? defaultList(key).ToArray() : list is TValue[] value ? value : list.ToArray();
             }
 
             public IList<TValue> GetRaw(TKey key) {
-                if (!storage.TryGetValue(key, out var list)) {
+                if (!storage.TryGetValue(key, out IList<TValue> list)) {
                     list = defaultList(key).ToList();
-                    if (isSealed)
+                    if (isSealed) {
                         list = list.ToArray();
+                    }
+
                     storage[key] = list;
                 }
                 return list;
@@ -404,40 +454,46 @@ namespace YAFC.Parser {
             }
 
             public bool Equals(List<TValue> x, List<TValue> y) {
-                if (x.Count != y.Count)
+                if (x.Count != y.Count) {
                     return false;
-                var comparer = EqualityComparer<TValue>.Default;
-                for (var i = 0; i < x.Count; i++)
-                    if (!comparer.Equals(x[i], y[i]))
+                }
+
+                EqualityComparer<TValue> comparer = EqualityComparer<TValue>.Default;
+                for (int i = 0; i < x.Count; i++) {
+                    if (!comparer.Equals(x[i], y[i])) {
                         return false;
+                    }
+                }
+
                 return true;
             }
 
             public int GetHashCode(List<TValue> obj) {
-                var count = obj.Count;
-                return count == 0 ? 0 : (obj.Count * 347 + obj[0].GetHashCode()) * 347 + obj[count - 1].GetHashCode();
+                int count = obj.Count;
+                return count == 0 ? 0 : (((obj.Count * 347) + obj[0].GetHashCode()) * 347) + obj[count - 1].GetHashCode();
             }
         }
 
         public Type TypeNameToType(string typeName) {
-            switch (typeName) {
-                case "item": return typeof(Item);
-                case "fluid": return typeof(Fluid);
-                case "technology": return typeof(Technology);
-                case "recipe": return typeof(Recipe);
-                case "entity": return typeof(Entity);
-                default: return null;
-            }
+            return typeName switch {
+                "item" => typeof(Item),
+                "fluid" => typeof(Fluid),
+                "technology" => typeof(Technology),
+                "recipe" => typeof(Recipe),
+                "entity" => typeof(Entity),
+                _ => null,
+            };
         }
 
         private void ParseModYafcHandles(LuaTable scriptEnabled) {
             if (scriptEnabled != null) {
-                foreach (var element in scriptEnabled.ArrayElements) {
+                foreach (object element in scriptEnabled.ArrayElements) {
                     if (element is LuaTable table) {
-                        table.Get("type", out string type);
-                        table.Get("name", out string name);
-                        if (registeredObjects.TryGetValue((TypeNameToType(type), name), out var existing))
+                        _ = table.Get("type", out string type);
+                        _ = table.Get("name", out string name);
+                        if (registeredObjects.TryGetValue((TypeNameToType(type), name), out FactorioObject existing)) {
                             rootAccessible.Add(existing);
+                        }
                     }
                 }
             }

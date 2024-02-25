@@ -10,8 +10,10 @@ namespace YAFC.UI {
         public bool valid => surface != null && surface.rendererVersion == version;
 
         public TextureHandle Destroy() {
-            if (valid)
+            if (valid) {
                 SDL.SDL_DestroyTexture(handle);
+            }
+
             return default;
         }
 
@@ -24,17 +26,16 @@ namespace YAFC.UI {
 
     public abstract class DrawingSurface : IDisposable {
         private IntPtr rendererHandle;
-        private int _rendererVersion;
 
         public IntPtr renderer {
             get => rendererHandle;
             protected set {
                 rendererHandle = value;
-                _rendererVersion++;
+                rendererVersion++;
             }
         }
 
-        public int rendererVersion => _rendererVersion;
+        public int rendererVersion { get; private set; }
 
         public float pixelsPerUnit { get; set; }
 
@@ -56,21 +57,21 @@ namespace YAFC.UI {
         }
 
         public TextureHandle BeginRenderToTexture(out SDL.SDL_Rect textureSize) {
-            SDL.SDL_GetRendererOutputSize(renderer, out var w, out var h);
+            _ = SDL.SDL_GetRendererOutputSize(renderer, out int w, out int h);
             textureSize = new SDL.SDL_Rect { w = w, h = h };
-            var texture = SDL.SDL_CreateTexture(renderer, SDL.SDL_PIXELFORMAT_RGBA8888, (int)SDL.SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, textureSize.w, textureSize.h);
-            SDL.SDL_SetRenderTarget(renderer, texture);
+            IntPtr texture = SDL.SDL_CreateTexture(renderer, SDL.SDL_PIXELFORMAT_RGBA8888, (int)SDL.SDL_TextureAccess.SDL_TEXTUREACCESS_TARGET, textureSize.w, textureSize.h);
+            _ = SDL.SDL_SetRenderTarget(renderer, texture);
             return new TextureHandle(this, texture);
         }
 
         public void EndRenderToTexture() {
-            SDL.SDL_SetRenderTarget(renderer, IntPtr.Zero);
+            _ = SDL.SDL_SetRenderTarget(renderer, IntPtr.Zero);
         }
 
         public virtual SDL.SDL_Rect SetClip(SDL.SDL_Rect clip) {
-            var prev = clipRect;
+            SDL.SDL_Rect prev = clipRect;
             clipRect = clip;
-            SDL.SDL_RenderSetClipRect(renderer, ref clip);
+            _ = SDL.SDL_RenderSetClipRect(renderer, ref clip);
             return prev;
         }
 
@@ -82,13 +83,18 @@ namespace YAFC.UI {
             this.clipRect = clipRect;
             {
                 // TODO work-around sdl bug
-                SDL.SDL_RenderSetClipRect(renderer, ref clipRect);
+                _ = SDL.SDL_RenderSetClipRect(renderer, ref clipRect);
             }
-            SDL.SDL_RenderClear(renderer);
+            _ = SDL.SDL_RenderClear(renderer);
         }
 
-        public TextureHandle CreateTextureFromSurface(IntPtr surface) => new TextureHandle(this, SDL.SDL_CreateTextureFromSurface(renderer, surface));
-        public TextureHandle CreateTexture(uint format, int access, int w, int h) => new TextureHandle(this, SDL.SDL_CreateTexture(renderer, format, access, w, h));
+        public TextureHandle CreateTextureFromSurface(IntPtr surface) {
+            return new TextureHandle(this, SDL.SDL_CreateTextureFromSurface(renderer, surface));
+        }
+
+        public TextureHandle CreateTexture(uint format, int access, int w, int h) {
+            return new TextureHandle(this, SDL.SDL_CreateTexture(renderer, format, access, w, h));
+        }
     }
 
     public abstract class SoftwareDrawingSurface : DrawingSurface {
@@ -99,25 +105,25 @@ namespace YAFC.UI {
         }
 
         public override SDL.SDL_Rect SetClip(SDL.SDL_Rect clip) {
-            SDL.SDL_SetClipRect(surface, ref clip);
+            _ = SDL.SDL_SetClipRect(surface, ref clip);
             return base.SetClip(clip);
         }
 
         internal override void DrawIcon(SDL.SDL_Rect position, Icon icon, SchemeColor color) {
-            var sdlColor = color.ToSdlColor();
-            var iconSurface = IconCollection.GetIconSurface(icon);
-            SDL.SDL_SetSurfaceColorMod(iconSurface, sdlColor.r, sdlColor.g, sdlColor.b);
-            SDL.SDL_SetSurfaceAlphaMod(iconSurface, sdlColor.a);
-            SDL.SDL_BlitScaled(iconSurface, ref IconCollection.IconRect, surface, ref position);
+            SDL.SDL_Color sdlColor = color.ToSdlColor();
+            IntPtr iconSurface = IconCollection.GetIconSurface(icon);
+            _ = SDL.SDL_SetSurfaceColorMod(iconSurface, sdlColor.r, sdlColor.g, sdlColor.b);
+            _ = SDL.SDL_SetSurfaceAlphaMod(iconSurface, sdlColor.a);
+            _ = SDL.SDL_BlitScaled(iconSurface, ref IconCollection.IconRect, surface, ref position);
         }
 
         internal override void DrawBorder(SDL.SDL_Rect position, RectangleBorder border) {
-            RenderingUtils.GetBorderParameters(pixelsPerUnit, border, out var top, out var side, out var bottom);
+            RenderingUtils.GetBorderParameters(pixelsPerUnit, border, out int top, out int side, out int bottom);
             RenderingUtils.GetBorderBatch(position, top, side, bottom, ref blitMapping);
-            var bm = blitMapping;
-            for (var i = 0; i < bm.Length; i++) {
-                ref var cur = ref bm[i];
-                SDL.SDL_BlitScaled(RenderingUtils.CircleSurface, ref cur.texture, surface, ref cur.position);
+            RenderingUtils.BlitMapping[] bm = blitMapping;
+            for (int i = 0; i < bm.Length; i++) {
+                ref RenderingUtils.BlitMapping cur = ref bm[i];
+                _ = SDL.SDL_BlitScaled(RenderingUtils.CircleSurface, ref cur.texture, surface, ref cur.position);
             }
         }
     }
@@ -132,18 +138,20 @@ namespace YAFC.UI {
         }
 
         public static float ClampPixelsPerUnit(Vector2 size, float pixelsPerUnit) {
-            var maxppu = MathF.Min(65535 / size.X, 65535 / size.Y);
+            float maxppu = MathF.Min(65535 / size.X, 65535 / size.Y);
             return MathF.Min(maxppu, pixelsPerUnit);
         }
 
         public void Clear(SDL.SDL_Color bgColor) {
-            SDL.SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
-            SDL.SDL_RenderClear(renderer);
+            _ = SDL.SDL_SetRenderDrawColor(renderer, bgColor.r, bgColor.g, bgColor.b, bgColor.a);
+            _ = SDL.SDL_RenderClear(renderer);
         }
 
         public override void Dispose() {
-            if (surface == IntPtr.Zero)
+            if (surface == IntPtr.Zero) {
                 return;
+            }
+
             base.Dispose();
             SDL.SDL_FreeSurface(surface);
             surface = IntPtr.Zero;
@@ -157,7 +165,7 @@ namespace YAFC.UI {
         public override Window window => null;
 
         public void SavePng(string filename) {
-            SDL_image.IMG_SavePNG(surface, filename);
+            _ = SDL_image.IMG_SavePNG(surface, filename);
         }
     }
 }

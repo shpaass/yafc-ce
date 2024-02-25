@@ -6,22 +6,24 @@ using YAFC.UI;
 namespace YAFC {
     public static class Program {
         public static bool hasOverriddenFont;
-        static void Main(string[] args) {
+
+        private static void Main(string[] args) {
             YafcLib.Init();
             YafcLib.RegisterDefaultAnalysis();
             Ui.Start();
-            var overrideFont = Preferences.Instance.overrideFont;
+            string overrideFont = Preferences.Instance.overrideFont;
             FontFile overriddenFontFile = null;
             try {
-                if (!string.IsNullOrEmpty(overrideFont) && File.Exists(overrideFont))
+                if (!string.IsNullOrEmpty(overrideFont) && File.Exists(overrideFont)) {
                     overriddenFontFile = new FontFile(overrideFont);
+                }
             }
             catch (Exception ex) {
                 Console.Error.WriteException(ex);
             }
             hasOverriddenFont = overriddenFontFile != null;
             Font.header = new Font(overriddenFontFile ?? new FontFile("Data/Roboto-Light.ttf"), 2f);
-            var regular = overriddenFontFile ?? new FontFile("Data/Roboto-Regular.ttf");
+            FontFile regular = overriddenFontFile ?? new FontFile("Data/Roboto-Regular.ttf");
             Font.subheader = new Font(regular, 1.5f);
             Font.text = new Font(regular, 1f);
 
@@ -63,7 +65,7 @@ namespace YAFC {
                 }
             }
 
-            var window = new WelcomeScreen(cliProject);
+            _ = new WelcomeScreen(cliProject);
             Ui.MainLoop();
         }
     }

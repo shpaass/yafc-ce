@@ -6,25 +6,26 @@ namespace YAFC.UI {
         private object currentDraggingObject;
 
         public void SetDraggingArea<T>(Rect rect, T draggingObject, SchemeColor bgColor) {
-            if (window == null || mouseDownButton == -1)
+            if (window == null || mouseDownButton == -1) {
                 return;
+            }
+
             rebuildRequested = false;
             currentDraggingObject = draggingObject;
-            var overlay = window.GetDragOverlay();
+            DragOverlay overlay = window.GetDragOverlay();
             overlay.BeginDrag(this, rect, bgColor);
         }
 
         public void UpdateDraggingObject(object obj) {
-            if (currentDraggingObject != null)
+            if (currentDraggingObject != null) {
                 currentDraggingObject = obj;
+            }
         }
 
         public bool isDragging => currentDraggingObject != null;
 
         public bool IsDragging<T>(T obj) {
-            if (currentDraggingObject != null && obj.Equals(currentDraggingObject))
-                return true;
-            return false;
+            return currentDraggingObject != null && obj.Equals(currentDraggingObject);
         }
 
         public bool ConsumeDrag<T>(Vector2 anchor, T obj) {
@@ -37,7 +38,9 @@ namespace YAFC.UI {
             return false;
         }
 
-        public T GetDraggingObject<T>() => currentDraggingObject is T t ? t : default;
+        public T GetDraggingObject<T>() {
+            return currentDraggingObject is T t ? t : default;
+        }
 
         internal class DragOverlay {
             private readonly ImGui contents = new ImGui(null, default) { mouseCapture = false };
@@ -53,13 +56,15 @@ namespace YAFC.UI {
 
             private void ExtractDrawCommandsFrom<T>(List<DrawCommand<T>> sourceList, List<DrawCommand<T>> targetList, Rect rect) {
                 targetList.Clear();
-                var delta = rect.Position;
-                var firstInBlock = -1;
-                for (var i = 0; i < sourceList.Count; i++) {
-                    var elem = sourceList[i];
+                Vector2 delta = rect.Position;
+                int firstInBlock = -1;
+                for (int i = 0; i < sourceList.Count; i++) {
+                    DrawCommand<T> elem = sourceList[i];
                     if (rect.Contains(elem.rect)) {
-                        if (firstInBlock == -1)
+                        if (firstInBlock == -1) {
                             firstInBlock = i;
+                        }
+
                         targetList.Add(new DrawCommand<T>(elem.rect - delta, elem.data, elem.color));
                     }
                     else if (firstInBlock != -1) {
@@ -68,8 +73,9 @@ namespace YAFC.UI {
                         firstInBlock = -1;
                     }
                 }
-                if (firstInBlock != -1)
+                if (firstInBlock != -1) {
                     sourceList.RemoveRange(firstInBlock, sourceList.Count - firstInBlock);
+                }
             }
 
             public void BeginDrag(ImGui source, Rect rect, SchemeColor bgColor) {
@@ -86,8 +92,10 @@ namespace YAFC.UI {
             }
 
             public void Build(ImGui screenGui) {
-                if (currentSource == null)
+                if (currentSource == null) {
                     return;
+                }
+
                 if (InputSystem.Instance.mouseDownButton == -1) {
                     currentSource = null;
                     realPosition = default;
@@ -95,9 +103,9 @@ namespace YAFC.UI {
                 }
 
                 if (screenGui.action == ImGuiAction.Build) {
-                    var sourceRect = currentSource.screenRect - currentSource.offset;
-                    var requestedPosition = screenGui.mousePosition + mouseOffset;
-                    var clampedPos = Vector2.Clamp(requestedPosition, sourceRect.Position, Vector2.Max(sourceRect.Position, sourceRect.BottomRight - contents.contentSize));
+                    Rect sourceRect = currentSource.screenRect - currentSource.offset;
+                    Vector2 requestedPosition = screenGui.mousePosition + mouseOffset;
+                    Vector2 clampedPos = Vector2.Clamp(requestedPosition, sourceRect.Position, Vector2.Max(sourceRect.Position, sourceRect.BottomRight - contents.contentSize));
                     realPosition = new Rect(clampedPos, contents.contentSize);
                     screenGui.DrawPanel(realPosition, contents);
                 }
@@ -105,9 +113,7 @@ namespace YAFC.UI {
         }
 
         public bool ShouldEnterDrag(Rect moveHandle) {
-            if (action != ImGuiAction.MouseMove || !IsMouseDown(moveHandle) || isDragging || Vector2.DistanceSquared(InputSystem.Instance.mousePosition, InputSystem.Instance.mouseDownPosition) < 1f)
-                return false;
-            return true;
+            return action == ImGuiAction.MouseMove && IsMouseDown(moveHandle) && !isDragging && Vector2.DistanceSquared(InputSystem.Instance.mousePosition, InputSystem.Instance.mouseDownPosition) >= 1f;
         }
     }
 }

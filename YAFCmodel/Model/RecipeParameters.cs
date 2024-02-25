@@ -63,35 +63,38 @@ namespace YAFC.Model {
             else {
                 recipeTime = recipe.time / entity.craftingSpeed;
                 productivity = entity.productivity;
-                var energy = entity.energy;
-                var energyUsage = entity.power;
-                var energyPerUnitOfFuel = 0f;
+                EntityEnergy energy = entity.energy;
+                float energyUsage = entity.power;
+                float energyPerUnitOfFuel = 0f;
 
                 // Special case for fuel
                 if (fuel != null) {
-                    var fluid = fuel.fluid;
+                    Fluid fluid = fuel.fluid;
                     energyPerUnitOfFuel = fuel.fuelValue;
 
                     if (energy.type == EntityEnergyType.FluidHeat) {
-                        if (fluid == null)
+                        if (fluid == null) {
                             warningFlags |= WarningFlags.FuelWithTemperatureNotLinked;
+                        }
                         else {
-                            var temperature = fluid.temperature;
+                            int temperature = fluid.temperature;
                             if (temperature > energy.workingTemperature.max) {
                                 temperature = energy.workingTemperature.max;
                                 warningFlags |= WarningFlags.FuelTemperatureExceedsMaximum;
                             }
 
-                            var heatCap = fluid.heatCapacity;
+                            float heatCap = fluid.heatCapacity;
                             energyPerUnitOfFuel = (temperature - energy.workingTemperature.min) * heatCap;
                         }
                     }
 
-                    if (fluid != null && !energy.acceptedTemperature.Contains(fluid.temperature))
+                    if (fluid != null && !energy.acceptedTemperature.Contains(fluid.temperature)) {
                         warningFlags |= WarningFlags.FuelDoesNotProvideEnergy;
+                    }
 
-                    if (energyPerUnitOfFuel > 0f)
+                    if (energyPerUnitOfFuel > 0f) {
                         fuelUsagePerSecondPerBuilding = energyUsage <= 0f ? 0f : energyUsage / (energyPerUnitOfFuel * energy.effectivity);
+                    }
                     else {
                         fuelUsagePerSecondPerBuilding = 0;
                         warningFlags |= WarningFlags.FuelDoesNotProvideEnergy;
@@ -115,35 +118,38 @@ namespace YAFC.Model {
 
                 // Special case for boilers
                 if (recipe.flags.HasFlags(RecipeFlags.UsesFluidTemperature)) {
-                    var fluid = recipe.ingredients[0].goods.fluid;
+                    Fluid fluid = recipe.ingredients[0].goods.fluid;
                     if (fluid != null) {
                         float inputTemperature = fluid.temperature;
-                        foreach (var variant in variants) {
+                        foreach (FactorioObject variant in variants) {
                             if (variant is Fluid fluidVariant && fluidVariant.originalName == fluid.originalName) {
                                 inputTemperature = fluidVariant.temperature;
                             }
                         }
 
-                        var outputTemp = recipe.products[0].goods.fluid.temperature;
-                        var deltaTemp = (outputTemp - inputTemperature);
-                        var energyPerUnitOfFluid = deltaTemp * fluid.heatCapacity;
-                        if (deltaTemp > 0 && fuel != null)
+                        int outputTemp = recipe.products[0].goods.fluid.temperature;
+                        float deltaTemp = outputTemp - inputTemperature;
+                        float energyPerUnitOfFluid = deltaTemp * fluid.heatCapacity;
+                        if (deltaTemp > 0 && fuel != null) {
                             recipeTime = 60 * energyPerUnitOfFluid / (fuelUsagePerSecondPerBuilding * fuel.fuelValue * energy.effectivity);
+                        }
                     }
                 }
 
-                var isMining = recipe.flags.HasFlags(RecipeFlags.UsesMiningProductivity);
+                bool isMining = recipe.flags.HasFlags(RecipeFlags.UsesMiningProductivity);
                 activeEffects = new ModuleEffects();
-                if (isMining)
+                if (isMining) {
                     productivity += Project.current.settings.miningProductivity;
+                }
 
                 if (entity is EntityReactor reactor && reactor.reactorNeighbourBonus > 0f) {
                     productivity += reactor.reactorNeighbourBonus * Project.current.settings.GetReactorBonusMultiplier();
                     warningFlags |= WarningFlags.ReactorsNeighboursFromPrefs;
                 }
 
-                if (entity.factorioType == "solar-panel")
+                if (entity.factorioType == "solar-panel") {
                     warningFlags |= WarningFlags.AssumesNauvisSolarRatio;
+                }
 
                 modules = default;
                 if (moduleFiller != null && recipe.modules.Length > 0 && entity.allowedEffects != AllowedEffects.None) {
@@ -153,8 +159,9 @@ namespace YAFC.Model {
                     fuelUsagePerSecondPerBuilding *= activeEffects.energyUsageMod;
                 }
 
-                if (energy.drain > 0f)
+                if (energy.drain > 0f) {
                     fuelUsagePerSecondPerBuilding += energy.drain / energyPerUnitOfFuel;
+                }
 
                 if (fuelUsagePerSecondPerBuilding > energy.fuelConsumptionLimit) {
                     recipeTime *= fuelUsagePerSecondPerBuilding / energy.fuelConsumptionLimit;
@@ -164,8 +171,10 @@ namespace YAFC.Model {
             }
 
             if (recipeTime < MIN_RECIPE_TIME && recipe.flags.HasFlags(RecipeFlags.LimitedByTickRate)) {
-                if (productivity > 0f)
-                    productivity *= (MIN_RECIPE_TIME / recipeTime); // Recipe time is affected by the minimum time while productivity bonus aren't
+                if (productivity > 0f) {
+                    productivity *= MIN_RECIPE_TIME / recipeTime; // Recipe time is affected by the minimum time while productivity bonus aren't
+                }
+
                 recipeTime = MIN_RECIPE_TIME;
                 warningFlags |= WarningFlags.RecipeTickLimit;
             }

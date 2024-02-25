@@ -31,11 +31,11 @@ namespace YAFC.UI {
         public void Build(ImGui gui) {
             owner = gui;
             if (source != null && gui.isBuilding) {
-                var rect = source.TranslateRect(sourceRect, gui);
+                Rect rect = source.TranslateRect(sourceRect, gui);
                 if (ShoudBuild(source, sourceRect, gui, rect)) {
-                    var contentSize = contents.CalculateState(width, gui.pixelsPerUnit);
-                    var position = CalculatePosition(gui, rect, contentSize);
-                    var parentRect = new Rect(position, contentSize);
+                    Vector2 contentSize = contents.CalculateState(width, gui.pixelsPerUnit);
+                    Vector2 position = CalculatePosition(gui, rect, contentSize);
+                    Rect parentRect = new Rect(position, contentSize);
                     gui.DrawPanel(parentRect, contents);
                 }
                 else {
@@ -52,7 +52,10 @@ namespace YAFC.UI {
     public abstract class DropDownPanel : AttachedPanel, IMouseFocus {
         private bool focused;
         protected DropDownPanel(Padding padding, float width) : base(padding, width) { }
-        protected override bool ShoudBuild(ImGui source, Rect sourceRect, ImGui parent, Rect parentRect) => focused;
+        protected override bool ShoudBuild(ImGui source, Rect sourceRect, ImGui parent, Rect parentRect) {
+            return focused;
+        }
+
         public override void SetFocus(ImGui source, Rect rect) {
             InputSystem.Instance.SetMouseFocus(this);
             base.SetFocus(source, rect);
@@ -60,8 +63,10 @@ namespace YAFC.UI {
 
         public bool FilterPanel(IPanel panel) {
             while (panel != null) {
-                if (panel == contents)
+                if (panel == contents) {
                     return true;
+                }
+
                 panel = panel.Parent;
             }
 
@@ -88,7 +93,9 @@ namespace YAFC.UI {
 
         public delegate void Builder(ImGui gui, ref bool closed);
 
-        public void SetPadding(Padding padding) => contents.initialPadding = padding;
+        public void SetPadding(Padding padding) {
+            contents.initialPadding = padding;
+        }
 
         public void SetFocus(ImGui source, Rect rect, GuiBuilder builder, float width = 20f) {
             this.width = width;
@@ -97,19 +104,22 @@ namespace YAFC.UI {
         }
 
         protected override Vector2 CalculatePosition(ImGui gui, Rect targetRect, Vector2 contentSize) {
-            var size = gui.contentSize;
-            var targetY = targetRect.Bottom + contentSize.Y > size.Y && targetRect.Y >= contentSize.Y ? targetRect.Y - contentSize.Y : targetRect.Bottom;
-            var x = MathUtils.Clamp(targetRect.X, 0, size.X - contentSize.X);
-            var y = MathUtils.Clamp(targetY, 0, size.Y - contentSize.Y);
+            Vector2 size = gui.contentSize;
+            float targetY = targetRect.Bottom + contentSize.Y > size.Y && targetRect.Y >= contentSize.Y ? targetRect.Y - contentSize.Y : targetRect.Bottom;
+            float x = MathUtils.Clamp(targetRect.X, 0, size.X - contentSize.X);
+            float y = MathUtils.Clamp(targetY, 0, size.Y - contentSize.Y);
             return new Vector2(x, y);
         }
 
         protected override void BuildContents(ImGui gui) {
             gui.boxColor = SchemeColor.PureBackground;
             gui.textColor = SchemeColor.BackgroundText;
-            if (builder != null)
+            if (builder != null) {
                 builder.Invoke(gui);
-            else Close();
+            }
+            else {
+                Close();
+            }
         }
     }
 
@@ -118,10 +128,8 @@ namespace YAFC.UI {
             contents.mouseCapture = false;
         }
         protected override bool ShoudBuild(ImGui source, Rect sourceRect, ImGui parent, Rect parentRect) {
-            var window = source.window;
-            if (InputSystem.Instance.mouseOverWindow != window)
-                return false;
-            return parentRect.Contains(parent.mousePosition);
+            Window window = source.window;
+            return InputSystem.Instance.mouseOverWindow == window && parentRect.Contains(parent.mousePosition);
         }
 
         protected override Vector2 CalculatePosition(ImGui gui, Rect targetRect, Vector2 contentSize) {

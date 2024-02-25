@@ -12,20 +12,23 @@ namespace YAFC.Model {
         public string name { get; set; }
 
         public void Solve(Dictionary<Goods, float> totalFlow, float multiplier) {
-            foreach (var element in elements)
+            foreach (ProductionSummaryEntry element in elements) {
                 element.RefreshFlow();
+            }
+
             totalFlow.Clear();
-            foreach (var row in elements) {
-                foreach (var (item, amount) in row.flow) {
-                    totalFlow.TryGetValue(item, out var prev);
-                    totalFlow[item] = prev + amount * multiplier;
+            foreach (ProductionSummaryEntry row in elements) {
+                foreach ((Goods item, float amount) in row.flow) {
+                    _ = totalFlow.TryGetValue(item, out float prev);
+                    totalFlow[item] = prev + (amount * multiplier);
                 }
             }
         }
 
         public void UpdateFilter(Goods filteredGoods, SearchQuery searchQuery) {
-            foreach (var element in elements)
+            foreach (ProductionSummaryEntry element in elements) {
                 element.UpdateFilter(filteredGoods, searchQuery);
+            }
         }
     }
 
@@ -34,10 +37,14 @@ namespace YAFC.Model {
 
         protected internal override void AfterDeserialize() {
             // Must be either page reference, or subgroup, not both
-            if (subgroup == null && page == null)
+            if (subgroup == null && page == null) {
                 throw new NotSupportedException("Referenced page does not exist");
-            if (subgroup != null && page != null)
+            }
+
+            if (subgroup != null && page != null) {
                 page = null;
+            }
+
             base.AfterDeserialize();
         }
 
@@ -48,33 +55,19 @@ namespace YAFC.Model {
         [SkipSerialization] public Dictionary<Goods, float> flow { get; } = new Dictionary<Goods, float>();
         private bool needRefreshFlow = true;
 
-        public Icon icon {
-            get {
-                if (subgroup != null)
-                    return Icon.Folder;
-                if (page.page == null)
-                    return Icon.Warning;
-                return page.page.icon?.icon ?? Icon.None;
-            }
-        }
+        public Icon icon => subgroup != null ? Icon.Folder : page.page == null ? Icon.Warning : page.page.icon?.icon ?? Icon.None;
 
-        public string name {
-            get {
-                if (page != null)
-                    return page.page?.name ?? "Page missing";
-                return "Broken entry";
-            }
-        }
+        public string name => page != null ? page.page?.name ?? "Page missing" : "Broken entry";
 
         public bool CollectSolvingTasks(List<Task> listToFill) {
-            var solutionTask = SolveIfNessessary();
+            Task solutionTask = SolveIfNessessary();
             if (solutionTask != null) {
                 listToFill.Add(solutionTask);
                 needRefreshFlow = true;
             }
 
             if (subgroup != null) {
-                foreach (var element in subgroup.elements) {
+                foreach (ProductionSummaryEntry element in subgroup.elements) {
                     needRefreshFlow |= element.CollectSolvingTasks(listToFill);
                 }
             }
@@ -82,41 +75,45 @@ namespace YAFC.Model {
         }
 
         public Task SolveIfNessessary() {
-            if (page == null)
+            if (page == null) {
                 return null;
-            var solutionPagepage = page.page;
-            if (solutionPagepage != null && solutionPagepage.IsSolutionStale())
-                return solutionPagepage.ExternalSolve();
-            return null;
+            }
+
+            ProjectPage solutionPagepage = page.page;
+            return solutionPagepage != null && solutionPagepage.IsSolutionStale() ? solutionPagepage.ExternalSolve() : (Task)null;
         }
 
         public float GetAmount(Goods goods) {
-            return flow.TryGetValue(goods, out var amount) ? amount : 0;
+            return flow.TryGetValue(goods, out float amount) ? amount : 0;
         }
 
         public void RefreshFlow() {
-            if (!needRefreshFlow)
+            if (!needRefreshFlow) {
                 return;
+            }
+
             needRefreshFlow = false;
             flow.Clear();
             if (subgroup != null) {
                 subgroup.Solve(flow, multiplier);
             }
             else {
-                var spage = page?.page?.content as ProductionTable;
-                if (spage == null)
+                if (page?.page?.content is not ProductionTable spage) {
                     return;
-
-                foreach (var flowEntry in spage.flow) {
-                    if (flowEntry.amount != 0)
-                        flow[flowEntry.goods] = flowEntry.amount * multiplier;
                 }
 
-                foreach (var link in spage.links)
-                    if (link.amount != 0) {
-                        flow.TryGetValue(link.goods, out var prevValue);
-                        flow[link.goods] = prevValue + link.amount * multiplier;
+                foreach (ProductionTableFlow flowEntry in spage.flow) {
+                    if (flowEntry.amount != 0) {
+                        flow[flowEntry.goods] = flowEntry.amount * multiplier;
                     }
+                }
+
+                foreach (ProductionLink link in spage.links) {
+                    if (link.amount != 0) {
+                        _ = flow.TryGetValue(link.goods, out float prevValue);
+                        flow[link.goods] = prevValue + (link.amount * multiplier);
+                    }
+                }
             }
         }
 
@@ -126,12 +123,11 @@ namespace YAFC.Model {
 
         public void UpdateFilter(Goods goods, SearchQuery query) {
             visible = flow.ContainsKey(goods);
-            if (subgroup != null)
-                subgroup.UpdateFilter(goods, query);
+            subgroup?.UpdateFilter(goods, query);
         }
 
         public void SetMultiplier(float newMultiplier) {
-            this.RecordUndo();
+            _ = this.RecordUndo();
             needRefreshFlow = true;
             multiplier = newMultiplier;
         }
@@ -160,29 +156,39 @@ namespace YAFC.Model {
             base.InitNew();
         }
 
-        public float GetTotalFlow(Goods goods) => totalFlow.TryGetValue(goods, out var amount) ? amount : 0;
+        public float GetTotalFlow(Goods goods) {
+            return totalFlow.TryGetValue(goods, out float amount) ? amount : 0;
+        }
 
         public override async Task<string> Solve(ProjectPage page) {
-            var taskList = new List<Task>();
-            foreach (var element in group.elements)
-                element.CollectSolvingTasks(taskList);
-            if (taskList.Count > 0)
+            List<Task> taskList = new List<Task>();
+            foreach (ProductionSummaryEntry element in group.elements) {
+                _ = element.CollectSolvingTasks(taskList);
+            }
+
+            if (taskList.Count > 0) {
                 await Task.WhenAll(taskList);
+            }
+
             columnsExist.Clear();
             group.Solve(totalFlow, 1);
 
-            foreach (var column in columns)
-                columnsExist.Add(column.goods);
+            foreach (ProductionSummaryColumn column in columns) {
+                _ = columnsExist.Add(column.goods);
+            }
+
             sortedFlow.Clear();
-            foreach (var element in totalFlow)
+            foreach (KeyValuePair<Goods, float> element in totalFlow) {
                 sortedFlow.Add((element.Key, element.Value));
+            }
+
             sortedFlow.Sort(this);
             return null;
         }
 
         public int Compare((Goods goods, float amount) x, (Goods goods, float amount) y) {
-            var amt1 = x.goods.fluid != null ? x.amount / 50f : x.amount;
-            var amt2 = y.goods.fluid != null ? y.amount / 50f : y.amount;
+            float amt1 = x.goods.fluid != null ? x.amount / 50f : x.amount;
+            float amt2 = y.goods.fluid != null ? y.amount / 50f : y.amount;
             return amt1.CompareTo(amt2);
         }
     }

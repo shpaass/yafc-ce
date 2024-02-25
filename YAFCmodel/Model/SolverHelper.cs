@@ -15,14 +15,19 @@ namespace YAFC.Model {
         }
 
         public float this[TVariable var, TConstraint constr] {
-            get => values.TryGetValue((var, constr), out var val) ? val : 0;
+            get => values.TryGetValue((var, constr), out float val) ? val : 0;
             set => values[(var, constr)] = value;
         }
 
-        public float this[TVariable var] => results.TryGetValue(var, out var value) ? value : 0f;
+        public float this[TVariable var] => results.TryGetValue(var, out float value) ? value : 0f;
 
-        public void AddVariable(TVariable var, float min, float max, float coef) => variables.Add((var, min, max, coef));
-        public void AddConstraint(TConstraint constr, float min, float max) => constraints.Add((constr, min, max));
+        public void AddVariable(TVariable var, float min, float max, float coef) {
+            variables.Add((var, min, max, coef));
+        }
+
+        public void AddConstraint(TConstraint constr, float min, float max) {
+            constraints.Add((constr, min, max));
+        }
 
         public void Clear() {
             values.Clear();
@@ -31,34 +36,36 @@ namespace YAFC.Model {
         }
 
         public Solver.ResultStatus Solve(string name) {
-            var solver = DataUtils.CreateSolver(name);
+            Solver solver = DataUtils.CreateSolver(name);
             results.Clear();
-            var realMapVars = new Dictionary<TVariable, Variable>(variables.Count);
-            var realMapConstrs = new Dictionary<TConstraint, Constraint>(constraints.Count);
-            var objective = solver.Objective();
+            Dictionary<TVariable, Variable> realMapVars = new Dictionary<TVariable, Variable>(variables.Count);
+            Dictionary<TConstraint, Constraint> realMapConstrs = new Dictionary<TConstraint, Constraint>(constraints.Count);
+            Objective objective = solver.Objective();
             objective.SetOptimizationDirection(maximize);
 
-            foreach (var (tvar, min, max, coef) in variables) {
-                var variable = solver.MakeNumVar(min, max, tvar.ToString());
+            foreach ((TVariable tvar, float min, float max, float coef) in variables) {
+                Variable variable = solver.MakeNumVar(min, max, tvar.ToString());
                 objective.SetCoefficient(variable, coef);
                 realMapVars[tvar] = variable;
             }
 
-            foreach (var (tconst, min, max) in constraints) {
-                var constraint = solver.MakeConstraint(min, max, tconst.ToString());
+            foreach ((TConstraint tconst, float min, float max) in constraints) {
+                Constraint constraint = solver.MakeConstraint(min, max, tconst.ToString());
                 realMapConstrs[tconst] = constraint;
             }
 
-            foreach (var ((tvar, tconstr), value) in values) {
-                if (realMapVars.TryGetValue(tvar, out var variable) && realMapConstrs.TryGetValue(tconstr, out var constraint))
+            foreach (((TVariable tvar, TConstraint tconstr), float value) in values) {
+                if (realMapVars.TryGetValue(tvar, out Variable variable) && realMapConstrs.TryGetValue(tconstr, out Constraint constraint)) {
                     constraint.SetCoefficient(variable, value);
+                }
             }
 
-            var result = solver.Solve();
+            Solver.ResultStatus result = solver.Solve();
 
-            if (result == Solver.ResultStatus.OPTIMAL || result == Solver.ResultStatus.FEASIBLE) {
-                foreach (var (tvar, var) in realMapVars)
+            if (result is Solver.ResultStatus.OPTIMAL or Solver.ResultStatus.FEASIBLE) {
+                foreach ((TVariable tvar, Variable var) in realMapVars) {
                     results[tvar] = (float)var.SolutionValue();
+                }
             }
             solver.Dispose();
 

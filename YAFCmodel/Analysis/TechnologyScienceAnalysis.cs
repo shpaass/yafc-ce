@@ -7,11 +7,11 @@ namespace YAFC.Model {
         public Mapping<Technology, Ingredient[]> allSciencePacks { get; private set; }
 
         public Ingredient GetMaxTechnologyIngredient(Technology tech) {
-            var list = allSciencePacks[tech];
+            Ingredient[] list = allSciencePacks[tech];
             Ingredient ingr = null;
-            var order = new Bits();
-            foreach (var elem in list) {
-                var elemOrder = Milestones.Instance.GetMilestoneResult(elem.goods.id) - 1;
+            Bits order = new Bits();
+            foreach (Ingredient elem in list) {
+                Bits elemOrder = Milestones.Instance.GetMilestoneResult(elem.goods.id) - 1;
                 if (ingr == null || elemOrder > order) {
                     order = elemOrder;
                     ingr = elem;
@@ -22,34 +22,39 @@ namespace YAFC.Model {
         }
 
         public override void Compute(Project project, ErrorCollector warnings) {
-            var sciencePacks = Database.allSciencePacks;
-            var sciencePackIndex = Database.goods.CreateMapping<int>();
-            for (var i = 0; i < sciencePacks.Length; i++)
+            Item[] sciencePacks = Database.allSciencePacks;
+            Mapping<Goods, int> sciencePackIndex = Database.goods.CreateMapping<int>();
+            for (int i = 0; i < sciencePacks.Length; i++) {
                 sciencePackIndex[sciencePacks[i]] = i;
-            var sciencePackCount = new Mapping<Technology, float>[sciencePacks.Length];
-            for (var i = 0; i < sciencePacks.Length; i++)
+            }
+
+            Mapping<Technology, float>[] sciencePackCount = new Mapping<Technology, float>[sciencePacks.Length];
+            for (int i = 0; i < sciencePacks.Length; i++) {
                 sciencePackCount[i] = Database.technologies.CreateMapping<float>();
+            }
 
-            var processing = Database.technologies.CreateMapping<bool>();
-            var requirementMap = Database.technologies.CreateMapping<Technology, bool>(Database.technologies);
+            Mapping<Technology, bool> processing = Database.technologies.CreateMapping<bool>();
+            Mapping<Technology, Technology, bool> requirementMap = Database.technologies.CreateMapping<Technology, bool>(Database.technologies);
 
-            var queue = new Queue<Technology>();
-            foreach (var tech in Database.technologies.all) {
+            Queue<Technology> queue = new Queue<Technology>();
+            foreach (Technology tech in Database.technologies.all) {
                 if (tech.prerequisites.Length == 0) {
                     processing[tech] = true;
                     queue.Enqueue(tech);
                 }
             }
-            var prerequisiteQueue = new Queue<Technology>();
+            Queue<Technology> prerequisiteQueue = new Queue<Technology>();
 
             while (queue.Count > 0) {
-                var current = queue.Dequeue();
+                Technology current = queue.Dequeue();
 
                 // Fast processing for the first prerequisite (just copy everything)
                 if (current.prerequisites.Length > 0) {
-                    var firstRequirement = current.prerequisites[0];
-                    foreach (var pack in sciencePackCount)
+                    Technology firstRequirement = current.prerequisites[0];
+                    foreach (Mapping<Technology, float> pack in sciencePackCount) {
                         pack[current] += pack[firstRequirement];
+                    }
+
                     requirementMap.CopyRow(firstRequirement, current);
                 }
 
@@ -57,13 +62,13 @@ namespace YAFC.Model {
                 prerequisiteQueue.Enqueue(current);
 
                 while (prerequisiteQueue.Count > 0) {
-                    var prerequisite = prerequisiteQueue.Dequeue();
-                    foreach (var ingredient in prerequisite.ingredients) {
-                        var science = sciencePackIndex[ingredient.goods];
+                    Technology prerequisite = prerequisiteQueue.Dequeue();
+                    foreach (Ingredient ingredient in prerequisite.ingredients) {
+                        int science = sciencePackIndex[ingredient.goods];
                         sciencePackCount[science][current] += ingredient.amount * prerequisite.count;
                     }
 
-                    foreach (var prerequisitePrerequisite in prerequisite.prerequisites) {
+                    foreach (Technology prerequisitePrerequisite in prerequisite.prerequisites) {
                         if (!requirementMap[current, prerequisitePrerequisite]) {
                             prerequisiteQueue.Enqueue(prerequisitePrerequisite);
                             requirementMap[current, prerequisitePrerequisite] = true;
@@ -71,11 +76,12 @@ namespace YAFC.Model {
                     }
                 }
 
-                foreach (var unlocks in Dependencies.reverseDependencies[current]) {
+                foreach (FactorioId unlocks in Dependencies.reverseDependencies[current]) {
                     if (Database.objects[unlocks] is Technology tech && !processing[tech]) {
-                        foreach (var techPreq in tech.prerequisites) {
-                            if (!processing[techPreq])
+                        foreach (Technology techPreq in tech.prerequisites) {
+                            if (!processing[techPreq]) {
                                 goto locked;
+                            }
                         }
 
                         processing[tech] = true;

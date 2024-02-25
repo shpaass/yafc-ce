@@ -11,28 +11,31 @@ namespace YAFC.Model {
         public static readonly AutomationAnalysis Instance = new AutomationAnalysis();
         public Mapping<FactorioObject, AutomationStatus> automatable;
 
-        private const AutomationStatus Unknown = (AutomationStatus)0;
+        private const AutomationStatus Unknown = 0;
         private const AutomationStatus UnknownInQueue = (AutomationStatus)1;
 
         public override void Compute(Project project, ErrorCollector warnings) {
-            var time = Stopwatch.StartNew();
-            var state = Database.objects.CreateMapping<AutomationStatus>();
+            Stopwatch time = Stopwatch.StartNew();
+            Mapping<FactorioObject, AutomationStatus> state = Database.objects.CreateMapping<AutomationStatus>();
             state[Database.voidEnergy] = AutomationStatus.AutomatableNow;
-            var processingQueue = new Queue<FactorioId>(Database.objects.count);
-            var unknowns = 0;
-            foreach (var recipe in Database.recipes.all) {
-                var hasAutomatableCrafter = false;
-                foreach (var crafter in recipe.crafters) {
-                    if (crafter != Database.character && crafter.IsAccessible())
+            Queue<FactorioId> processingQueue = new Queue<FactorioId>(Database.objects.count);
+            int unknowns = 0;
+            foreach (Recipe recipe in Database.recipes.all) {
+                bool hasAutomatableCrafter = false;
+                foreach (EntityCrafter crafter in recipe.crafters) {
+                    if (crafter != Database.character && crafter.IsAccessible()) {
                         hasAutomatableCrafter = true;
+                    }
                 }
-                if (!hasAutomatableCrafter)
+                if (!hasAutomatableCrafter) {
                     state[recipe] = AutomationStatus.NotAutomatable;
+                }
             }
 
-            foreach (var obj in Database.objects.all) {
-                if (!obj.IsAccessible())
+            foreach (FactorioObject obj in Database.objects.all) {
+                if (!obj.IsAccessible()) {
                     state[obj] = AutomationStatus.NotAutomatable;
+                }
                 else if (state[obj] == Unknown) {
                     unknowns++;
                     state[obj] = UnknownInQueue;
@@ -41,53 +44,61 @@ namespace YAFC.Model {
             }
 
             while (processingQueue.Count > 0) {
-                var index = processingQueue.Dequeue();
-                var dependencies = Dependencies.dependencyList[index];
-                var automationState = Milestones.Instance.IsAccessibleWithCurrentMilestones(index) ? AutomationStatus.AutomatableNow : AutomationStatus.AutomatableLater;
-                foreach (var depGroup in dependencies) {
+                FactorioId index = processingQueue.Dequeue();
+                DependencyList[] dependencies = Dependencies.dependencyList[index];
+                AutomationStatus automationState = Milestones.Instance.IsAccessibleWithCurrentMilestones(index) ? AutomationStatus.AutomatableNow : AutomationStatus.AutomatableLater;
+                foreach (DependencyList depGroup in dependencies) {
                     if (!depGroup.flags.HasFlags(DependencyList.Flags.OneTimeInvestment)) {
                         if (depGroup.flags.HasFlags(DependencyList.Flags.RequireEverything)) {
-                            foreach (var element in depGroup.elements)
-                                if (state[element] < automationState)
+                            foreach (FactorioId element in depGroup.elements) {
+                                if (state[element] < automationState) {
                                     automationState = state[element];
+                                }
+                            }
                         }
                         else {
-                            var localHighest = AutomationStatus.NotAutomatable;
-                            foreach (var element in depGroup.elements) {
-                                if (state[element] > localHighest)
+                            AutomationStatus localHighest = AutomationStatus.NotAutomatable;
+                            foreach (FactorioId element in depGroup.elements) {
+                                if (state[element] > localHighest) {
                                     localHighest = state[element];
+                                }
                             }
 
-                            if (localHighest < automationState)
+                            if (localHighest < automationState) {
                                 automationState = localHighest;
+                            }
                         }
                     }
                     else if (automationState == AutomationStatus.AutomatableNow && depGroup.flags == DependencyList.Flags.CraftingEntity) {
                         // If only character is accessible at current milestones as a crafting entity, don't count the object as currently automatable
-                        var hasMachine = false;
-                        foreach (var element in depGroup.elements) {
+                        bool hasMachine = false;
+                        foreach (FactorioId element in depGroup.elements) {
                             if (element != Database.character.id && Milestones.Instance.IsAccessibleWithCurrentMilestones(element)) {
                                 hasMachine = true;
                                 break;
                             }
                         }
 
-                        if (!hasMachine)
+                        if (!hasMachine) {
                             automationState = AutomationStatus.AutomatableLater;
+                        }
                     }
                 }
 
-                if (automationState == UnknownInQueue)
+                if (automationState == UnknownInQueue) {
                     automationState = Unknown;
+                }
 
                 state[index] = automationState;
                 if (automationState != Unknown) {
                     unknowns--;
-                    foreach (var revDep in Dependencies.reverseDependencies[index]) {
-                        var oldState = state[revDep];
-                        if (oldState == Unknown || oldState == AutomationStatus.AutomatableLater && automationState == AutomationStatus.AutomatableNow) {
-                            if (oldState == AutomationStatus.AutomatableLater)
+                    foreach (FactorioId revDep in Dependencies.reverseDependencies[index]) {
+                        AutomationStatus oldState = state[revDep];
+                        if (oldState == Unknown || (oldState == AutomationStatus.AutomatableLater && automationState == AutomationStatus.AutomatableNow)) {
+                            if (oldState == AutomationStatus.AutomatableLater) {
                                 unknowns++;
+                            }
+
                             processingQueue.Enqueue(revDep);
                             state[revDep] = UnknownInQueue;
                         }
@@ -99,9 +110,10 @@ namespace YAFC.Model {
             Console.WriteLine("Automation analysis (first pass) finished in " + time.ElapsedMilliseconds + " ms. Unknowns left: " + unknowns);
             if (unknowns > 0) {
                 // TODO run graph analysis if there are any unknowns left... Right now assume they are not automatable
-                foreach (var (k, v) in state) {
-                    if (v == Unknown)
+                foreach ((FactorioObject k, AutomationStatus v) in state) {
+                    if (v == Unknown) {
                         state[k] = AutomationStatus.NotAutomatable;
+                    }
                 }
             }
             automatable = state;
