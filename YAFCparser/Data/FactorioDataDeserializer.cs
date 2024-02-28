@@ -379,7 +379,11 @@ namespace YAFC.Parser {
             if (obj is LuaTable table) {
                 if (!table.Get(1, out string key))
                     return;
-                Localize(key, table);
+
+                if (key == "?")
+                    Localize(table[2]);  // Skip over the ?
+                else
+                    Localize(key, table);
             }
             else localeBuilder.Append(obj);
         }
@@ -421,7 +425,7 @@ namespace YAFC.Parser {
                 }
             }
 
-            var s = localeBuilder.ToString();
+            var s = localeBuilder.ToString().TrimStart();
             localeBuilder.Clear();
             return s;
         }
@@ -440,8 +444,6 @@ namespace YAFC.Parser {
 
             key = FactorioLocalization.Localize(key);
             if (key == null) {
-                if (table != null)
-                    localeBuilder.Append(string.Join(" ", table.ArrayElements<string>()));
                 return;
             }
 
