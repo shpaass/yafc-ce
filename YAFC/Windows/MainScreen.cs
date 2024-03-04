@@ -609,8 +609,7 @@ namespace YAFC {
         }
 
         private async Task<bool> SaveProject() {
-            if (!string.IsNullOrEmpty(project.attachedFileName))
-            {
+            if (!string.IsNullOrEmpty(project.attachedFileName)) {
                 await project.Save(project.attachedFileName);
                 return true;
             }
