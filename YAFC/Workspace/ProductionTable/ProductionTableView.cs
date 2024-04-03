@@ -154,6 +154,11 @@ namespace YAFC {
                 }
 
                 gui.textColor = recipe.hierarchyEnabled ? SchemeColor.BackgroundText : SchemeColor.BackgroundTextFaint;
+
+                if (view.flatHierarchyBuilder.nextRowIsHighlighted) {
+                    gui.textColor = view.flatHierarchyBuilder.nextRowTextColor;
+                }
+
                 gui.BuildText(recipe.recipe.locName, wrap: true);
             }
 
@@ -875,7 +880,9 @@ goodsHaveNoProduction:;
                 iconColor = goods.IsSourceResource() ? SchemeColor.Green : SchemeColor.None;
             }
 
-            if (gui.BuildFactorioObjectWithAmount(goods, amount, goods?.flowUnitOfMeasure ?? UnitOfMeasure.None, iconColor)) {
+            SchemeColor textColor = flatHierarchyBuilder.nextRowIsHighlighted ? flatHierarchyBuilder.nextRowTextColor : SchemeColor.None;
+
+            if (gui.BuildFactorioObjectWithAmount(goods, amount, goods?.flowUnitOfMeasure ?? UnitOfMeasure.None, iconColor, textColor)) {
                 OpenProductDropdown(gui, gui.lastRect, goods, amount, link, dropdownType, recipe, context, variants);
             }
         }

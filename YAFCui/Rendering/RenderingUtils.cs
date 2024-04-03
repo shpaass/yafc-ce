@@ -34,6 +34,12 @@ namespace YAFC.UI {
             ColorFromHex(0xe4e4e4), ColorFromHex(0xc4c4c4), Black, BlackTransparent, // Grey group
             ColorFromHex(0xbd33a4), ColorFromHex(0x8b008b), Black, BlackTransparent, // Magenta group
             ColorFromHex(0x6abf69), ColorFromHex(0x388e3c), Black, BlackTransparent, // Green group
+
+            // Row highlighting colors (background, text)
+            ColorFromHex(0xe8ffe8), ColorFromHex(0x56ad65), // Green
+            ColorFromHex(0xffffe8), ColorFromHex(0x8c8756), // Yellow
+            ColorFromHex(0xffe8e8), ColorFromHex(0xaa5555), // Red
+            ColorFromHex(0xe8efff), ColorFromHex(0x526ea5)  // Blue
         };
 
         private static readonly SDL.SDL_Color[] DarkModeScheme = {
@@ -47,6 +53,12 @@ namespace YAFC.UI {
             ColorFromHex(0x343434), ColorFromHex(0x545454), White, WhiteTransparent, // Grey group
             ColorFromHex(0x8b008b), ColorFromHex(0xbd33a4), Black, BlackTransparent, // Magenta group
             ColorFromHex(0x00600f), ColorFromHex(0x00701a), Black, BlackTransparent, // Green group
+
+            // Row highlighting colors (background, text)
+            ColorFromHex(0x001500), ColorFromHex(0x4a4a4a), // Green
+            ColorFromHex(0xffffe8), ColorFromHex(0xaaa668), // Yellow
+            ColorFromHex(0xffe8e8), ColorFromHex(0xaa5555), // Red
+            ColorFromHex(0xe8efff), ColorFromHex(0x526ea5)  // Blue
         };
 
         private static SDL.SDL_Color[] SchemeColors = LightModeScheme;

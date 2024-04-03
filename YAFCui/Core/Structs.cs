@@ -44,7 +44,16 @@
         Green,
         GreenAlt,
         GreenText,
-        GreenTextFaint
+        GreenTextFaint,
+        // Tagged row colors
+        TagColorGreenBackground,
+        TagColorGreenText,
+        TagColorYellowBackground,
+        TagColorYellowText,
+        TagColorRedBackground,
+        TagColorRedText,
+        TagColorBlueBackground,
+        TagColorBlueText
     }
 
     public enum RectangleBorder {
