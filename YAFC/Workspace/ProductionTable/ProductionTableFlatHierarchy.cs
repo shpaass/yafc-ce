@@ -274,6 +274,14 @@ namespace YAFC {
             };
         }
 
+        /// <summary>
+        /// This method is used to determine the text color for a highlighted row. To avoid
+        /// excessive coupling, the tag state and the row color are kept separate.
+        /// </summary>
+        /// <param name="highlighting">
+        /// Represents the highlighting state for which the corresponding color needs to be determined.
+        /// </param>
+        /// <returns></returns>
         private static SchemeColor GetHighlightingTextColor(RowHighlighting highlighting) {
             return highlighting switch {
                 RowHighlighting.Green => SchemeColor.TagColorGreenText,
