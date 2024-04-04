@@ -162,7 +162,7 @@ namespace YAFC {
                     if (item != null) {
                         if (item.elements.Count == 0) {
                             using (gui.EnterGroup(new Padding(0.5f + depWidth, 0.5f, 0.5f, 0.5f))) {
-                                gui.BuildText(emptyGroupMessage, wrap: true); // set color if nested row is empty
+                                gui.BuildText(emptyGroupMessage, wrap: true); // set color if the nested row is empty
                             }
                         }
 
@@ -176,7 +176,7 @@ namespace YAFC {
                 else {
                     if (gui.isBuilding) {
                         float top = depthStart.Pop();
-                        // set color bgColor if row is nested table and not collapsed
+                        // set color bgColor if the row is a nested table and is not collapsed
                         gui.DrawRectangle(new Rect(depWidth, top, grid.width - depWidth, gui.statePosition.Bottom - top), bgColor, RectangleBorder.Thin);
                     }
                     SwapBgColor(ref bgColor);
