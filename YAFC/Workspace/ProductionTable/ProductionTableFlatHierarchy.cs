@@ -5,8 +5,16 @@ using YAFC.UI;
 
 namespace YAFC {
     /// <summary>
+    /// <para>
     /// This is a flat hierarchy that can be used to display a table with nested groups in a single list.
     /// The method <see cref="BuildFlatHierarchy"/> flattens the tree.
+    /// </para>
+    /// <para>
+    /// This class interacts tightly with <see cref="ProductionTableView"/>. The computation of the rendering
+    /// state occurs at multiple stages, resulting in some interleaving. This is due to YAFC utilizing an
+    /// intermediate GUI architecture with loop-based rendering via SDL instead of employing an event-based
+    /// GUI system.
+    /// </para>
     /// </summary>
     public class FlatHierarchy<TRow, TGroup> where TRow : ModelObject<TGroup>, IGroupedElement<TGroup> where TGroup : ModelObject<ModelObject>, IElementGroup<TRow> {
         private readonly DataGrid<TRow> grid;
@@ -89,12 +97,26 @@ namespace YAFC {
 
         private readonly Stack<float> depthStart = new Stack<float>();
 
+        /// <summary>
+        /// This method alternates between the two row background colors, which in turn increase readability.
+        /// If a row is highlighted, the background color is set to the highlighting color without alternation.
+        /// </summary>
+        /// <param name="color">Current background color</param>
         private void SwapBgColor(ref SchemeColor color) {
-            color = nextRowIsHighlighted ? nextRowBackgroundColor :
-                color == SchemeColor.Background ? SchemeColor.PureBackground : SchemeColor.Background;
+            if (nextRowIsHighlighted) {
+                color = nextRowBackgroundColor;
+            }
+            else {
+                color = (color == SchemeColor.Background) ? SchemeColor.PureBackground : SchemeColor.Background;
+            }
         }
 
+        /// <summary>
+        /// This property is utilized by the rendering code to determine whether a row that will be drawn
+        /// requires highlighting.
+        /// </summary>
         public bool nextRowIsHighlighted { get; private set; }
+
         public SchemeColor nextRowBackgroundColor { get; private set; }
         public SchemeColor nextRowTextColor { get; private set; }
 
@@ -116,7 +138,8 @@ namespace YAFC {
                 var recipe = flatRecipes[i];
                 var item = flatGroups[i];
 
-                nextRowIsHighlighted = typeof(TRow) == typeof(RecipeRow) && rowHighlighting[i] != RowHighlighting.None;
+                nextRowIsHighlighted = (typeof(TRow) == typeof(RecipeRow)) && (rowHighlighting[i] != RowHighlighting.None);
+
                 if (nextRowIsHighlighted) {
                     nextRowBackgroundColor = GetHighlightingBackgroundColor(rowHighlighting[i]);
                     nextRowTextColor = GetHighlightingTextColor(rowHighlighting[i]);
@@ -184,8 +207,6 @@ namespace YAFC {
                     depWidth = depth * 0.5f;
                     _ = gui.AllocateRect(20f, 0.5f);
                 }
-
-                nextRowIsHighlighted = false;
             }
             var fullRect = grid.EndBuildingContent(gui);
             gui.DrawRectangle(fullRect, SchemeColor.PureBackground);
@@ -235,6 +256,14 @@ namespace YAFC {
             grid.BuildHeader(gui);
         }
 
+        /// <summary>
+        /// This method is used to determine the background color for a highlighted row. To avoid
+        /// excessive coupling, the tag state and the row color are kept separate.
+        /// </summary>
+        /// <param name="highlighting">
+        /// Represents the highlighting state for which the corresponding color needs to be determined.
+        /// </param>
+        /// <returns></returns>
         private static SchemeColor GetHighlightingBackgroundColor(RowHighlighting highlighting) {
             return highlighting switch {
                 RowHighlighting.Green => SchemeColor.TagColorGreenBackground,
