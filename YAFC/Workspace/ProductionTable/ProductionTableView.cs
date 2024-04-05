@@ -153,10 +153,11 @@ namespace YAFC {
                     });
                 }
 
-                gui.textColor = recipe.hierarchyEnabled ? SchemeColor.BackgroundText : SchemeColor.BackgroundTextFaint;
-
                 if (view.flatHierarchyBuilder.nextRowIsHighlighted) {
                     gui.textColor = view.flatHierarchyBuilder.nextRowTextColor;
+                }
+                else {
+                    gui.textColor = recipe.hierarchyEnabled ? SchemeColor.BackgroundText : SchemeColor.BackgroundTextFaint;
                 }
 
                 gui.BuildText(recipe.recipe.locName, wrap: true);
