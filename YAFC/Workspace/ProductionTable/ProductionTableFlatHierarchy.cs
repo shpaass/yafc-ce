@@ -270,10 +270,10 @@ namespace YAFC {
         /// <returns></returns>
         private static SchemeColor GetHighlightingBackgroundColor(RowHighlighting highlighting) {
             return highlighting switch {
-                RowHighlighting.Green => SchemeColor.TagColorGreenBackground,
-                RowHighlighting.Yellow => SchemeColor.TagColorYellowBackground,
-                RowHighlighting.Red => SchemeColor.TagColorRedBackground,
-                RowHighlighting.Blue => SchemeColor.TagColorBlueBackground,
+                RowHighlighting.Green => SchemeColor.TagColorGreen,
+                RowHighlighting.Yellow => SchemeColor.TagColorYellow,
+                RowHighlighting.Red => SchemeColor.TagColorRed,
+                RowHighlighting.Blue => SchemeColor.TagColorBlue,
                 _ => SchemeColor.None
             };
         }
