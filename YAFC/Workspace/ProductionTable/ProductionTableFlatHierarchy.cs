@@ -140,6 +140,8 @@ namespace YAFC {
 
                 nextRowIsHighlighted = (typeof(TRow) == typeof(RecipeRow)) && (rowHighlighting[i] != RowHighlighting.None);
 
+                // TODO: See https://github.com/have-fun-was-taken/yafc-ce/issues/91
+                //       and https://github.com/have-fun-was-taken/yafc-ce/pull/86#discussion_r1550369353
                 if (nextRowIsHighlighted) {
                     nextRowBackgroundColor = GetHighlightingBackgroundColor(rowHighlighting[i]);
                     nextRowTextColor = GetHighlightingTextColor(rowHighlighting[i]);
@@ -241,9 +243,11 @@ namespace YAFC {
 
                     BuildFlatHierarchy(sub, highlight); // Pass the current highlight color to the child rows
 
+                    // The flattened hierarchy contains empty rows for the nested table. But since this
+                    // is a rendering issue, it is not necessary to add them to the actual data structure.
+                    // TODO: Investigate why this is needed and how to clean it up.
                     flatRecipes.Add(null);
                     flatGroups.Add(sub);
-
                     rowHighlighting.Add(RowHighlighting.None);
                 }
                 else {

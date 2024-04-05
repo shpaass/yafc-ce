@@ -880,6 +880,8 @@ goodsHaveNoProduction:;
                 iconColor = goods.IsSourceResource() ? SchemeColor.Green : SchemeColor.None;
             }
 
+            // TODO: See https://github.com/have-fun-was-taken/yafc-ce/issues/91
+            //       and https://github.com/have-fun-was-taken/yafc-ce/pull/86#discussion_r1550377021
             SchemeColor textColor = flatHierarchyBuilder.nextRowIsHighlighted ? flatHierarchyBuilder.nextRowTextColor : SchemeColor.None;
 
             if (gui.BuildFactorioObjectWithAmount(goods, amount, goods?.flowUnitOfMeasure ?? UnitOfMeasure.None, iconColor, textColor)) {
