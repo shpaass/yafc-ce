@@ -48,7 +48,7 @@ namespace YAFC {
                     bool isError = row.parameters.warningFlags >= WarningFlags.EntityNotSpecified;
                     bool hover;
                     if (isError) {
-                        hover = gui.BuildRedButton(Icon.Error) == ButtonEvent.MouseOver;
+                        hover = gui.BuildRedButton(Icon.Error, invertedColors: true) == ButtonEvent.MouseOver;
                     }
                     else {
                         using (gui.EnterGroup(ImGuiUtils.DefaultIconPadding)) {
@@ -890,7 +890,7 @@ goodsHaveNoProduction:;
             if (!flatHierarchyBuilder.nextRowIsHighlighted) {
                 textColor = SchemeColor.None;
             }
-            else if (recipe is {enabled: false}) {
+            else if (recipe is { enabled: false }) {
                 textColor = SchemeColor.BackgroundTextFaint;
             }
 

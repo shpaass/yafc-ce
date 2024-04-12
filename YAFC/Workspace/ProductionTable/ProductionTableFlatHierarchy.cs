@@ -143,12 +143,18 @@ namespace YAFC {
                 // TODO: See https://github.com/have-fun-was-taken/yafc-ce/issues/91
                 //       and https://github.com/have-fun-was-taken/yafc-ce/pull/86#discussion_r1550369353
                 if (nextRowIsHighlighted) {
-                    nextRowBackgroundColor = GetHighlightingBackgroundColor(rowHighlighting[i], recipe is RecipeRow {enabled: true});
+                    nextRowBackgroundColor = GetHighlightingBackgroundColor(rowHighlighting[i], recipe is RecipeRow { enabled: true });
                     nextRowTextColor = GetHighlightingTextColor(rowHighlighting[i]);
                 }
                 else {
                     nextRowBackgroundColor = bgColor;
                     nextRowTextColor = SchemeColor.BackgroundText;
+                }
+
+                bool isError = recipe is RecipeRow r && r.parameters.warningFlags >= WarningFlags.EntityNotSpecified;
+                if (isError) {
+                    nextRowBackgroundColor = SchemeColor.Error;
+                    nextRowTextColor = SchemeColor.PureForeground;
                 }
 
                 if (recipe != null) {
@@ -178,7 +184,7 @@ namespace YAFC {
                             MoveFlatHierarchy(gui.GetDraggingObject<TRow>(), recipe);
                         }
 
-                        if (nextRowIsHighlighted) {
+                        if (nextRowIsHighlighted || isError) {
                             rect.X += depWidth;
                             rect.Width -= depWidth;
                             gui.DrawRectangle(rect, nextRowBackgroundColor);
