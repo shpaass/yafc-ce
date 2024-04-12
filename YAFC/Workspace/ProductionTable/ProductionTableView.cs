@@ -153,7 +153,10 @@ namespace YAFC {
                     });
                 }
 
-                if (view.flatHierarchyBuilder.nextRowIsHighlighted) {
+                if (!recipe.enabled) {
+                    gui.textColor = SchemeColor.BackgroundTextFaint;
+                }
+                else if (view.flatHierarchyBuilder.nextRowIsHighlighted) {
                     gui.textColor = view.flatHierarchyBuilder.nextRowTextColor;
                 }
                 else {
@@ -883,7 +886,13 @@ goodsHaveNoProduction:;
 
             // TODO: See https://github.com/have-fun-was-taken/yafc-ce/issues/91
             //       and https://github.com/have-fun-was-taken/yafc-ce/pull/86#discussion_r1550377021
-            SchemeColor textColor = flatHierarchyBuilder.nextRowIsHighlighted ? flatHierarchyBuilder.nextRowTextColor : SchemeColor.None;
+            SchemeColor textColor = flatHierarchyBuilder.nextRowTextColor;
+            if (!flatHierarchyBuilder.nextRowIsHighlighted) {
+                textColor = SchemeColor.None;
+            }
+            else if (recipe is {enabled: false}) {
+                textColor = SchemeColor.BackgroundTextFaint;
+            }
 
             if (gui.BuildFactorioObjectWithAmount(goods, amount, goods?.flowUnitOfMeasure ?? UnitOfMeasure.None, iconColor, textColor)) {
                 OpenProductDropdown(gui, gui.lastRect, goods, amount, link, dropdownType, recipe, context, variants);

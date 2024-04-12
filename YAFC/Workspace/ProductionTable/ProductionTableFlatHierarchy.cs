@@ -143,7 +143,7 @@ namespace YAFC {
                 // TODO: See https://github.com/have-fun-was-taken/yafc-ce/issues/91
                 //       and https://github.com/have-fun-was-taken/yafc-ce/pull/86#discussion_r1550369353
                 if (nextRowIsHighlighted) {
-                    nextRowBackgroundColor = GetHighlightingBackgroundColor(rowHighlighting[i]);
+                    nextRowBackgroundColor = GetHighlightingBackgroundColor(rowHighlighting[i], recipe is RecipeRow {enabled: true});
                     nextRowTextColor = GetHighlightingTextColor(rowHighlighting[i]);
                 }
                 else {
@@ -267,13 +267,16 @@ namespace YAFC {
         /// <param name="highlighting">
         /// Represents the highlighting state for which the corresponding color needs to be determined.
         /// </param>
+        /// <param name="isEnabled">
+        /// If the row is not enabled, a fainter color is used.
+        /// </param>
         /// <returns></returns>
-        private static SchemeColor GetHighlightingBackgroundColor(RowHighlighting highlighting) {
+        private static SchemeColor GetHighlightingBackgroundColor(RowHighlighting highlighting, bool isEnabled) {
             return highlighting switch {
-                RowHighlighting.Green => SchemeColor.TagColorGreen,
-                RowHighlighting.Yellow => SchemeColor.TagColorYellow,
-                RowHighlighting.Red => SchemeColor.TagColorRed,
-                RowHighlighting.Blue => SchemeColor.TagColorBlue,
+                RowHighlighting.Green => isEnabled ? SchemeColor.TagColorGreen : SchemeColor.TagColorGreenAlt,
+                RowHighlighting.Yellow => isEnabled ? SchemeColor.TagColorYellow : SchemeColor.TagColorYellowAlt,
+                RowHighlighting.Red => isEnabled ? SchemeColor.TagColorRed : SchemeColor.TagColorRedAlt,
+                RowHighlighting.Blue => isEnabled ? SchemeColor.TagColorBlue : SchemeColor.TagColorBlueAlt,
                 _ => SchemeColor.None
             };
         }
