@@ -19,7 +19,7 @@ namespace Yafc.Model {
         private const float CostPerProductPerSize = 0.2f;
         private const float CostPerItem = 0.02f;
         private const float CostPerFluid = 0.0005f;
-        private const float CostPerPollution = 0.01f;
+        private const float CostPerPollution = 0;
         private const float CostLowerLimit = -10f;
         private const float CostLimitWhenGeneratesOnMap = 1e4f;
         private const float MiningPenalty = 1f; // Penalty for any mining
