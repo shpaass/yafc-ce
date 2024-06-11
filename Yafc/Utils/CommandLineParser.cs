@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 
 namespace Yafc {
     public static class CommandLineParser {
@@ -13,6 +14,15 @@ namespace Yafc {
 
             if (args.Length == 0) {
                 return options;
+            }
+
+            if (args.Length == 1 && !args[0].StartsWith("--")) {
+                string path = Path.GetFullPath(args[0]);
+                ProjectDefinition? foundProject = Preferences.Instance.recentProjects.FirstOrDefault(
+                        x => x.path != null &&
+                             string.Equals(path, Path.GetFullPath(x.path), StringComparison.InvariantCultureIgnoreCase)
+                    );
+                return foundProject;
             }
 
             if (!args[0].StartsWith("--")) {
