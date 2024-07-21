@@ -154,8 +154,10 @@ namespace Yafc.Model {
         /// from the specified one.
         /// </summary>
         /// <param name="currentPage">The page to get the next page from (probably the current page).</param>
+        /// <param name="forward">Whether to move visually-forward (true), i.e. left to right, or
+        /// visually-backward (false), i.e. right-to-left.</param>
         /// <returns>The page object that should be set to active.</returns>
-        public ProjectPage? VisibleNeighborOfPage(ProjectPage? currentPage, bool forward = true) {
+        public ProjectPage? VisibleNeighborOfPage(ProjectPage? currentPage, bool forward) {
             if (currentPage == null) {
                 return null;
             }
