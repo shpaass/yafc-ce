@@ -148,6 +148,29 @@ namespace Yafc.Model {
             page.MarkAsDeleted();
             _ = this.RecordUndo().pages.Remove(page);
         }
+
+        /// <summary>
+        /// Get the page that is visually next (i.e. to the right of the current selected page on the tab bar)
+        /// from the specified one.
+        /// </summary>
+        /// <param name="currentPage">The page to get the next page from (probably the current page).</param>
+        /// <returns>The page object that should be set to active.</returns>
+        public ProjectPage? VisibleNeighborOfPage(ProjectPage? currentPage, bool forward = true) {
+            if (currentPage == null) {
+                return null;
+            }
+            var currentGuid = currentPage.guid;
+            var currentVisualIndex = displayPages.IndexOf(currentGuid);
+            return pagesByGuid[displayPages[forward ? NextVisualIndex() : PreviousVisualIndex()]];
+            int NextVisualIndex() {
+                var naiveNextVisualIndex = currentVisualIndex + 1;
+                return naiveNextVisualIndex >= displayPages.Count ? 0 : naiveNextVisualIndex;
+            }
+            int PreviousVisualIndex() {
+                var naivePreviousVisualIndex = currentVisualIndex - 1;
+                return naivePreviousVisualIndex < 0 ? displayPages.Count - 1 : naivePreviousVisualIndex;
+            }
+        }
     }
 
     public class ProjectSettings(Project project) : ModelObject<Project>(project) {

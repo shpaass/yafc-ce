@@ -163,7 +163,7 @@ namespace Yafc {
             else {
                 activePageView = null;
             }
-
+            InputSystem.Instance.SetMouseFocus(null);
             Rebuild();
         }
 
@@ -589,6 +589,9 @@ namespace Yafc {
                         break;
                     case SDL.SDL_Scancode.SDL_SCANCODE_T:
                         ProductionTableView.CreateProductionSheet();
+                        break;
+                    case SDL.SDL_Scancode.SDL_SCANCODE_TAB:
+                        SetActivePage(project.VisibleNeighborOfPage(activePage, (key.mod & SDL.SDL_Keymod.KMOD_SHIFT) == 0));
                         break;
                     default:
                         if (_activePageView?.ControlKey(key.scancode) != true) {
