@@ -89,8 +89,6 @@ namespace Yafc {
             bodyContent.offset = prevOffset;
             return surface;
         }
-
-
     }
 
     public abstract class ProjectPageView<T> : ProjectPageView where T : ProjectPageContents {
