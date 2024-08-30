@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
+using System.Threading.Tasks;
 using SDL2;
 using Yafc.UI;
 
@@ -42,7 +43,7 @@ namespace Yafc {
             previousFocus = InputSystem.Instance.SetDefaultKeyboardFocus(this);
         }
 
-        protected override void BuildContents(ImGui gui) {
+        protected override Task BuildContents(ImGui gui) {
             gui.BuildText(description, TextBlockDisplayStyle.WrappedText);
             if (gui.BuildTextInput(location, out string newLocation, null)) {
                 if (Directory.Exists(newLocation)) {
@@ -62,6 +63,8 @@ namespace Yafc {
                     }
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         private void BuildSelectButton(ImGui gui) {

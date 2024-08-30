@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using SDL2;
 using Serilog;
 
@@ -33,7 +34,7 @@ namespace Yafc.UI {
             exists = false;
         }
 
-        protected override void BuildContents(ImGui gui) {
+        protected override Task BuildContents(ImGui gui) {
             gui.BuildText(ex.GetType().Name, Font.header);
             gui.BuildText(ex.Message, new TextBlockDisplayStyle(Font.subheader, true));
             gui.BuildText(ex.StackTrace, TextBlockDisplayStyle.WrappedText);
@@ -50,6 +51,8 @@ namespace Yafc.UI {
                     _ = SDL.SDL_SetClipboardText(ex.Message + "\n\n" + ex.StackTrace);
                 }
             }
+
+            return Task.CompletedTask;
         }
     }
 }

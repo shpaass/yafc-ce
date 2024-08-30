@@ -1,4 +1,5 @@
-﻿using Yafc.UI;
+﻿using System.Threading.Tasks;
+using Yafc.UI;
 
 namespace Yafc {
     public class AboutScreen : WindowUtility {
@@ -6,7 +7,7 @@ namespace Yafc {
 
         public AboutScreen(Window parent) : base(ImGuiUtils.DefaultScreenPadding) => Create("About YAFC-CE", 50, parent);
 
-        protected override void BuildContents(ImGui gui) {
+        protected override Task BuildContents(ImGui gui) {
             gui.allocator = RectAllocator.Center;
             gui.BuildText("Yet Another Factorio Calculator", new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
             gui.BuildText("(Community Edition)", TextBlockDisplayStyle.Centered);
@@ -66,6 +67,8 @@ namespace Yafc {
             gui.allocator = RectAllocator.Center;
             gui.BuildText("Factorio name, content and materials are trademarks and copyrights of Wube Software");
             BuildLink(gui, "https://factorio.com/");
+
+            return Task.CompletedTask;
         }
 
         private void BuildLink(ImGui gui, string url, string? text = null) {

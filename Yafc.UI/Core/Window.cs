@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Numerics;
+using System.Threading.Tasks;
 using SDL2;
 using Serilog;
 
@@ -201,12 +202,12 @@ namespace Yafc.UI {
             ShowDropDown(simpleDropDown);
         }
 
-        private void Build(ImGui gui) {
+        private async void Build(ImGui gui) {
             if (closed) {
                 return;
             }
 
-            BuildContents(gui);
+            await BuildContents(gui);
             if (dropDown != null) {
                 dropDown.Build(gui);
                 if (!dropDown.active) {
@@ -222,7 +223,7 @@ namespace Yafc.UI {
             }
         }
 
-        protected abstract void BuildContents(ImGui gui);
+        protected abstract Task BuildContents(ImGui gui);
         public virtual void Dispose() => rootGui.Dispose();
 
         internal ImGui.DragOverlay GetDragOverlay() => draggingOverlay ??= new ImGui.DragOverlay();
