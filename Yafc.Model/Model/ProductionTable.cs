@@ -468,10 +468,10 @@ match:
                         RecipeRow? ownerRecipe = link.owner.owner as RecipeRow;
                         while (ownerRecipe != null) {
                             if (link.notMatchedFlow > 0f) {
-                                ownerRecipe.parameters.warningFlags |= WarningFlags.OverproductionRequired;
+                                ownerRecipe.parameters = ownerRecipe.parameters.WithFlag(WarningFlags.OverproductionRequired);
                             }
                             else {
-                                ownerRecipe.parameters.warningFlags |= WarningFlags.DeadlockCandidate;
+                                ownerRecipe.parameters = ownerRecipe.parameters.WithFlag(WarningFlags.DeadlockCandidate);
                             }
 
                             ownerRecipe = ownerRecipe.owner.owner as RecipeRow;
@@ -483,10 +483,10 @@ match:
                         foreach (var link in linkList) {
                             if (link.flags.HasFlags(ProductionLink.Flags.LinkRecursiveNotMatched)) {
                                 if (link.notMatchedFlow > 0f) {
-                                    recipe.parameters.warningFlags |= WarningFlags.OverproductionRequired;
+                                    recipe.parameters = recipe.parameters.WithFlag(WarningFlags.OverproductionRequired);
                                 }
                                 else {
-                                    recipe.parameters.warningFlags |= WarningFlags.DeadlockCandidate;
+                                    recipe.parameters = recipe.parameters.WithFlag(WarningFlags.DeadlockCandidate);
                                 }
                             }
                         }
@@ -544,12 +544,12 @@ match:
             for (int i = 0; i < recipes.Count; i++) {
                 var recipe = recipes[i];
                 if (recipe.buildingCount > recipe.builtBuildings) {
-                    recipe.parameters.warningFlags |= WarningFlags.ExceedsBuiltCount;
+                    recipe.parameters = recipe.parameters.WithFlag(WarningFlags.ExceedsBuiltCount);
                     builtCountExceeded = true;
                 }
                 else if (recipe.subgroup != null) {
                     if (recipe.subgroup.CheckBuiltCountExceeded()) {
-                        recipe.parameters.warningFlags |= WarningFlags.ExceedsBuiltCount;
+                        recipe.parameters = recipe.parameters.WithFlag(WarningFlags.ExceedsBuiltCount);
                         builtCountExceeded = true;
                     }
                 }
