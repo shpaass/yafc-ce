@@ -315,17 +315,6 @@ match:
             Variable[] vars = new Variable[allRecipes.Count];
             float[] objCoefs = new float[allRecipes.Count];
 
-            for (int i = 0; i < allRecipes.Count; i++) {
-                var recipe = allRecipes[i];
-                recipe.parameters = RecipeParameters.CalculateParameters(recipe);
-                var variable = productionTableSolver.MakeNumVar(0f, double.PositiveInfinity, recipe.recipe.name);
-                if (recipe.fixedBuildings > 0f) {
-                    double fixedRps = (double)recipe.fixedBuildings / recipe.parameters.recipeTime;
-                    variable.SetBounds(fixedRps, fixedRps);
-                }
-                vars[i] = variable;
-            }
-
             Constraint[] constraints = new Constraint[allLinks.Count];
             for (int i = 0; i < allLinks.Count; i++) {
                 var link = allLinks[i];
@@ -338,62 +327,10 @@ match:
             }
 
             for (int i = 0; i < allRecipes.Count; i++) {
-                var recipe = allRecipes[i];
-                var recipeVar = vars[i];
-                var links = recipe.links;
-
-                for (int j = 0; j < recipe.recipe.products.Length; j++) {
-                    var product = recipe.recipe.products[j];
-                    if (product.amount <= 0f) {
-                        continue;
-                    }
-
-                    if (recipe.FindLink(product.goods, out var link)) {
-                        link.flags |= ProductionLink.Flags.HasProduction;
-                        float added = product.GetAmountPerRecipe(recipe.parameters.productivity);
-                        AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, added);
-                        float cost = product.goods.Cost();
-                        if (cost > 0f) {
-                            objCoefs[i] += added * cost;
-                        }
-                    }
-
-                    links.products[j] = link;
-                }
-
-                for (int j = 0; j < recipe.recipe.ingredients.Length; j++) {
-                    var ingredient = recipe.recipe.ingredients[j];
-                    var option = ingredient.variants == null ? ingredient.goods : recipe.GetVariant(ingredient.variants);
-                    if (recipe.FindLink(option, out var link)) {
-                        link.flags |= ProductionLink.Flags.HasConsumption;
-                        AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, -ingredient.amount);
-                    }
-
-                    links.ingredients[j] = link;
-                    links.ingredientGoods[j] = option;
-                }
-
-                links.fuel = links.spentFuel = null;
-
-                if (recipe.fuel != null) {
-                    float fuelAmount = recipe.parameters.fuelUsagePerSecondPerRecipe;
-                    if (recipe.FindLink(recipe.fuel, out var link)) {
-                        links.fuel = link;
-                        link.flags |= ProductionLink.Flags.HasConsumption;
-                        AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, -fuelAmount);
-                    }
-
-                    if (recipe.fuel.HasSpentFuel(out var spentFuel) && recipe.FindLink(spentFuel, out link)) {
-                        links.spentFuel = link;
-                        link.flags |= ProductionLink.Flags.HasProduction;
-                        AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, fuelAmount);
-                        if (spentFuel.Cost() > 0f) {
-                            objCoefs[i] += fuelAmount * spentFuel.Cost();
-                        }
-                    }
-                }
-
-                recipe.links = links;
+                RecipeRow recipeRow = allRecipes[i];
+                cacheRecipeLinks(recipeRow);
+                var links = recipeRow.links;
+                configureRecipeForSolving(productionTableSolver, ref vars[i], ref objCoefs[i], constraints, recipeRow);
             }
 
             foreach (var link in allLinks) {
@@ -529,6 +466,89 @@ match:
 
             CalculateFlow(null);
             return builtCountExceeded ? "This model requires more buildings than are currently built" : null;
+
+            static void cacheRecipeLinks(RecipeRow recipe) {
+                var links = recipe.links;
+
+                for (int j = 0; j < recipe.recipe.products.Length; j++) {
+                    var product = recipe.recipe.products[j];
+                    if (product.amount <= 0f) {
+                        links.products[j] = null;
+                        continue;
+                    }
+
+                    _ = recipe.FindLink(product.goods, out links.products[j]);
+                }
+
+                for (int j = 0; j < recipe.recipe.ingredients.Length; j++) {
+                    var ingredient = recipe.recipe.ingredients[j];
+                    var option = ingredient.variants == null ? ingredient.goods : recipe.GetVariant(ingredient.variants);
+
+                    _ = recipe.FindLink(option, out links.ingredients[j]);
+                    links.ingredientGoods[j] = option;
+                }
+
+                if (recipe.fuel != null) {
+                    _ = recipe.FindLink(recipe.fuel, out links.fuel);
+                    _ = recipe.fuel.HasSpentFuel(out var spentFuel);
+                    _ = recipe.FindLink(spentFuel, out links.spentFuel);
+                }
+                else {
+                    links.fuel = links.spentFuel = null;
+                }
+
+                recipe.links = links;
+            }
+
+            static void configureRecipeForSolving(Solver productionTableSolver, ref Variable recipeVar, ref float objCoef, Constraint[] constraints, RecipeRow recipe) {
+                recipe.parameters = RecipeParameters.CalculateParameters(recipe);
+                recipeVar = productionTableSolver.MakeNumVar(0f, double.PositiveInfinity, recipe.recipe.name);
+                if (recipe.fixedBuildings > 0f) {
+                    double fixedRps = (double)recipe.fixedBuildings / recipe.parameters.recipeTime;
+                    recipeVar.SetBounds(fixedRps, fixedRps);
+                }
+
+                var links = recipe.links;
+
+                for (int j = 0; j < recipe.recipe.products.Length; j++) {
+                    var product = recipe.recipe.products[j];
+                    var link = links.products[j];
+                    if (link != null) {
+                        link.flags |= ProductionLink.Flags.HasProduction;
+                        float added = product.GetAmountPerRecipe(recipe.parameters.productivity);
+                        AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, added);
+                        float cost = product.goods.Cost();
+                        if (cost > 0f) {
+                            objCoef += added * cost;
+                        }
+                    }
+                }
+
+                for (int j = 0; j < recipe.recipe.ingredients.Length; j++) {
+                    var link = links.ingredients[j];
+                    if (link != null) {
+                        var ingredient = recipe.recipe.ingredients[j];
+                        link.flags |= ProductionLink.Flags.HasConsumption;
+                        AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, -ingredient.amount);
+                    }
+                }
+
+                if (links.fuel != null) {
+                    float fuelAmount = recipe.parameters.fuelUsagePerSecondPerRecipe;
+                    var link = links.fuel;
+                    link.flags |= ProductionLink.Flags.HasConsumption;
+                    AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, -fuelAmount);
+
+                    if (links.spentFuel != null) {
+                        link = links.spentFuel;
+                        link.flags |= ProductionLink.Flags.HasProduction;
+                        AddLinkCoef(constraints[link.solverIndex], recipeVar, link, recipe, fuelAmount);
+                        if (link.goods.Cost() > 0f) {
+                            objCoef += fuelAmount * link.goods.Cost();
+                        }
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -622,7 +642,7 @@ match:
             return (sources, splits);
         }
 
-        public bool FindLink(Goods goods, [MaybeNullWhen(false)] out ProductionLink link) {
+        public bool FindLink(Goods? goods, [MaybeNullWhen(false)] out ProductionLink link) {
             if (goods == null) {
                 link = null;
                 return false;

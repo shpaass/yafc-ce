@@ -432,7 +432,7 @@ namespace Yafc.Model {
         internal float fuelUsagePerSecond => (float)(parameters.fuelUsagePerSecondPerRecipe * recipesPerSecond);
         public UsedModule usedModules => parameters.modules;
         public WarningFlags warningFlags => parameters.warningFlags;
-        public bool FindLink(Goods goods, [MaybeNullWhen(false)] out ProductionLink link) {
+        public bool FindLink(Goods? goods, [MaybeNullWhen(false)] out ProductionLink link) {
             return linkRoot.FindLink(goods, out link);
         }
 
