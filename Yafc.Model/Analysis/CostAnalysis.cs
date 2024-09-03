@@ -39,6 +39,10 @@ namespace Yafc.Model {
         private string? itemAmountPrefix;
 
         private bool ShouldInclude(FactorioObject obj) {
+            // Consider all recipes
+            if (obj is Recipe) {
+                return true;
+            }
             return onlyCurrentMilestones ? obj.IsAutomatableWithCurrentMilestones() : obj.IsAutomatable();
         }
 
@@ -228,6 +232,12 @@ namespace Yafc.Model {
                 constraint.SetUb(logisticsCost);
                 export[recipe] = logisticsCost;
                 recipeCost[recipe] = logisticsCost;
+
+                // export controls the value shown by the "There are better recipes to create X (wasting Y% of YAFC cost)" string.
+                // recipeCost controls the decisions made by the solver. We only want to affect the solver.
+                if (onlyCurrentMilestones ? !recipe.IsAccessibleWithCurrentMilestones() : !recipe.IsAccessible()) {
+                    recipeCost[recipe] *= project.settings.InaccessibleRecipePenalty;
+                }
             }
 
             // TODO this is temporary fix for strange item sources (make the cost of item not higher than the cost of its source)
@@ -296,7 +306,9 @@ namespace Yafc.Model {
                 if (o is RecipeOrTechnology recipe) {
                     foreach (var ingredient in recipe.ingredients) // TODO split
 {
-                        export[o] += export[ingredient.goods] * ingredient.amount;
+                        if (float.IsFinite(export[ingredient.goods])) {
+                            export[o] += export[ingredient.goods] * ingredient.amount;
+                        }
                     }
                 }
                 else if (o is Entity entity) {
