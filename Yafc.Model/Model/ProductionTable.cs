@@ -64,7 +64,7 @@ namespace Yafc.Model {
 
             foreach (var recipe in recipes) {
                 if (!recipe.enabled) {
-                    ClearDisabledRecipeContents(recipe);
+                    ClearRecipeContents(recipe, true);
                     continue;
                 }
 
@@ -74,19 +74,21 @@ namespace Yafc.Model {
             }
         }
 
-        private static void ClearDisabledRecipeContents(RecipeRow recipe) {
+        private static void ClearRecipeContents(RecipeRow recipe, bool recurse) {
             recipe.recipesPerSecond = 0;
             recipe.parameters = RecipeParameters.Empty;
-            recipe.hierarchyEnabled = false;
-            var subgroup = recipe.subgroup;
-            if (subgroup != null) {
-                subgroup.flow = [];
-                foreach (var link in subgroup.links) {
-                    link.flags = 0;
-                    link.linkFlow = 0;
-                }
-                foreach (var sub in subgroup.recipes) {
-                    ClearDisabledRecipeContents(sub);
+            if (recurse) {
+                recipe.hierarchyEnabled = false;
+                var subgroup = recipe.subgroup;
+                if (subgroup != null) {
+                    subgroup.flow = [];
+                    foreach (var link in subgroup.links) {
+                        link.flags = 0;
+                        link.linkFlow = 0;
+                    }
+                    foreach (var sub in subgroup.recipes) {
+                        ClearRecipeContents(sub, true);
+                    }
                 }
             }
         }
@@ -311,8 +313,10 @@ match:
             objective.SetMinimization();
             List<RecipeRow> allRecipes = [];
             List<ProductionLink> allLinks = [];
+            Dictionary<ProductionLink, List<RecipeRow>> inaccessibleProductionRecipes = [];
+            Dictionary<ProductionLink, List<RecipeRow>> inaccessibleConsumptionRecipes = [];
             Setup(allRecipes, allLinks);
-            Variable[] vars = new Variable[allRecipes.Count];
+            Variable?[] vars = new Variable?[allRecipes.Count];
             float[] objCoefs = new float[allRecipes.Count];
 
             Constraint[] constraints = new Constraint[allLinks.Count];
@@ -329,11 +333,43 @@ match:
             for (int i = 0; i < allRecipes.Count; i++) {
                 RecipeRow recipeRow = allRecipes[i];
                 cacheRecipeLinks(recipeRow);
-                var links = recipeRow.links;
-                configureRecipeForSolving(productionTableSolver, ref vars[i], ref objCoefs[i], constraints, recipeRow);
+                if (recipeRow.recipe.IsAccessible()) {
+                    configureRecipeForSolving(productionTableSolver, ref vars[i], ref objCoefs[i], constraints, recipeRow);
+                }
+                else {
+                    // Treat inaccessible recipes as disabled for now, but save enough information we can later re-enable them.
+                    ClearRecipeContents(recipeRow, false);
+                    foreach (var link in recipeRow.links.ingredients.Append(recipeRow.links.fuel).WhereNotNull()) {
+                        recordInaccessibleRecipe(inaccessibleConsumptionRecipes, link, recipeRow);
+                    }
+                    foreach (var link in recipeRow.links.products.Append(recipeRow.links.spentFuel).WhereNotNull()) {
+                        recordInaccessibleRecipe(inaccessibleProductionRecipes, link, recipeRow);
+                    }
+
+                    static void recordInaccessibleRecipe(Dictionary<ProductionLink, List<RecipeRow>> record, ProductionLink link, RecipeRow recipeRow) {
+                        if (!record.TryGetValue(link, out var recipes)) {
+                            record[link] = recipes = [];
+                        }
+                        recipes.Add(recipeRow);
+                    }
+                }
             }
 
             foreach (var link in allLinks) {
+                // If a link has no production or no consumption, enable the corresponding inaccessible recipes.
+                if (!link.flags.HasFlag(ProductionLink.Flags.HasProduction) && inaccessibleProductionRecipes.TryGetValue(link, out var recipes)) {
+                    foreach (var row in recipes) {
+                        int i = allRecipes.IndexOf(row);
+                        configureRecipeForSolving(productionTableSolver, ref vars[i], ref objCoefs[i], constraints, row);
+                    }
+                }
+                if (!link.flags.HasFlag(ProductionLink.Flags.HasConsumption) && inaccessibleConsumptionRecipes.TryGetValue(link, out recipes)) {
+                    foreach (var row in recipes) {
+                        int i = allRecipes.IndexOf(row);
+                        configureRecipeForSolving(productionTableSolver, ref vars[i], ref objCoefs[i], constraints, row);
+                    }
+                }
+
                 link.notMatchedFlow = 0f;
                 if (!link.flags.HasFlags(ProductionLink.Flags.HasProductionAndConsumption)) {
                     if (!link.flags.HasFlagAny(ProductionLink.Flags.HasProductionAndConsumption) && !link.owner.HasDisabledRecipeReferencing(link.goods)) {
@@ -459,7 +495,7 @@ match:
 
             for (int i = 0; i < allRecipes.Count; i++) {
                 var recipe = allRecipes[i];
-                recipe.recipesPerSecond = vars[i].SolutionValue();
+                recipe.recipesPerSecond = vars[i]?.SolutionValue() ?? 0;
             }
 
             bool builtCountExceeded = CheckBuiltCountExceeded();
@@ -500,7 +536,8 @@ match:
                 recipe.links = links;
             }
 
-            static void configureRecipeForSolving(Solver productionTableSolver, ref Variable recipeVar, ref float objCoef, Constraint[] constraints, RecipeRow recipe) {
+            static void configureRecipeForSolving(Solver productionTableSolver, ref Variable? recipeVar, ref float objCoef, Constraint[] constraints, RecipeRow recipe) {
+                if (recipeVar != null) { return; }
                 recipe.parameters = RecipeParameters.CalculateParameters(recipe);
                 recipeVar = productionTableSolver.MakeNumVar(0f, double.PositiveInfinity, recipe.recipe.name);
                 if (recipe.fixedBuildings > 0f) {
