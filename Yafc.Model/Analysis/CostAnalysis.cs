@@ -32,7 +32,6 @@ namespace Yafc.Model {
 
         public Mapping<FactorioObject, float> cost;
         public Mapping<Recipe, float> recipeCost;
-        public Mapping<RecipeOrTechnology, float> recipeProductCost;
         public Mapping<FactorioObject, float> flow;
         public Mapping<Recipe, float> recipeWastePercentage;
         public Goods[]? importantItems;
@@ -103,7 +102,6 @@ namespace Yafc.Model {
             }
 
             var export = Database.objects.CreateMapping<float>();
-            var recipeProductionCost = Database.recipesAndTechnologies.CreateMapping<float>();
             recipeCost = Database.recipes.CreateMapping<float>();
             flow = Database.objects.CreateMapping<float>();
             var lastVariable = Database.goods.CreateMapping<Variable>();
@@ -300,10 +298,6 @@ namespace Yafc.Model {
 {
                         export[o] += export[ingredient.goods] * ingredient.amount;
                     }
-
-                    foreach (var product in recipe.products) {
-                        recipeProductionCost[recipe] += product.amount * export[product.goods];
-                    }
                 }
                 else if (o is Entity entity) {
                     float minimal = float.PositiveInfinity;
@@ -316,7 +310,6 @@ namespace Yafc.Model {
                 }
             }
             cost = export;
-            recipeProductCost = recipeProductionCost;
 
             recipeWastePercentage = Database.recipes.CreateMapping<float>();
             if (result is Solver.ResultStatus.OPTIMAL or Solver.ResultStatus.FEASIBLE) {

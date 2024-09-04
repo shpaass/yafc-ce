@@ -68,10 +68,6 @@ namespace Yafc.Model {
             return CostAnalysis.Get(atCurrentMilestones).flow[recipe];
         }
 
-        public static float ProductCost(this Recipe recipe, bool atCurrentMilestones = false) {
-            return CostAnalysis.Get(atCurrentMilestones).recipeProductCost[recipe];
-        }
-
         public static float RecipeWaste(this Recipe recipe, bool atCurrentMilestones = false) {
             return CostAnalysis.Get(atCurrentMilestones).recipeWastePercentage[recipe];
         }
