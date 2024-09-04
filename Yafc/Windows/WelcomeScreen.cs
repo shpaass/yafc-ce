@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using SDL2;
 using Serilog;
 using Yafc.Model;
@@ -97,7 +98,7 @@ namespace Yafc {
             gui.DrawRectangle(gui.lastRect, SchemeColor.Error);
         }
 
-        protected override void BuildContents(ImGui gui) {
+        protected override Task BuildContents(ImGui gui) {
             gui.spacing = 1.5f;
             gui.BuildText("Yet Another Factorio Calculator", new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
             if (loading) {
@@ -185,6 +186,8 @@ namespace Yafc {
                     }
                 }
             }
+
+            return Task.CompletedTask;
         }
 
         private void ProjectErrorMoreInfo(ImGui gui) {

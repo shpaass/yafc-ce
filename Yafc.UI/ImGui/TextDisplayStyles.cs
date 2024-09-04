@@ -43,7 +43,8 @@ public record TextBlockDisplayStyle(Font? Font = null, bool WrapText = false, Re
 /// <param name="Padding">The <see cref="UI.Padding"/> to place between the text and the edges of the editable area. (The box area not used by <paramref name="Icon"/>.)</param>
 /// <param name="Alignment">The <see cref="RectAlignment"/> to apply when drawing the text within the edit box.</param>
 /// <param name="ColorGroup">The <see cref="SchemeColorGroup"/> to use when drawing the edit box.</param>
-public record TextBoxDisplayStyle(Icon Icon, Padding Padding, RectAlignment Alignment, SchemeColorGroup ColorGroup) {
+/// <param name="Prefix">The text to display inside the textbox, before the value.</param>
+public record TextBoxDisplayStyle(Icon Icon, Padding Padding, RectAlignment Alignment, SchemeColorGroup ColorGroup, string? Prefix = null) {
     /// <summary>
     /// Gets the default display style, used for the Preferences screen and calls to <see cref="ImGui.BuildTextInput(string?, out string, string?, Icon, bool, bool)"/>.
     /// </summary>

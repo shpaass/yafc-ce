@@ -31,14 +31,8 @@ namespace Yafc.Model {
         public int beaconCount;
     }
 
-    internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBuilding, float productivity, WarningFlags warningFlags, ModuleEffects activeEffects, UsedModule modules) {
+    internal sealed record RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBuilding, float productivity, WarningFlags warningFlags, ModuleEffects activeEffects, UsedModule modules) {
         public const float MIN_RECIPE_TIME = 1f / 60;
-        public float recipeTime { get; } = recipeTime;
-        public float fuelUsagePerSecondPerBuilding { get; } = fuelUsagePerSecondPerBuilding;
-        public float productivity { get; } = productivity;
-        public WarningFlags warningFlags { get; internal set; } = warningFlags;
-        public ModuleEffects activeEffects { get; } = activeEffects;
-        public UsedModule modules { get; } = modules;
 
         public static RecipeParameters Empty = new(0, 0, 0, 0, default, default);
 
@@ -182,5 +176,7 @@ namespace Yafc.Model {
 
             return new RecipeParameters(recipeTime, fuelUsagePerSecondPerBuilding, productivity, warningFlags, activeEffects, modules);
         }
+
+        internal RecipeParameters WithFlag(WarningFlags additionalFlag) => this with { warningFlags = warningFlags | additionalFlag };
     }
 }

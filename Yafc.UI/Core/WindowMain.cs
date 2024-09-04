@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Threading.Tasks;
 using SDL2;
 using Serilog;
 
@@ -35,12 +36,12 @@ namespace Yafc.UI {
             base.Create();
         }
 
-        protected override void BuildContents(ImGui gui) {
-            BuildContent(gui);
+        protected override async Task BuildContents(ImGui gui) {
+            await BuildContent(gui);
             gui.SetContextRect(new Rect(default, size));
         }
 
-        protected abstract void BuildContent(ImGui gui);
+        protected abstract Task BuildContent(ImGui gui);
 
         protected override void OnRepaint() {
             rootGui.Rebuild();

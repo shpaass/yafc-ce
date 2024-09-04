@@ -56,6 +56,18 @@ namespace Yafc {
                 }
             }
 
+            using (gui.EnterRowWithHelpIcon($"""
+                    Yafc considers all enabled recipes on your production sheets, even if they are inaccessible. The cost of inaccessible recipes will be multiplied by this amount, to discourage Yafc from using them.
+                    For example, an inaccessible ¥100 recipe will be treated as if it costs ¥{DataUtils.FormatAmount(100 * settings.InaccessibleRecipePenalty, UnitOfMeasure.None)}.
+                    """)) {
+                gui.BuildText("Cost penalty for inaccessible recipes:", topOffset: 0.5f);
+                DisplayAmount amount = new(settings.InaccessibleRecipePenalty, UnitOfMeasure.None);
+                if (gui.BuildFloatInput(amount, TextBoxDisplayStyle.DefaultTextInput with { Prefix = "×" }) && amount.Value >= 1) {
+                    settings.RecordUndo().InaccessibleRecipePenalty = amount.Value;
+                    gui.Rebuild();
+                }
+            }
+
             ChooseObject(gui, "Default belt:", Database.allBelts, prefs.defaultBelt, s => {
                 prefs.RecordUndo().defaultBelt = s;
                 gui.Rebuild();

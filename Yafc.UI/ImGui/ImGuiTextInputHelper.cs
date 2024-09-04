@@ -63,6 +63,9 @@ namespace Yafc.UI {
                 if (displayStyle.Icon != Icon.None) {
                     gui.BuildIcon(displayStyle.Icon, lineSize, (SchemeColor)displayStyle.ColorGroup + 3);
                 }
+                if (displayStyle.Prefix != null) {
+                    gui.BuildText(displayStyle.Prefix);
+                }
 
                 textRect = gui.RemainingRow(0.3f).AllocateRect(0, lineSize, RectAlignment.MiddleFullRow);
             }

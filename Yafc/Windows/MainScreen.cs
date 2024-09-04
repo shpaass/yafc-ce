@@ -95,23 +95,27 @@ namespace Yafc {
             _ = InputSystem.Instance.SetDefaultKeyboardFocus(this);
         }
 
-        private void ProjectSettingsChanged(bool visualOnly) {
+        private async void ProjectSettingsChanged(bool visualOnly) {
             if (visualOnly) {
                 return;
             }
 
             if (topScreen == null) {
-                ReRunAnalysis();
+                await ReRunAnalysis();
             }
             else {
                 analysisUpdatePending = true;
             }
         }
 
-        private void ReRunAnalysis() {
+        private async Task ReRunAnalysis() {
             analysisUpdatePending = false;
             ErrorCollector collector = new ErrorCollector();
             Analysis.ProcessAnalyses(this, project, collector);
+            project.pages.ForEach(p => p.SetToRecalculate());
+            Task primary = (activePage?.RunSolveJob() ?? Task.CompletedTask);
+            await (secondaryPage?.RunSolveJob() ?? Task.CompletedTask);
+            await primary;
             rootGui.MarkEverythingForRebuild();
             if (collector.severity > ErrorSeverity.None) {
                 ErrorListPanel.Show(collector);
@@ -205,7 +209,7 @@ namespace Yafc {
             secondaryPageView?.bodyContent.MarkEverythingForRebuild();
         }
 
-        protected override void BuildContent(ImGui gui) {
+        protected override async Task BuildContent(ImGui gui) {
             if (pseudoScreens.Count > 0) {
                 var top = pseudoScreens[0];
                 if (gui.isBuilding) {
@@ -224,7 +228,7 @@ namespace Yafc {
                     _ = InputSystem.Instance.SetDefaultKeyboardFocus(this);
                     topScreen = null;
                     if (analysisUpdatePending) {
-                        ReRunAnalysis();
+                        await ReRunAnalysis();
                     }
                 }
                 BuildTabBar(gui);

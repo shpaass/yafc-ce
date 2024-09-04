@@ -212,6 +212,7 @@ namespace Yafc.Model {
         public int reactorSizeX { get; set; } = 2;
         public int reactorSizeY { get; set; } = 2;
         public float PollutionCostModifier { get; set; } = 0;
+        public float InaccessibleRecipePenalty { get; set; } = 100;
         public event Action<bool>? changed;
         protected internal override void ThisChanged(bool visualOnly) {
             changed?.Invoke(visualOnly);
