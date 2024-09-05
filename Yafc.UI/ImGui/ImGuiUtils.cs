@@ -34,7 +34,7 @@ namespace Yafc.UI {
         public static readonly Padding DefaultIconPadding = new Padding(0.3f);
 
         /// <summary>Returns true when the clipboard holds content</summary>
-        public static bool HasClipboard() => SDL.SDL_HasClipboardText() == SDL.SDL_bool.SDL_TRUE;
+        public static bool HasClipboardText() => SDL.SDL_HasClipboardText() == SDL.SDL_bool.SDL_TRUE;
 
         public static ButtonEvent BuildButton(this ImGui gui, Rect rect, SchemeColor normal, SchemeColor over, SchemeColor down = SchemeColor.None, uint button = SDL.SDL_BUTTON_LEFT) {
             if (button == 0) {

@@ -408,7 +408,7 @@ namespace Yafc {
                 SelectSingleObjectPanel.Select(Database.objects.explorable, "Open Dependency Explorer", DependencyExplorer.Show);
             }
 
-            if (gui.BuildContextMenuButton("Import page from clipboard", disabled: !ImGuiUtils.HasClipboard()) && gui.CloseDropdown()) {
+            if (gui.BuildContextMenuButton("Import page from clipboard", disabled: !ImGuiUtils.HasClipboardText()) && gui.CloseDropdown()) {
                 ProjectPageSettingsPanel.LoadProjectPageFromClipboard();
             }
 
