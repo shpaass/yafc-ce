@@ -242,7 +242,9 @@ namespace Yafc {
                     gui.ShowDropDown(gui.lastRect, SettingsDropdown, new Padding(0f, 0f, 0f, 0.5f));
                 }
 
-                if (gui.BuildButton(Icon.Plus).WithTooltip(gui, "Create production sheet (Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_T) + ")")) {
+                if (gui.BuildButton(Icon.Plus).WithTooltip(gui, "Create production sheet (Ctrl+" +
+                    ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_T) + ")")) {
+
                     ProductionTableView.CreateProductionSheet();
                 }
 
