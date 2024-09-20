@@ -1094,8 +1094,12 @@ goodsHaveNoProduction:;
         SchemeColor iconColor;
 
         if (link != null) {
+            ProductionLink.Flags hasFlowAndProblems = ProductionLink.Flags.HasProductionAndConsumption
+                                                      | ProductionLink.Flags.LinkRecursiveNotMatched
+                                                      | ProductionLink.Flags.ChildNotMatched;
+            ProductionLink.Flags hasFlow = ProductionLink.Flags.HasProductionAndConsumption;
             // The icon is part of a production link
-            if ((link.flags & (ProductionLink.Flags.HasProductionAndConsumption | ProductionLink.Flags.LinkRecursiveNotMatched | ProductionLink.Flags.ChildNotMatched)) != ProductionLink.Flags.HasProductionAndConsumption) {
+            if ((link.flags & hasFlowAndProblems) != hasFlow) {
                 // The link has production and consumption sides, but either the production and consumption is not matched, or 'child was not matched'
                 iconColor = SchemeColor.Error;
             }
