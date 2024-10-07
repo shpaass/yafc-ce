@@ -28,6 +28,7 @@ Date:
     Internal changes:
         - Allow tooltips to be displayed when hovering over radio buttons.
         - Require parentheses when mixing && and || in the same expression.
+        - Set cpu platform during build
 ----------------------------------------------------------------------------------------------------------------------
 Version: 0.9.1
 Date: September 8th 2024
