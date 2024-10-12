@@ -21,7 +21,7 @@ public static partial class FactorioDataSource {
     private static readonly ILogger logger = Logging.GetLogger(typeof(FactorioDataSource));
     internal static Dictionary<string, ModInfo> allMods = [];
     internal static HashSet<string> disabledMods = [];
-    public static readonly Version defaultFactorioVersion = new Version(1, 2);
+    public static readonly Version defaultFactorioVersion = new Version(2, 0);
     private static byte[] ReadAllBytes(this Stream stream, int length) {
         BinaryReader reader = new BinaryReader(stream);
         byte[] bytes = reader.ReadBytes(length);
