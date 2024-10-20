@@ -80,6 +80,9 @@ internal static class FactorioPropertyTree {
             case 6:
                 return reader.ReadInt64();
 
+            case 7:
+                return reader.ReadUInt64();
+
             default:
                 throw new NotSupportedException("Unknown type");
         }
