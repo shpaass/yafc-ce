@@ -5,6 +5,7 @@
         <RootNamespace>Yafc.Parser</RootNamespace>
         <RuntimeIdentifiers>win-x64;linux-x64;osx-x64;osx-arm64</RuntimeIdentifiers>
         <Nullable>enable</Nullable>
+        <Platforms>x64;ARM64</Platforms>
     </PropertyGroup>
 
     <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
