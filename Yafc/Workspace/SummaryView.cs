@@ -10,6 +10,9 @@ using Yafc.UI;
 namespace Yafc;
 
 public class SummaryView : ProjectPageView<Summary> {
+    /// <summary>Height of each row</summary>
+    private float rowHeight;
+
     /// <summary>Some padding to have the contents of the first column not 'stick' to the rest of the UI</summary>
     private readonly Padding FirstColumnPadding = new Padding(1f, 1.5f, 0, 0);
     private static float firstColumnWidth;
@@ -59,10 +62,12 @@ public class SummaryView : ProjectPageView<Summary> {
             foreach ((string name, GoodDetails details, bool enoughProduced) in view.GoodsToDisplay()) {
                 ProductionLink? link = table.links.Find(x => x.goods.name == name);
                 grid.Next();
+                bool isDrawn = false;
 
                 if (link != null) {
                     if (link.amount != 0f) {
                         DrawProvideProduct(gui, link, page, details, enoughProduced);
+                        isDrawn = true;
                     }
                 }
                 else {
@@ -72,9 +77,15 @@ public class SummaryView : ProjectPageView<Summary> {
                         if (Math.Abs(flow.amount) > Epsilon) {
 
                             DrawRequestProduct(gui, flow, enoughProduced);
+                            isDrawn = true;
                         }
                     }
                 }
+                if (!isDrawn) {
+                    // Reserve empty space to prevent 'compressing' empty rows
+                    _ = gui.AllocateRect(0f, view.rowHeight);
+                }
+
             }
         }
 
@@ -263,6 +274,7 @@ public class SummaryView : ProjectPageView<Summary> {
 
         if (gui.isBuilding) {
             firstColumnWidth = CalculateFirstColumWidth(gui);
+            rowHeight = ButtonDisplayStyle.ProductionTableUnscaled.Size + gui.PixelsToUnits(gui.GetFontSize().lineSize);
         }
 
         scrollArea.Build(gui);

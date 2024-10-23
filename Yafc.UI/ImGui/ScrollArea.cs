@@ -24,7 +24,7 @@ public abstract class Scrollable(bool vertical, bool horizontal, bool collapsibl
 
     protected abstract void PositionContent(ImGui gui, Rect viewport);
 
-    /// <param name="availableHeight">Available height without in parent context for the Scrollable</param>
+    /// <param name="availableHeight">Available height in parent context for the Scrollable</param>
     public void Build(ImGui gui, float availableHeight, bool useBottomPadding = false) {
         this.gui = gui;
         var rect = gui.statePosition;
@@ -75,14 +75,11 @@ public abstract class Scrollable(bool vertical, bool horizontal, bool collapsibl
         }
 
         if (gui.action == ImGuiAction.MouseScroll) {
-            if (gui.ConsumeEvent(rect)) {
-                if (vertical && (!horizontal || !InputSystem.Instance.control)) {
-                    scrollY += gui.actionParameter * 3f;
-                }
-                else {
-                    scrollX += gui.actionParameter * 3f;
-                }
-            }
+            if (vertical && !InputSystem.Instance.control && gui.ConsumeEvent(rect))
+                scrollY += gui.actionParameter * 3f;
+
+            else if (horizontal && InputSystem.Instance.control && gui.ConsumeEvent(rect))
+                scrollX += gui.actionParameter * 3f;
         }
         else {
             if (horizontal && maxScroll.X > 0f) {
@@ -150,7 +147,7 @@ public abstract class Scrollable(bool vertical, bool horizontal, bool collapsibl
 
     ///<summary>This method is called when the required area of the <see cref="Scrollable"/> for the provided <paramref name="width"/> is needed.</summary>
     /// <returns>The required area of the contents of the <see cref="Scrollable"/>.</returns>
-    protected abstract Vector2 MeasureContent(float width, ImGui gui);
+    public abstract Vector2 MeasureContent(float width, ImGui gui);
 
     public bool KeyDown(SDL.SDL_Keysym key) {
         bool ctrl = InputSystem.Instance.control;
@@ -158,39 +155,75 @@ public abstract class Scrollable(bool vertical, bool horizontal, bool collapsibl
 
         switch ((ctrl, shift, key.scancode)) {
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_UP):
+                if (!vertical) {
+                    return false;
+                }
                 scrollY -= 3;
                 return true;
-            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_UP):
-                scrollY = 0; // ctrl+up = home
+            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_UP): // ctrl+up = home
+                if (!vertical) {
+                    return false;
+                }
+                scrollY = 0;
                 return true;
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_DOWN):
+                if (!vertical) {
+                    return false;
+                }
                 scrollY += 3;
                 return true;
-            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_DOWN):
-                scrollY = maxScroll.Y; // ctrl+down = end
+            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_DOWN): // ctrl+down = end
+                if (!vertical) {
+                    return false;
+                }
+                scrollY = maxScroll.Y;
                 return true;
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_LEFT):
+                if (!horizontal) {
+                    return false;
+                }
                 scrollX -= 3;
                 return true;
-            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_LEFT):
+            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_LEFT): // ctrl+left = start of line
+                if (!horizontal) {
+                    return false;
+                }
                 scrollX = 0;
                 return true;
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_RIGHT):
+                if (!horizontal) {
+                    return false;
+                }
                 scrollX += 3;
                 return true;
-            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_RIGHT):
+            case (true, false, SDL.SDL_Scancode.SDL_SCANCODE_RIGHT):  // ctrl+right = end of line
+                if (!horizontal) {
+                    return false;
+                }
                 scrollX = maxScroll.X;
                 return true;
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_PAGEDOWN):
+                if (!vertical) {
+                    return false;
+                }
                 scrollY += contentRect.Height;
                 return true;
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_PAGEUP):
+                if (!vertical) {
+                    return false;
+                }
                 scrollY -= contentRect.Height;
                 return true;
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_HOME):
                 scrollY = 0;
+                if (!vertical) {
+                    return false;
+                }
                 return true;
             case (false, false, SDL.SDL_Scancode.SDL_SCANCODE_END):
+                if (!vertical) {
+                    return false;
+                }
                 scrollY = maxScroll.Y;
                 return true;
             default:
@@ -226,7 +259,8 @@ public abstract class ScrollAreaBase : Scrollable {
 
     public void RebuildContents() => contents.Rebuild();
 
-    protected override Vector2 MeasureContent(float width, ImGui gui) => contents.CalculateState(width, gui.pixelsPerUnit);
+    ///<summary>Calculates the content dimensions by (re)building the contents using <see cref="BuildContents"/></summary>
+    public override Vector2 MeasureContent(float width, ImGui gui) => contents.CalculateState(width, gui.pixelsPerUnit);
 }
 
 ///<summary>Area with scrollbars, which will be visible if it does not fit in the parent area in order to let the user fully view the content of the area.</summary>
