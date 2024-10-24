@@ -15,6 +15,11 @@
 //     Internal changes:
 //         Changes to the code that do not affect the behavior of the program.
 ----------------------------------------------------------------------------------------------------------------------
+Version: 2.0.2
+Date: soon(tm)
+    Bugfixes:
+        - Support games without the Space Age DLC again.
+----------------------------------------------------------------------------------------------------------------------
 Version: 2.0.1
 Date: October 23rd 2024
     Bugfixes:

@@ -176,13 +176,14 @@ public static partial class FactorioDataSource {
             string modListPath = Path.Combine(modPath, "mod-list.json");
             Dictionary<string, Version> versionSpecifiers = [];
 
-            if (File.Exists(modListPath)) {
+            bool hasModList = File.Exists(modListPath);
+            if (hasModList) {
                 var mods = JsonSerializer.Deserialize<ModList>(File.ReadAllText(modListPath)) ?? throw new($"Could not read mod list from {modListPath}");
                 allMods = mods.mods.Where(x => x.enabled).Select(x => x.name).ToDictionary(x => x, x => (ModInfo)null!);
                 versionSpecifiers = mods.mods.Where(x => x.enabled && !string.IsNullOrEmpty(x.version)).ToDictionary(x => x.name, x => Version.Parse(x.version!)); // null-forgiving: null version strings are filtered by the Where.
             }
             else {
-                allMods = new Dictionary<string, ModInfo> { { "base", null! }, { "elevated-rails", null! }, { "quality", null! }, { "space-age", null! } };
+                allMods = new Dictionary<string, ModInfo> { { "base", null! } };
             }
 
             allMods["core"] = null!;
@@ -196,6 +197,18 @@ public static partial class FactorioDataSource {
 
             if (modPath != factorioPath && modPath != "") {
                 FindMods(modPath, progress, allFoundMods);
+            }
+
+            if (!hasModList) {
+                // Check if the Space Age DLC mods are available, as the game will enable them by default when available.
+                bool foundSpaceAge = allFoundMods.Exists(modInfo => modInfo.name == "space-age");
+                if (foundSpaceAge) {
+                    // Add space-age mod ...
+                    allMods.Add("space-age", null!);
+                    // ... and its dependencies
+                    allMods.Add("quality", null!);
+                    allMods.Add("elevated-rails", null!);
+                }
             }
 
             Version? factorioVersion = null;
