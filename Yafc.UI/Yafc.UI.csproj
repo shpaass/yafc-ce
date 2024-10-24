@@ -5,6 +5,7 @@
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <RootNamespace>Yafc.UI</RootNamespace>
         <Nullable>enable</Nullable>
+        <Platforms>x64;ARM64</Platforms>
     </PropertyGroup>
 
     <ItemGroup>
