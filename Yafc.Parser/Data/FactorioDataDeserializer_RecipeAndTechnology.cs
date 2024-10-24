@@ -100,13 +100,13 @@ internal partial class FactorioDataDeserializer {
             technology.ingredients = LoadResearchIngredientList(unit, technology.typeDotName, errorCollector);
             recipeCategories.Add(SpecialNames.Labs, technology);
         }
-        else if (table.Get("research_trigger", out LuaTable? researchTrigger)) {
-            technology.ingredients = [];
+        else if (table.Get("research_trigger", out LuaTable? researchTriggerTable)) {
+            LoadResearchTrigger(researchTriggerTable, ref technology, errorCollector);
+            technology.ingredients ??= [];
             recipeCategories.Add(SpecialNames.TechnologyTrigger, technology);
-            errorCollector.Error($"Research trigger not yet supported for {technology.name}", ErrorSeverity.MinorDataLoss);
         }
         else {
-            errorCollector.Error($"Could not get science packs for {technology.name}.", ErrorSeverity.AnalysisWarning);
+            errorCollector.Error($"Could not get requirement(s) to unlock {technology.name}.", ErrorSeverity.AnalysisWarning);
         }
 
         DeserializeFlags(table, technology);
@@ -227,6 +227,29 @@ internal partial class FactorioDataDeserializer {
 
             return null!;
         }).Where(x => x is not null).ToArray() ?? [];
+    }
+
+    private void LoadResearchTrigger(LuaTable researchTriggerTable, ref Technology technology, ErrorCollector errorCollector) {
+        if (!researchTriggerTable.Get("type", out string? type)) {
+            errorCollector.Error($"Research trigger of {technology.typeDotName} does not have a type field", ErrorSeverity.MinorDataLoss);
+            return;
+        }
+
+        switch (type) {
+            case "craft-item":
+                if (!researchTriggerTable.Get("item", out string? craftItemName)) {
+                    errorCollector.Error($"Research trigger craft-item of {technology.typeDotName} does not have a item field", ErrorSeverity.MinorDataLoss);
+                    break;
+                }
+                float craftCount = researchTriggerTable.Get("count", 1);
+                technology.ingredients = [new Ingredient(GetObject<Item>(craftItemName), craftCount)];
+                technology.flags = RecipeFlags.HasResearchTriggerCraft;
+
+                break;
+            default:
+                errorCollector.Error($"Research trigger of {technology.typeDotName} has an unsupported type {type}", ErrorSeverity.MinorDataLoss);
+                break;
+        }
     }
 
     private void LoadRecipeData(Recipe recipe, LuaTable table, ErrorCollector errorCollector) {

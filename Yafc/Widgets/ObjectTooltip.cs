@@ -500,7 +500,15 @@ public class ObjectTooltip : Tooltip {
     }
 
     private void BuildTechnology(Technology technology, ImGui gui) {
-        BuildRecipe(technology, gui);
+        bool isResearchTriggerCraft = (technology.flags & RecipeFlags.HasResearchTriggerCraft) == RecipeFlags.HasResearchTriggerCraft;
+        if (isResearchTriggerCraft) {
+            BuildCommon(technology, gui);
+
+        }
+        else {
+            BuildRecipe(technology, gui);
+        }
+
         if (technology.hidden && !technology.enabled) {
             using (gui.EnterGroup(contentPadding)) {
                 gui.BuildText("This technology is hidden from the list and cannot be researched.", TextBlockDisplayStyle.WrappedText);
@@ -511,6 +519,15 @@ public class ObjectTooltip : Tooltip {
             BuildSubHeader(gui, "Prerequisites");
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.prerequisites, 1);
+            }
+        }
+
+        if (isResearchTriggerCraft) {
+            BuildSubHeader(gui, "Item crafting required");
+            using (gui.EnterGroup(contentPadding)) {
+                using var grid = gui.EnterInlineGrid(3f);
+                grid.Next();
+                _ = gui.BuildFactorioObjectWithAmount(technology.ingredients[0].goods, technology.ingredients[0].amount, ButtonDisplayStyle.ProductionTableUnscaled);
             }
         }
 

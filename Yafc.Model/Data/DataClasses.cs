@@ -83,6 +83,8 @@ public enum RecipeFlags {
     UsesMiningProductivity = 1 << 0,
     UsesFluidTemperature = 1 << 2,
     ScaleProductionWithPower = 1 << 3,
+    /// <summary>Set when the technology has a research trigger to craft an item</summary>
+    HasResearchTriggerCraft = 1 << 4,
 }
 
 public abstract class RecipeOrTechnology : FactorioObject {
