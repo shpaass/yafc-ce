@@ -603,7 +603,7 @@ doneDrawing:;
         }
 
         if (isResearchTriggerCraft) {
-            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyItemCrafting);
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyCrafting);
             using (gui.EnterGroup(contentPadding)) {
                 using var grid = gui.EnterInlineGrid(3f);
                 grid.Next();

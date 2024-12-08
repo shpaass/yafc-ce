@@ -137,7 +137,10 @@ public abstract class RecipeOrTechnology : FactorioObject {
                 collector.Add((ingredients, DependencyNode.Flags.Ingredient));
             }
         }
-        collector.Add((crafters, DependencyNode.Flags.CraftingEntity));
+        if (!flags.HasFlagAny(RecipeFlags.HasResearchTriggerMask)) {
+            // Trigger researches do not require a crafter, and sometimes (fluid crafting triggers) don't have one
+            collector.Add((crafters, DependencyNode.Flags.CraftingEntity));
+        }
         if (sourceEntity != null) {
             collector.Add(([sourceEntity], DependencyNode.Flags.SourceEntity));
         }

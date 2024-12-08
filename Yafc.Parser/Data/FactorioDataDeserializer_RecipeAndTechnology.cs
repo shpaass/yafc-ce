@@ -326,12 +326,22 @@ internal partial class FactorioDataDeserializer {
         }
 
         switch (type) {
+            case "craft-fluid":
+                if (!researchTriggerTable.Get("fluid", out string? craftFluidName)) {
+                    errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have a fluid field", ErrorSeverity.MinorDataLoss);
+                    break;
+                }
+                float craftCount = researchTriggerTable.Get("count", 1);
+                technology.ingredients = [new Ingredient(GetObject<Fluid>(craftFluidName), craftCount)];
+                technology.flags = RecipeFlags.HasResearchTriggerCraft;
+
+                break;
             case "craft-item":
                 if (!researchTriggerTable.Get("item", out string? craftItemName)) {
                     errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have an item field", ErrorSeverity.MinorDataLoss);
                     break;
                 }
-                float craftCount = researchTriggerTable.Get("count", 1);
+                craftCount = researchTriggerTable.Get("count", 1);
                 technology.ingredients = [new Ingredient(GetObject<Item>(craftItemName), craftCount)];
                 technology.flags = RecipeFlags.HasResearchTriggerCraft;
 
