@@ -96,6 +96,26 @@ public static partial class DataUtils {
         return (ms.GetMilestoneResult(id) - 1) & ms.lockedMask;
     }
 
+    /// <summary>
+    /// Gets an <see cref="IComparer{T}"/> where the <paramref name="first"/> always comes first.
+    /// </summary>
+    /// <typeparam name="T">The type of objects to compare.</typeparam>
+    /// <param name="first">The object that compares before any other value, including <see langword="null"/>.</param>
+    /// <param name="comparer">The comparer to use when neither of the compared objects is <paramref name="first"/>.</param>
+    /// <returns>An <see cref="IComparer{T}"/> that sorts <paramref name="first"/> before any other value,
+    /// and sorts all other values the same way <paramref name="comparer"/> does.</returns>
+    public static IComparer<T> CustomFirstItemComparer<T>(T first, IComparer<T> comparer) where T : notnull
+        => new CustomFirstComparer<T>(first, comparer);
+
+    private class CustomFirstComparer<T>(T first, IComparer<T> comparer) : IComparer<T> where T : notnull {
+        public int Compare(T? x, T? y) {
+            if (first.Equals(x) && first.Equals(y)) { return 0; }
+            if (first.Equals(x)) { return -1; }
+            if (first.Equals(y)) { return 1; }
+            return comparer.Compare(x, y);
+        }
+    }
+
     public static string dataPath { get; internal set; } = "";
     public static string modsPath { get; internal set; } = "";
 

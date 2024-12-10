@@ -19,6 +19,8 @@ Version:
 Date:
     Features:
         - Added Ctrl+Shift+F to search all pages.
+        - In the Link Summary panel tooltip, add information on where (in the table) each recipe can be found.
+        - In the Link Summary panel, allow clicking on a recipe to inspect that recipe's links.
     Fixes:
         - "Map generated" entities that don't generate in any locations could break automation analysis.
         - Recipes that are referenced without being defined do not prevent YAFC from loading.

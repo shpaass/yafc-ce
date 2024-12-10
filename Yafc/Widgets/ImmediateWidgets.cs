@@ -166,9 +166,15 @@ public static class ImmediateWidgets {
         return gui.BuildFactorioObjectButtonBackground(gui.lastRect, obj, displayStyle.BackgroundColor, tooltipOptions);
     }
 
-    public static Click BuildFactorioObjectButtonWithText(this ImGui gui, IFactorioObjectWrapper? obj, string? extraText = null, IconDisplayStyle? iconDisplayStyle = null) {
+    public static Click BuildFactorioObjectButtonWithText(this ImGui gui, IFactorioObjectWrapper? obj, string? extraText = null,
+        IconDisplayStyle? iconDisplayStyle = null, float indent = 0f, ObjectTooltipOptions tooltipOptions = default) {
+
         iconDisplayStyle ??= IconDisplayStyle.Default;
         using (gui.EnterRow()) {
+            if (indent > 0) {
+                // Relying on EnterRow using a default spacing of 0.5.
+                gui.AllocateRect(indent - 0.5f, 0);
+            }
             gui.BuildFactorioObjectIcon(obj, iconDisplayStyle);
             var color = gui.textColor;
             if (obj != null && !obj.target.IsAccessible() && !iconDisplayStyle.AlwaysAccessible) {
@@ -188,7 +194,7 @@ public static class ImmediateWidgets {
             gui.BuildText(obj == null ? "None" : obj.target.locName, TextBlockDisplayStyle.WrappedText with { Color = color });
         }
 
-        return gui.BuildFactorioObjectButtonBackground(gui.lastRect, obj);
+        return gui.BuildFactorioObjectButtonBackground(gui.lastRect, obj, tooltipOptions: tooltipOptions);
     }
 
     internal static bool BuildInlineObjectList<T>(this ImGui gui, IEnumerable<T> list, [NotNullWhen(true)] out T? selected, ObjectSelectOptions<T> options) where T : FactorioObject {
