@@ -242,9 +242,15 @@ doneDrawing:;
                         gui.BuildText(DataUtils.FormatAmount(crafter.CraftingSpeed(quality), UnitOfMeasure.Percent, "Crafting speed: "));
                     }
 
-                    float productivity = crafter.effectReceiver?.baseEffect.productivity ?? 0;
-                    if (productivity != 0f) {
-                        gui.BuildText(DataUtils.FormatAmount(productivity, UnitOfMeasure.Percent, "Crafting productivity: "));
+                    Effect baseEffect = crafter.effectReceiver.baseEffect;
+                    if (baseEffect.speed != 0f) {
+                        gui.BuildText(DataUtils.FormatAmount(baseEffect.speed, UnitOfMeasure.Percent, "Crafting speed: "));
+                    }
+                    if (baseEffect.productivity != 0f) {
+                        gui.BuildText(DataUtils.FormatAmount(baseEffect.productivity, UnitOfMeasure.Percent, "Crafting productivity: "));
+                    }
+                    if (baseEffect.consumption != 0f) {
+                        gui.BuildText(DataUtils.FormatAmount(baseEffect.consumption, UnitOfMeasure.Percent, "Energy consumption: "));
                     }
 
                     if (crafter.allowedEffects != AllowedEffects.None) {
