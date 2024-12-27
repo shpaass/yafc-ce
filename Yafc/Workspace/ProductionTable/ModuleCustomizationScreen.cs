@@ -123,6 +123,12 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
                 DrawRecipeModules(gui, modules.beacon, ref effects);
             }
 
+            if (recipe?.entity?.target.effectReceiver.baseEffect is { } baseEffect) {
+                effects.productivity += baseEffect.productivity;
+                effects.speed += baseEffect.speed;
+                effects.consumption += baseEffect.consumption;
+            }
+
             if (recipe != null) {
                 float craftingSpeed = (recipe.entity?.GetCraftingSpeed() ?? 1f) * effects.speedMod;
                 gui.BuildText("Current effects:", Font.subheader);
