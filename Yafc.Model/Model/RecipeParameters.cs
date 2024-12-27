@@ -34,15 +34,15 @@ public struct UsedModule {
     public int beaconCount;
 }
 
-internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBuilding, float productivity, WarningFlags warningFlags, ModuleEffects activeEffects, UsedModule modules) {
+internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBuilding, WarningFlags warningFlags, ModuleEffects activeEffects, UsedModule modules) {
     public float recipeTime { get; } = recipeTime;
     public float fuelUsagePerSecondPerBuilding { get; } = fuelUsagePerSecondPerBuilding;
-    public float productivity { get; } = productivity;
+    public float productivity => activeEffects.productivity;
     public WarningFlags warningFlags { get; internal set; } = warningFlags;
     public ModuleEffects activeEffects { get; } = activeEffects;
     public UsedModule modules { get; } = modules;
 
-    public static RecipeParameters Empty = new(0, 0, 0, 0, default, default);
+    public static RecipeParameters Empty = new(0, 0, 0, default, default);
 
     public float fuelUsagePerSecondPerRecipe => recipeTime * fuelUsagePerSecondPerBuilding;
 
@@ -51,7 +51,7 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
         ObjectWithQuality<EntityCrafter>? entity = row.entity;
         RecipeOrTechnology recipe = row.recipe;
         Goods? fuel = row.fuel;
-        float recipeTime, fuelUsagePerSecondPerBuilding = 0, productivity;
+        float recipeTime, fuelUsagePerSecondPerBuilding = 0, productivity, speed, consumption;
         ModuleEffects activeEffects = default;
         UsedModule modules = default;
 
@@ -59,10 +59,14 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
             warningFlags |= WarningFlags.EntityNotSpecified;
             recipeTime = recipe.time;
             productivity = 0f;
+            speed = 0;
+            consumption = 0f;
         }
         else {
             recipeTime = recipe.time / entity.GetCraftingSpeed();
             productivity = entity.target.effectReceiver.baseEffect.productivity;
+            speed = entity.target.effectReceiver.baseEffect.speed;
+            consumption = entity.target.effectReceiver.baseEffect.consumption;
             EntityEnergy energy = entity.target.energy;
             float energyUsage = entity.GetPower();
             float energyPerUnitOfFuel = 0f;
@@ -154,10 +158,14 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
 
             if (entity.target.allowedEffects != AllowedEffects.None && entity.target.allowedModuleCategories is not []) {
                 row.GetModulesInfo((recipeTime, fuelUsagePerSecondPerBuilding), entity.target, ref activeEffects, ref modules);
-                productivity += activeEffects.productivity;
-                recipeTime /= activeEffects.speedMod;
-                fuelUsagePerSecondPerBuilding *= activeEffects.energyUsageMod;
             }
+
+            activeEffects.productivity += productivity;
+            activeEffects.speed += speed;
+            activeEffects.consumption += consumption;
+
+            recipeTime /= activeEffects.speedMod;
+            fuelUsagePerSecondPerBuilding *= activeEffects.energyUsageMod;
 
             if (energy.drain > 0f) {
                 fuelUsagePerSecondPerBuilding += energy.drain / energyPerUnitOfFuel;
@@ -170,6 +178,6 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
             }
         }
 
-        return new RecipeParameters(recipeTime, fuelUsagePerSecondPerBuilding, productivity, warningFlags, activeEffects, modules);
+        return new RecipeParameters(recipeTime, fuelUsagePerSecondPerBuilding, warningFlags, activeEffects, modules);
     }
 }
