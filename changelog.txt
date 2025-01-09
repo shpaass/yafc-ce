@@ -19,6 +19,7 @@ Version:
 Date:
     Features:
         - Apply productivity, speed, and consumption effects to recipes, and show them in tooltips.
+        - Updated the dropdown icon for better clarity.
     Fixes:
         - Building emission/absorption (pollution and spores) are displayed in tooltips again.
         - Fix a parsing error when using the deprecated data.extend API.
