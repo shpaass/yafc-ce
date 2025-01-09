@@ -250,7 +250,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
             }
 
             gui.allocator = RectAllocator.RightRow;
-            if (gui.BuildButton(Icon.DropDown, SchemeColor.None, SchemeColor.Grey).WithTooltip(gui, "List and search all pages (Ctrl+Shift+" +
+            if (gui.BuildButton(Icon.Menu, SchemeColor.None, SchemeColor.Grey).WithTooltip(gui, "List and search all pages (Ctrl+Shift+" +
                 ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_F) + ")") || showSearchAll) {
                 showSearchAll = false;
                 updatePageList();

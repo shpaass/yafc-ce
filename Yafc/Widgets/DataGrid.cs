@@ -67,7 +67,7 @@ public abstract class TextDataColumn<TData>(string header, float initialWidth, f
             var rect = gui.statePosition;
             Rect menuRect = new Rect(rect.Right - 1.7f, rect.Y, 1.5f, 1.5f);
             if (gui.isBuilding) {
-                gui.DrawIcon(menuRect, Icon.DropDown, SchemeColor.BackgroundText);
+                gui.DrawIcon(menuRect, Icon.Menu, SchemeColor.BackgroundText);
             }
 
             if (gui.BuildButton(menuRect, SchemeColor.None, SchemeColor.Grey)) {
