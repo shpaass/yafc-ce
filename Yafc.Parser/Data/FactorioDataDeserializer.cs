@@ -161,10 +161,13 @@ internal partial class FactorioDataDeserializer {
             allObjects[i].id = (FactorioId)i;
         }
 
+        rocketCapacity = raw.Get<LuaTable>("utility-constants").Get<LuaTable>("default").Get("rocket_lift_weight", 1000000);
+        defaultItemWeight = raw.Get<LuaTable>("utility-constants").Get<LuaTable>("default").Get("default_item_weight", 100);
         UpdateSplitFluids();
         var iconRenderTask = renderIcons ? Task.Run(RenderIcons) : Task.CompletedTask;
         UpdateRecipeIngredientFluids(errorCollector);
         UpdateRecipeCatalysts();
+        CalculateItemWeights();
         CalculateMaps(netProduction);
         ExportBuiltData();
         progress.Report(("Post-processing", "Calculating dependencies"));
@@ -444,6 +447,14 @@ internal partial class FactorioDataDeserializer {
             EnsureLaunchRecipe(item, launchProducts);
         }
 
+        if (table.Get("weight", out int weight)) {
+            item.weight = weight;
+        }
+
+        if (table.Get("ingredient_to_weight_coefficient", out float ingredient_to_weight_coefficient)) {
+            item.ingredient_to_weight_coefficient = ingredient_to_weight_coefficient;
+        }
+
         if (GetRef(table, "spoil_result", out Item? spoiled)) {
             var recipe = CreateSpecialRecipe(item, SpecialNames.SpoilRecipe, "spoiling");
             recipe.ingredients = [new Ingredient(item, 1)];
@@ -479,6 +490,73 @@ internal partial class FactorioDataDeserializer {
 
         if (table.Get("plant_result", out string? plantResult) && !string.IsNullOrEmpty(plantResult)) {
             plantResults[item] = plantResult;
+        }
+    }
+
+    // This was constructed from educated guesses and https://forums.factorio.com/viewtopic.php?f=23&t=120781.
+    // It was compared with https://rocketcal.cc/weights.json. Where the results differed, these results were verified in Factorio.
+    private void CalculateItemWeights() {
+        Dictionary<Item, List<Item>> dependencies = [];
+        foreach (Recipe recipe in allObjects.OfType<Recipe>()) {
+            foreach (Item ingredient in recipe.ingredients.Select(i => i.goods).OfType<Item>()) {
+                if (!dependencies.TryGetValue(ingredient, out List<Item>? dependents)) {
+                    dependencies[ingredient] = dependents = [];
+                }
+                dependents.AddRange(recipe.products.Select(p => p.goods).OfType<Item>());
+            }
+        }
+
+        Queue<Item> queue = new(allObjects.OfType<Item>());
+        while (queue.TryDequeue(out Item? item)) {
+            if (item.weight != 0) {
+                continue;
+            }
+            Recipe? recipe = allObjects.OfType<Recipe>().FirstOrDefault(r => r.name == item.name);
+            // Hidden recipes appear to be ignored by Factorio; a pistol weighs 100g, not the 200kg that would be expected from its stack size.
+            if (recipe?.products.Length > 0 && !recipe.hidden) {
+                float weight = 0;
+                foreach (Ingredient ingredient in recipe.ingredients) {
+                    if (ingredient.goods is Item i) {
+                        if (i.weight == 0) {
+                            // Wait to calculate this weight until we have the weights of all its ingredients
+                            goto nextWeightCalculation;
+                        }
+
+                        weight += i.weight * ingredient.amount;
+                    }
+                    else { // fluid
+                        // Barrels gain 5 kg when filled with 50 units of fluid.
+                        // This matches data.raw.utility-constants.default_item_weight, so that seems like a good value to use.
+                        weight += defaultItemWeight * ingredient.amount;
+                    }
+                }
+
+                item.weight = (int)(weight / recipe.products[0].amount * item.ingredient_to_weight_coefficient);
+
+                if (!recipe.allowedEffects.HasFlag(AllowedEffects.Productivity)) {
+                    // When productivity is disallowed, a rocket can never carry more than one stack.
+                    item.weight = Math.Max(item.weight, rocketCapacity / item.stackSize);
+                }
+                else if (item.weight * item.stackSize < rocketCapacity) {
+                    // When productivity is allowed, a rocket can carry either < 1 stack or an integer number of stacks.
+                    // Do lots of integer division to floor the stack count.
+                    item.weight = rocketCapacity / (rocketCapacity / item.weight / item.stackSize) / item.stackSize;
+                }
+
+                foreach (Item product in dependencies[item]) {
+                    if (product.weight == 0) {
+                        queue.Enqueue(product);
+                    }
+                }
+            }
+nextWeightCalculation:;
+        }
+
+        // If it doesn't otherwise have a weight, it gets the default weight.
+        foreach (Item item in allObjects.OfType<Item>()) {
+            if (item.weight == 0) {
+                item.weight = defaultItemWeight;
+            }
         }
     }
 

@@ -35,6 +35,8 @@ internal partial class FactorioDataDeserializer {
     private readonly EntityEnergy laborEntityEnergy;
     private Entity? character;
     private readonly Version factorioVersion;
+    private int rocketCapacity;
+    private int defaultItemWeight;
 
     private static readonly Version v0_18 = new Version(0, 18);
 
@@ -230,6 +232,8 @@ internal partial class FactorioDataDeserializer {
         Database.allInserters = Database.entities.all.OfType<EntityInserter>().ToArray();
         Database.allAccumulators = Database.entities.all.OfType<EntityAccumulator>().ToArray();
         Database.allContainers = Database.entities.all.OfType<EntityContainer>().ToArray();
+
+        Database.rocketCapacity = rocketCapacity;
     }
 
     private static bool AreInverseRecipes(Recipe packing, Recipe unpacking) {
