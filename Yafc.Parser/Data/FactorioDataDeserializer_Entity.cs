@@ -583,7 +583,7 @@ internal partial class FactorioDataDeserializer {
             }
             if (generation.Get("control", out string? control)) {
                 entity.mapGenerated = true;
-                entity.autoplaceControl = generation?.Get<string>("control");
+                entity.autoplaceControl = generation.Get<string>("control");
             }
         }
 

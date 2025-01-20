@@ -76,18 +76,18 @@ internal static class DataParserUtils {
         return result;
     }
 
-    public static T Get<T>(this LuaTable table, int key, T def) {
-        _ = Parse(table[key], out var result, def);
+    public static T Get<T>(this LuaTable? table, int key, T def) {
+        _ = Parse(table?[key], out var result, def);
         return result;
     }
 
-    public static T? Get<T>(this LuaTable table, string key) {
-        _ = Parse(table[key], out T? result);
+    public static T? Get<T>(this LuaTable? table, string key) {
+        _ = Parse(table?[key], out T? result);
         return result;
     }
 
-    public static T? Get<T>(this LuaTable table, int key) {
-        _ = Parse(table[key], out T? result);
+    public static T? Get<T>(this LuaTable? table, int key) {
+        _ = Parse(table?[key], out T? result);
         return result;
     }
 

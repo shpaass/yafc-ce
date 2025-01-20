@@ -395,6 +395,10 @@ public class Item : Goods {
     /// Gets the time it takes for a base-quality item to spoil, in seconds, or 0 if this item doesn't spoil.
     /// </summary>
     public float baseSpoilTime => getBaseSpoilTime.Value;
+
+    public int weight { get; internal set; }
+    internal float ingredient_to_weight_coefficient = 0.5f;
+
     /// <summary>
     /// Gets the <see cref="Quality"/>-adjusted spoilage time for this item, in seconds, or 0 if this item doesn't spoil.
     /// </summary>

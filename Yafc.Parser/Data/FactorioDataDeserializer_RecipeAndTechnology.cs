@@ -39,7 +39,7 @@ internal partial class FactorioDataDeserializer {
     }
 
     private static void DeserializeFlags(LuaTable table, RecipeOrTechnology recipe) {
-        recipe.hidden = table.Get("hidden", true);
+        recipe.hidden = table.Get("hidden", false);
         recipe.enabled = table.Get("enabled", true);
     }
 

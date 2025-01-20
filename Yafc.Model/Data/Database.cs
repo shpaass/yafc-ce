@@ -40,6 +40,7 @@ public static class Database {
     public static FactorioIdRange<Quality> qualities { get; internal set; } = null!;
     public static FactorioIdRange<Location> locations { get; internal set; } = null!;
     public static int constantCombinatorCapacity { get; internal set; } = 18;
+    public static int rocketCapacity { get; internal set; }
 
     /// <summary>
     /// Returns the set of beacons filtered to only those that can accept at least one module.
