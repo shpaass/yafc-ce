@@ -60,6 +60,8 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         Create("Yet Another Factorio Calculator CE v" + YafcLib.version.ToString(3), display, Preferences.Instance.initialMainScreenWidth,
             Preferences.Instance.initialMainScreenHeight, Preferences.Instance.maximizeMainScreen);
         SetProject(project);
+
+        this.onFocusLost += project.PerformAutoSave;
     }
 
     [MemberNotNull(nameof(project))]

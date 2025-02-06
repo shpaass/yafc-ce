@@ -11,9 +11,7 @@ public class Preferences {
     public static readonly Preferences Instance;
     public static readonly string appDataFolder;
     private static readonly string fileName;
-
-    public static readonly string autosaveFilename;
-
+    
     static Preferences() {
         appDataFolder = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
         if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
@@ -24,7 +22,6 @@ public class Preferences {
             _ = Directory.CreateDirectory(appDataFolder);
         }
 
-        autosaveFilename = Path.Combine(appDataFolder, "autosave2.yafc");
         fileName = Path.Combine(appDataFolder, "yafc2.config");
         if (File.Exists(fileName)) {
             try {

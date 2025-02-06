@@ -88,6 +88,12 @@ public class PreferencesScreen : PseudoScreen {
                     .OrderBy(x => x.locName)]
             };
         }
+        using (gui.EnterRow()) {
+            gui.BuildText("Autosave project:", topOffset: 0.25f);
+            if (gui.BuildCheckBox("enable", Project.current.preferences.autosaveEnabled, out bool newAutosave)) {
+                Project.current.preferences.autosaveEnabled = newAutosave; 
+            }
+        }
 
         technologyList.Build(gui);
         technologyList.RebuildContents();

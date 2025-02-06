@@ -25,7 +25,7 @@ public class Project : ModelObject {
     public new UndoSystem undo => base.undo;
     private uint lastSavedVersion;
     public uint unsavedChangesCount => projectVersion - lastSavedVersion;
-
+    
     public Project() : base(new UndoSystem()) {
         settings = new ProjectSettings(this);
         preferences = new ProjectPreferences(this);
@@ -133,6 +133,13 @@ public class Project : ModelObject {
     public void Save(Stream stream) {
         using Utf8JsonWriter writer = new Utf8JsonWriter(stream, JsonUtils.DefaultWriterOptions);
         SerializationMap<Project>.SerializeToJson(this, writer);
+    }
+
+    public void PerformAutoSave() {
+        if (preferences.autosaveEnabled) {
+            Console.WriteLine("Auto-saving...");
+            Save(attachedFileName);
+        }
     }
 
     public void RecalculateDisplayPages() {
@@ -264,6 +271,8 @@ public class ProjectPreferences(Project owner) : ModelObject<Project>(owner) {
     public int maxMilestonesPerTooltipLine { get; set; } = 28;
     public bool showMilestoneOnInaccessible { get; set; } = true;
 
+    public bool autosaveEnabled { get; set; }
+    
     protected internal override void AfterDeserialize() {
         base.AfterDeserialize();
         defaultBelt ??= Database.allBelts.OrderBy(x => x.beltItemsPerSecond).FirstOrDefault();
