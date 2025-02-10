@@ -19,6 +19,7 @@ Version:
 Date:
     Features:
         - Detect lightning rods/collectors as electricity sources, and estimate the required accumulator count.
+        - Added button to remove link from link summary screen.
     Fixes:
         - When creating launch recipes, obey the rocket capacity, not the item stack size.
         - Improve detection of special (e.g. barrelling, caging) recipes, especially with SA's recycling recipes.
