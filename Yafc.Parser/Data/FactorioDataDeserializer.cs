@@ -107,10 +107,11 @@ internal partial class FactorioDataDeserializer {
     /// <param name="progress">An <see cref="IProgress{T}"/> that receives two strings describing the current loading state.</param>
     /// <param name="errorCollector">An <see cref="ErrorCollector"/> that will collect the errors and warnings encountered while loading and processing the file and data.</param>
     /// <param name="renderIcons">If <see langword="true"/>, Yafc will render the icons necessary for UI display.</param>
+    /// <param name="useLatestSave">If <see langword="true"/>, Yafc will try to find the most recent autosave.</param>
     /// <returns>A <see cref="Project"/> containing the information loaded from <paramref name="projectPath"/>. Also sets the <see langword="static"/> properties
     /// in <see cref="Database"/>.</returns>
     public Project LoadData(string projectPath, LuaTable data, LuaTable prototypes, bool netProduction,
-        IProgress<(string, string)> progress, ErrorCollector errorCollector, bool renderIcons) {
+        IProgress<(string, string)> progress, ErrorCollector errorCollector, bool renderIcons, bool useLatestSave) {
 
         progress.Report(("Loading", "Loading items"));
         raw = (LuaTable?)data["raw"] ?? throw new ArgumentException("Could not load data.raw from data argument", nameof(data));
@@ -173,7 +174,7 @@ internal partial class FactorioDataDeserializer {
         Dependencies.Calculate();
         TechnologyLoopsFinder.FindTechnologyLoops();
         progress.Report(("Post-processing", "Creating project"));
-        Project project = Project.ReadFromFile(projectPath, errorCollector);
+        Project project = Project.ReadFromFile(projectPath, errorCollector, useLatestSave);
         Analysis.ProcessAnalyses(progress, project, errorCollector);
         progress.Report(("Rendering icons", ""));
         iconRenderedProgress = progress;

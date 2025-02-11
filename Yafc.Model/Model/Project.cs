@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Yafc.Model;
 
@@ -24,8 +25,13 @@ public class Project : ModelObject {
     public int hiddenPages { get; private set; }
     public new UndoSystem undo => base.undo;
     private uint lastSavedVersion;
+    private uint lastAutoSavedVersion;
+
     public uint unsavedChangesCount => projectVersion - lastSavedVersion;
-    
+
+    private int autosaveIndex;
+    private const int AutosaveRollingLimit = 5;
+
     public Project() : base(new UndoSystem()) {
         settings = new ProjectSettings(this);
         preferences = new ProjectPreferences(this);
@@ -71,14 +77,39 @@ public class Project : ModelObject {
         metaInfoChanged?.Invoke();
     }
 
-    public static Project ReadFromFile(string path, ErrorCollector collector) {
+    public static Project ReadFromFile(string path, ErrorCollector collector, bool useMostRecent) {
         Project? project;
+
+        // Check whether there is an autosave that is saved at a later time than the current save.
+        if (useMostRecent) {
+            var savetime = File.GetLastWriteTimeUtc(path);
+            var highestAutosave = Enumerable
+                .Range(1, AutosaveRollingLimit)
+                .Select(i => new {
+                        Path = GenerateAutosavePath(path, i),
+                        Index = i,
+                        LastWriteTimeUtc = File.GetLastWriteTimeUtc(GenerateAutosavePath(path, i))
+                    }
+                )
+                .MaxBy(s => s.LastWriteTimeUtc);
+
+            if (highestAutosave != null && highestAutosave.LastWriteTimeUtc > savetime) {
+                path = highestAutosave.Path;
+            }
+        }
 
         if (!string.IsNullOrEmpty(path) && File.Exists(path)) {
             project = Read(File.ReadAllBytes(path), collector);
         }
         else {
             project = new Project();
+        }
+
+        // If an Auto Save is used to open the project we want remove the 'autosave' part so when the user
+        // manually saves the file next time it saves the 'main' save instead of the generated save file.
+        if (path != null) {
+            var autosaveRegex = new Regex("-autosave-[0-9]");
+            path = autosaveRegex.Replace(path, "");
         }
 
         project.attachedFileName = path;
@@ -126,6 +157,7 @@ public class Project : ModelObject {
         using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write)) {
             Save(fs);
         }
+        
         attachedFileName = fileName;
         lastSavedVersion = projectVersion;
     }
@@ -136,11 +168,20 @@ public class Project : ModelObject {
     }
 
     public void PerformAutoSave() {
-        if (preferences.autosaveEnabled) {
-            Console.WriteLine("Auto-saving...");
-            Save(attachedFileName);
+        if (attachedFileName != null && lastAutoSavedVersion != projectVersion) {
+            autosaveIndex = (autosaveIndex % AutosaveRollingLimit) + 1;
+            var fileName = GenerateAutosavePath(attachedFileName, autosaveIndex);
+            
+            using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write)) {
+                Save(fs);
+            }
+
+            lastAutoSavedVersion = projectVersion;
         }
     }
+
+    private static string GenerateAutosavePath(string filename, int saveIndex) 
+        => filename.Replace(".yafc", $"-autosave-{saveIndex}.yafc");
 
     public void RecalculateDisplayPages() {
         foreach (var page in displayPages) {
@@ -270,8 +311,6 @@ public class ProjectPreferences(Project owner) : ModelObject<Project>(owner) {
     /// <summary>The maximum number of milestone icons in each line when drawing tooltip headers.</summary>
     public int maxMilestonesPerTooltipLine { get; set; } = 28;
     public bool showMilestoneOnInaccessible { get; set; } = true;
-
-    public bool autosaveEnabled { get; set; }
     
     protected internal override void AfterDeserialize() {
         base.AfterDeserialize();

@@ -88,12 +88,6 @@ public class PreferencesScreen : PseudoScreen {
                     .OrderBy(x => x.locName)]
             };
         }
-        using (gui.EnterRow()) {
-            gui.BuildText("Autosave project:", topOffset: 0.25f);
-            if (gui.BuildCheckBox("enable", Project.current.preferences.autosaveEnabled, out bool newAutosave)) {
-                Project.current.preferences.autosaveEnabled = newAutosave; 
-            }
-        }
 
         technologyList.Build(gui);
         technologyList.RebuildContents();
@@ -213,6 +207,10 @@ public class PreferencesScreen : PseudoScreen {
             Preferences.Instance.darkMode = newValue;
             Preferences.Instance.Save();
             RenderingUtils.SetColorScheme(newValue);
+        }
+        
+        if (gui.BuildCheckBox("Enable autosave (Saves when the window loses focus)", Preferences.Instance.autosaveEnabled, out newValue)) {
+            Preferences.Instance.autosaveEnabled = newValue;
         }
     }
 

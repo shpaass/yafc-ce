@@ -71,6 +71,16 @@ public class Preferences {
     /// </summary>
     public int shoppingDisplayState { get; set; } = 3;
 
+    /// <summary>
+    /// When enabled autosave every time the window loses focus.
+    /// </summary>
+    public bool autosaveEnabled { get; set; } = true;
+    
+    /// <summary>
+    /// When enabled a newer autosave will always get priority above the manual saved file when loading the project.
+    /// </summary>
+    public bool useMostRecentSave { get; set; } = true;
+    
     public void AddProject(string dataPath, string modsPath, string projectPath, bool netProduction) {
         recentProjects = recentProjects.Where(x => string.Compare(projectPath, x.path, StringComparison.InvariantCultureIgnoreCase) != 0)
             .Prepend(new ProjectDefinition(dataPath, modsPath, projectPath, netProduction))

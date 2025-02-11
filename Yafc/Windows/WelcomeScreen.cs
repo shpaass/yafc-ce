@@ -34,7 +34,8 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
     private string? errorMessage;
     private string? tip;
     private readonly string[] tips;
-
+    private bool useMostRecentSave = true;
+    
     private static readonly Dictionary<string, string> languageMapping = new Dictionary<string, string>()
     {
         {"en", "English"},
@@ -170,6 +171,14 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                 gui.BuildText("In-game objects language:");
             }
 
+            using (gui.EnterRowWithHelpIcon("""When enabled it will try to find a more recent autosave. Disable if you want to load your manual save only.""", false)) {
+                if (gui.BuildCheckBox("Load most recent (auto-)save", Preferences.Instance.useMostRecentSave, out useMostRecentSave)) 
+                {
+                    Preferences.Instance.useMostRecentSave = useMostRecentSave;
+                    Preferences.Instance.Save();
+                }
+            }
+            
             using (gui.EnterRowWithHelpIcon("""
                     If checked, YAFC will only suggest production or consumption recipes that have a net production or consumption of that item or fluid.
                     For example, kovarex enrichment will not be suggested when adding recipes that produce U-238 or consume U-235.
@@ -393,7 +402,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
             await Ui.ExitMainThread();
 
             ErrorCollector collector = new ErrorCollector();
-            var project = FactorioDataSource.Parse(dataPath, modsPath, projectPath, netProduction, this, collector, Preferences.Instance.language);
+            var project = FactorioDataSource.Parse(dataPath, modsPath, projectPath, netProduction, this, collector, Preferences.Instance.language, Preferences.Instance.useMostRecentSave);
 
             await Ui.EnterMainThread();
             logger.Information("Opening main screen");
