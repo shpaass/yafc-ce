@@ -311,7 +311,7 @@ public class ProjectPreferences(Project owner) : ModelObject<Project>(owner) {
     /// <summary>The maximum number of milestone icons in each line when drawing tooltip headers.</summary>
     public int maxMilestonesPerTooltipLine { get; set; } = 28;
     public bool showMilestoneOnInaccessible { get; set; } = true;
-    
+
     protected internal override void AfterDeserialize() {
         base.AfterDeserialize();
         defaultBelt ??= Database.allBelts.OrderBy(x => x.beltItemsPerSecond).FirstOrDefault();
