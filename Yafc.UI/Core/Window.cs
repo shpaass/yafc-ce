@@ -38,6 +38,8 @@ public abstract class Window : IDisposable {
     public virtual bool preventQuit => false;
     internal Window(Padding padding) => rootGui = new ImGui(Build, padding);
 
+    public event OnFocusLost? onFocusLost;
+    
     internal void Create() {
         if (surface is null) {
             throw new InvalidOperationException($"surface must be set by a derived class before calling {nameof(Create)}.");
@@ -179,7 +181,8 @@ public abstract class Window : IDisposable {
         }
     }
 
-    public virtual void FocusLost() { }
+    public virtual void FocusLost() => onFocusLost?.Invoke();
+    
     public virtual void Minimized() { }
 
     public void SetNextRepaint(long nextRepaintTime) {
@@ -263,3 +266,5 @@ public abstract class Window : IDisposable {
         GC.SuppressFinalize(this);
     }
 }
+
+public delegate void OnFocusLost(); 

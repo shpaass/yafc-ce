@@ -166,12 +166,13 @@ public static partial class FactorioDataSource {
     /// <param name="errorCollector">An <see cref="ErrorCollector"/> that will collect the errors and warnings encountered while loading and processing the file and data.</param>
     /// <param name="locale">One of the languages supported by Factorio. Typically just the two-letter language code, e.g. en,
     /// but occasionally also includes the region code, e.g. pt-PT.</param>
+    /// <param name="useLatestSave">If <see langword="true"/>, Yafc will try to find the most recent autosave.</param>
     /// <param name="renderIcons">If <see langword="true"/>, Yafc will render the icons necessary for UI display.</param>
     /// <returns>A <see cref="Project"/> containing the information loaded from <paramref name="projectPath"/>.
     /// Also sets the <see langword="static"/> properties in <see cref="Database"/>.</returns>
     /// <exception cref="NotSupportedException">Thrown if a mod enabled in mod-list.json could not be found in <paramref name="modPath"/>.</exception>
     public static Project Parse(string factorioPath, string modPath, string projectPath, bool netProduction,
-        IProgress<(string MajorState, string MinorState)> progress, ErrorCollector errorCollector, string locale, bool renderIcons = true) {
+        IProgress<(string MajorState, string MinorState)> progress, ErrorCollector errorCollector, string locale, bool useLatestSave, bool renderIcons = true) {
 
         LuaContext? dataContext = null;
 
@@ -357,7 +358,7 @@ public static partial class FactorioDataSource {
             _ = dataContext.Exec(postProcess, "*", "post");
 
             FactorioDataDeserializer deserializer = new FactorioDataDeserializer(factorioVersion ?? defaultFactorioVersion);
-            var project = deserializer.LoadData(projectPath, dataContext.data, (LuaTable)dataContext.defines["prototypes"]!, netProduction, progress, errorCollector, renderIcons);
+            var project = deserializer.LoadData(projectPath, dataContext.data, (LuaTable)dataContext.defines["prototypes"]!, netProduction, progress, errorCollector, renderIcons, useLatestSave);
             logger.Information("Completed!");
             progress.Report(("Completed!", ""));
 

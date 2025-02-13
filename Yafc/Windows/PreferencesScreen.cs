@@ -208,6 +208,10 @@ public class PreferencesScreen : PseudoScreen {
             Preferences.Instance.Save();
             RenderingUtils.SetColorScheme(newValue);
         }
+        
+        if (gui.BuildCheckBox("Enable autosave (Saves when the window loses focus)", Preferences.Instance.autosaveEnabled, out newValue)) {
+            Preferences.Instance.autosaveEnabled = newValue;
+        }
     }
 
     protected override void ReturnPressed() => Close();

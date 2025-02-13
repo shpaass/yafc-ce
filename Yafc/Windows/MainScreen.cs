@@ -60,6 +60,12 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         Create("Yet Another Factorio Calculator CE v" + YafcLib.version.ToString(3), display, Preferences.Instance.initialMainScreenWidth,
             Preferences.Instance.initialMainScreenHeight, Preferences.Instance.maximizeMainScreen);
         SetProject(project);
+
+        onFocusLost += () => {
+            if (Preferences.Instance.autosaveEnabled) {
+                project.PerformAutoSave();
+            }
+        };
     }
 
     [MemberNotNull(nameof(project))]
@@ -365,8 +371,8 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         if (gui.BuildContextMenuButton("Undo", "Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_Z)) && gui.CloseDropdown()) {
             project.undo.PerformUndo();
         }
-
-        if (gui.BuildContextMenuButton("Save", "Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_S)) && gui.CloseDropdown()) {
+        
+        if (gui.BuildContextMenuButton($"Save", "Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_S)) && gui.CloseDropdown()) {
             SaveProject().CaptureException();
         }
 
@@ -667,7 +673,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
 
         ErrorCollector errors = new ErrorCollector();
         try {
-            Project project = Project.ReadFromFile(path, errors);
+            Project project = Project.ReadFromFile(path, errors, Preferences.Instance.useMostRecentSave);
             Analysis.ProcessAnalyses(this, project, errors);
             SetProject(project);
         }
