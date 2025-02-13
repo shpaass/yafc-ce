@@ -5,7 +5,7 @@ root = true
 
 # Don't use tabs for indentation.
 [*]
-indent_style = space
+indent_style = tab
 # (Please don't specify an indent_size here; that has too many unintended consequences.)
 
 # Code files
