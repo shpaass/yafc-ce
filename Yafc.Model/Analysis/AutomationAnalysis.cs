@@ -27,10 +27,6 @@ public class AutomationAnalysis : Analysis {
         foreach (Recipe recipe in Database.recipes.all.ExceptExcluded(this)) {
             bool hasAutomatableCrafter = false;
 
-            
-            if (recipe.name.StartsWith("spoil.")) {
-                break;    //Spoiling is always automatable
-            }
             foreach (var crafter in recipe.crafters) {
                 if (crafter != Database.character && crafter.IsAccessible()) {
                     hasAutomatableCrafter = true;
