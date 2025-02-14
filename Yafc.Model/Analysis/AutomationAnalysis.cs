@@ -69,7 +69,7 @@ public class AutomationAnalysis : Analysis {
                 foreach (var revDep in Dependencies.reverseDependencies[index]) {
                     var oldState = state[revDep];
 
-                    if (oldState == Unknown || (oldState == AutomationStatus.AutomatableLater && automationState == AutomationStatus.AutomatableNow)) {
+                    if (oldState == Unknown || (oldState == AutomationStatus.AutomatableLater && automationState >= AutomationStatus.AutomatableNow)) {
                         if (oldState == AutomationStatus.AutomatableLater) {
                             unknowns++;
                         }
