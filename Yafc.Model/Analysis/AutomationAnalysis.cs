@@ -27,7 +27,7 @@ public class AutomationAnalysis : Analysis {
         foreach (Recipe recipe in Database.recipes.all.ExceptExcluded(this)) {
             bool hasAutomatableCrafter = false;
 
-            if (recipe.locname == 'spoiling') {    //Spoiling is always automatable
+            if (recipe.locname == "spoiling") {    //Spoiling is always automatable
                 hasAutomatableCrafter = true;
             }
             foreach (var crafter in recipe.crafters) {
