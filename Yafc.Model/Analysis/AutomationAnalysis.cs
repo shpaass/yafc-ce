@@ -36,7 +36,7 @@ public class AutomationAnalysis : Analysis {
                     hasAutomatableCrafter = true;
                 }
             }
-            else if (!hasAutomatableCrafter) {
+            if (!hasAutomatableCrafter) {
                 state[recipe] = AutomationStatus.NotAutomatable;
             }
         }
