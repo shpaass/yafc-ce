@@ -6,7 +6,7 @@ using Yafc.UI;
 namespace Yafc.Model;
 
 public enum AutomationStatus : sbyte {
-    NotAutomatable = -1, AutomatableLater = 2, AutomatableNow = 3, AutomatableAlways = 4,
+    NotAutomatable = -1, AutomatableLater = 2, AutomatableNow = 3,
 }
 
 public class AutomationAnalysis : Analysis {
@@ -27,13 +27,14 @@ public class AutomationAnalysis : Analysis {
         foreach (Recipe recipe in Database.recipes.all.ExceptExcluded(this)) {
             bool hasAutomatableCrafter = false;
 
+            
+            if (recipe.name.StartsWith("spoil.")) {
+                break;    //Spoiling is always automatable
+            }
             foreach (var crafter in recipe.crafters) {
                 if (crafter != Database.character && crafter.IsAccessible()) {
                     hasAutomatableCrafter = true;
                 }
-            }
-            if (recipe.name.StartsWith("spoil.")) {    //Spoiling is always automatable
-                state[recipe] = AutomationStatus.AutomatableAlways;
             }
             else if (!hasAutomatableCrafter) {
                 state[recipe] = AutomationStatus.NotAutomatable;
