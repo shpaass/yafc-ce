@@ -151,6 +151,7 @@ public static partial class Ui {
                                 window.FocusLost();
                                 break;
                             case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_FOCUS_GAINED:
+                                window.FocusGained();
                                 window.Rebuild();
                                 break;
                             case SDL.SDL_WindowEventID.SDL_WINDOWEVENT_MINIMIZED:
