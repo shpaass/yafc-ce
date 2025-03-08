@@ -66,7 +66,7 @@ public abstract class WindowUtility(Padding padding) : Window(padding) {
     // TODO this is work-around for inability to create utility or modal window in SDL2
     // Fake utility windows are closed on focus lost
     public override void FocusLost() {
-        if (parent != null) {
+        if (parent != null && parent.closed) {
             Close();
         }
         base.FocusLost();
