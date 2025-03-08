@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Numerics;
 using SDL2;
 using Serilog;
@@ -37,6 +38,8 @@ public abstract class Window : IDisposable {
 
     public virtual bool preventQuit => false;
     internal Window(Padding padding) => rootGui = new ImGui(Build, padding);
+
+    private List<Window> childWindows = new List<Window>();
 
     internal void Create() {
         if (surface is null) {
@@ -164,6 +167,7 @@ public abstract class Window : IDisposable {
     protected internal virtual void Close() {
         visible = false;
         closed = true;
+        childWindows.ForEach(w => w.Close());
         surface?.Dispose();
         SDL.SDL_DestroyWindow(window);
         Dispose();
@@ -240,6 +244,9 @@ public abstract class Window : IDisposable {
             }
         }
     }
+
+    public void removeChildWindow(Window window) => childWindows.Remove(window);
+    public void addChildWindow(Window window) => childWindows.Add(window);
 
     protected abstract void BuildContents(ImGui gui);
 
