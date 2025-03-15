@@ -134,6 +134,7 @@ public class BlueprintEntity {
 public class BlueprintRequestFilter {
     public string? name { get; set; }
     public string? quality { get; set; }
+    public string? comparator { get; set; }
     public int index { get; set; }
     public int count { get; set; }
 }

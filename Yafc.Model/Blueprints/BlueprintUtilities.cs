@@ -65,7 +65,7 @@ public static class BlueprintUtilities {
 
             for (int j = 0; j < chest.logisticSlotsCount; j++) {
                 var (item, amount) = goods[index++];
-                BlueprintRequestFilter filter = new BlueprintRequestFilter { index = j + 1, count = amount, name = item.target.name, quality = item.quality.name };
+                BlueprintRequestFilter filter = new BlueprintRequestFilter { index = j + 1, count = amount, name = item.target.name, quality = item.quality.name, comparator = "=" };
                 entity.requestFilters.Add(filter);
 
                 if (index >= goods.Count) {

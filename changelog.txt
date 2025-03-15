@@ -21,6 +21,7 @@ Date:
         - Open the preferences or milestones when you click on the icon for the reactor or quality warning messages.
         - Implemented Auto Save.
         - (SA) Research recipes correctly consume quality science packs, and the UI explains this.
+        - Fix export of blueprint chests from shopping list (broken in factorio >= 2.0.35)
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.10.0
 Date: March 5th 2025
