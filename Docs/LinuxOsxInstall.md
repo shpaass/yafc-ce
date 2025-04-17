@@ -1,20 +1,20 @@
 ### Arch 
 There is an AUR package for yafc-ce: [`factorio-yafc-ce-git`](https://aur.archlinux.org/packages/factorio-yafc-ce-git) 
-Once the package is installed, it can be run with `factorio-yafc`. Note that at least dotnet 6 or later is required.
+Once the package is installed, it can be run with `factorio-yafc`. Note that dotnet runtime v8 is required.
 
 ### Debian-based
 - Download the latest Yafc-ce release.
-- [Install dotnet core (v8.0 or later)](https://learn.microsoft.com/en-us/dotnet/core/install/linux-debian)
+- [Install dotnet core (runtime version: v8)](https://learn.microsoft.com/en-us/dotnet/core/install/linux-debian)
 - Install SDL2:
   - `sudo apt-get install libsdl2-2.0-0`
   - `sudo apt-get install libsdl2-image-2.0-0`
   - `sudo apt-get install libsdl2-ttf-2.0-0`
   - For reference, have following libraries: SDL2-2.0.so.0, SDL2_ttf-2.0.so.0, SDL2_image-2.0.so.0
-- Make sure you have OpenGL available
-- Use the `Yafc` executable to run.
+- Make sure you have OpenGL available.
+- Use the `Yafc` executable to run (you might need to give it executable permissions: `chmod +x Yafc`).
 
 ### OSX
-- [Install dotnet core (v8.0 or later)](https://dotnet.microsoft.com/download)
+- [Install dotnet core (runtime version: v8)](https://dotnet.microsoft.com/download)
 - For Arm64 Macs, that's it. You can skip to the final step of launching Yafc.
 - For Intel Macs, you can skip to the step of getting SDL libraries with `brew`.
 - If you want to build Lua from source, here's how you can do that:
