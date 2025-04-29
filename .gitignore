@@ -1,6 +1,7 @@
 ## Custom ignores that were not the part of the conventional file
 
 Build/
+*.g.cs
 
 # Debug launch configuration
 Y[Aa][Ff][Cc]/Properties/launchSettings.json

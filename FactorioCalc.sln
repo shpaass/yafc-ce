@@ -24,6 +24,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yafc.I18n", "Yafc.I18n\Yafc.I18n.csproj", "{4FEC38A5-A997-48C9-97F5-87BD12119F44}"
+	ProjectSection(ProjectDependencies) = postProject
+		{E8A28A02-99C4-41D3-99E3-E6252BD116B7} = {E8A28A02-99C4-41D3-99E3-E6252BD116B7}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Yafc.I18n.Generator", "Yafc.I18n.Generator\Yafc.I18n.Generator.csproj", "{E8A28A02-99C4-41D3-99E3-E6252BD116B7}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +64,10 @@ Global
 		{4FEC38A5-A997-48C9-97F5-87BD12119F44}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4FEC38A5-A997-48C9-97F5-87BD12119F44}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4FEC38A5-A997-48C9-97F5-87BD12119F44}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E8A28A02-99C4-41D3-99E3-E6252BD116B7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E8A28A02-99C4-41D3-99E3-E6252BD116B7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E8A28A02-99C4-41D3-99E3-E6252BD116B7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E8A28A02-99C4-41D3-99E3-E6252BD116B7}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
