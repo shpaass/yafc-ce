@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Yafc.I18n;
 
 namespace Yafc.Model;
 
@@ -315,7 +316,7 @@ internal class TypeSerializer : ValueSerializer<Type> {
         }
         Type? type = Type.GetType(s);
         if (type == null) {
-            context.Error("Type " + s + " does not exist. Possible plugin version change", ErrorSeverity.MinorDataLoss);
+            context.Error(LSs.LoadErrorUntranslatedTypeDoesNotExist.L(s), ErrorSeverity.MinorDataLoss);
         }
 
         return type;
@@ -387,11 +388,11 @@ internal class FactorioObjectSerializer<T> : ValueSerializer<T> where T : Factor
             var substitute = Database.FindClosestVariant(s);
 
             if (substitute is T t) {
-                context.Error("Fluid " + t.locName + " doesn't have correct temperature information. May require adjusting its temperature.", ErrorSeverity.MinorDataLoss);
+                context.Error(LSs.LoadErrorFluidHasIncorrectTemperature.L(t.locName), ErrorSeverity.MinorDataLoss);
                 return t;
             }
 
-            context.Error("Factorio object '" + s + "' no longer exist. Check mods configuration.", ErrorSeverity.MinorDataLoss);
+            context.Error(LSs.LoadErrorUntranslatedFactorioObjectNotFound.L(s), ErrorSeverity.MinorDataLoss);
         }
         return obj as T;
     }
@@ -430,10 +431,10 @@ internal sealed partial class QualityObjectSerializer<T> : ValueSerializer<IObje
                     _ = Database.objectsByTypeName.TryGetValue(parts[1], out var obj);
                     _ = Database.objectsByTypeName.TryGetValue("Quality." + parts[2], out var qual);
                     if (obj is not T) {
-                        context.Error($"Factorio object '{parts[1]}' no longer exists. Check mods configuration.", ErrorSeverity.MinorDataLoss);
+                        context.Error(LSs.LoadErrorUntranslatedFactorioObjectNotFound.L(parts[1]), ErrorSeverity.MinorDataLoss);
                     }
                     else if (qual is not Quality quality) {
-                        context.Error($"Factorio quality '{parts[2]}' no longer exists. Check mods configuration.", ErrorSeverity.MinorDataLoss);
+                        context.Error(LSs.LoadErrorUntranslatedFactorioQualityNotFound.L(parts[2]), ErrorSeverity.MinorDataLoss);
                     }
                     else {
                         return ObjectWithQuality.Get(obj as T, quality);

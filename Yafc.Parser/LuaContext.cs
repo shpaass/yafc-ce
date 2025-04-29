@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Serilog;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Yafc.Model.Tests")]
@@ -549,7 +551,7 @@ internal partial class LuaContext : IDisposable {
     }
 
     public void DoModFiles(string[] modorder, string fileName, IProgress<(string, string)> progress) {
-        string header = "Executing mods " + fileName;
+        string header = LSs.ProgressExecutingModAtDataStage.L(fileName);
 
         foreach (string mod in modorder) {
             required.Clear();
@@ -570,7 +572,7 @@ internal partial class LuaContext : IDisposable {
     public LuaTable defines => (LuaTable)GetGlobal("defines")!;
 }
 
-internal class LuaTable {
+internal class LuaTable : ILocalizable {
     public readonly LuaContext context;
     public readonly int refId;
 
@@ -590,4 +592,9 @@ internal class LuaTable {
 
     public List<object?> ArrayElements => context.ArrayElements(refId);
     public Dictionary<object, object?> ObjectElements => context.ObjectElements(refId);
+
+    bool ILocalizable.Get([NotNullWhen(true)] out string? key, out object[] parameters) {
+        parameters = ArrayElements.Skip(1).ToArray()!;
+        return this.Get(1, out key);
+    }
 }

@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Runtime.InteropServices;
 using SDL2;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc;
@@ -24,19 +25,19 @@ public class ImageSharePanel : PseudoScreen {
     }
 
     public override void Build(ImGui gui) {
-        BuildHeader(gui, "Image generated");
+        BuildHeader(gui, LSs.SharingImageGenerated);
         gui.BuildText(header, TextBlockDisplayStyle.WrappedText);
-        if (gui.BuildButton("Save as PNG")) {
+        if (gui.BuildButton(LSs.SaveAsPng)) {
             SaveAsPng();
         }
 
-        if (gui.BuildButton("Save to temp folder and open")) {
+        if (gui.BuildButton(LSs.SaveAndOpen)) {
             surface.SavePng(TempImageFile);
             Ui.VisitLink("file:///" + TempImageFile);
         }
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
-            && gui.BuildButton(copied ? "Copied to clipboard" : "Copy to clipboard (Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_C) + ")", active: !copied)) {
+            && gui.BuildButton(copied ? LSs.CopiedToClipboard : LSs.CopyToClipboardWithShortcut.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_C)), active: !copied)) {
 
             WindowsClipboard.CopySurfaceToClipboard(surface);
             copied = true;
@@ -53,7 +54,7 @@ public class ImageSharePanel : PseudoScreen {
     }
 
     private async void SaveAsPng() {
-        string? path = await new FilesystemScreen(header, "Save as PNG", "Save", null, FilesystemScreen.Mode.SelectOrCreateFile, name + ".png", MainScreen.Instance, null, "png");
+        string? path = await new FilesystemScreen(header, LSs.SaveAsPng, LSs.Save, null, FilesystemScreen.Mode.SelectOrCreateFile, name + ".png", MainScreen.Instance, null, "png");
         if (path != null) {
             surface?.SavePng(path);
         }

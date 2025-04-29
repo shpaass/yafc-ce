@@ -11,6 +11,7 @@ using System.Runtime.InteropServices;
 using Newtonsoft.Json.Linq;
 using SDL2;
 using Serilog;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.Parser;
 using Yafc.UI;
@@ -126,7 +127,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
         recentProjectScroll = new ScrollArea(20f, BuildRecentProjectList, collapsible: true);
         languageScroll = new ScrollArea(20f, LanguageSelection, collapsible: true);
         errorScroll = new ScrollArea(20f, BuildError, collapsible: true);
-        Create("Welcome to YAFC CE v" + YafcLib.version.ToString(3), 45, null);
+        Create(LSs.Welcome.L(YafcLib.version.ToString(3)), 45, null);
 
         if (cliProject != null && !string.IsNullOrEmpty(cliProject.dataPath)) {
             SetProject(cliProject);
@@ -141,7 +142,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
 
     private void BuildError(ImGui gui) {
         if (errorMod != null) {
-            gui.BuildText($"Error while loading mod {errorMod}.", TextBlockDisplayStyle.Centered with { Color = SchemeColor.Error });
+            gui.BuildText(LSs.ErrorWhileLoadingMod.L(errorMod), TextBlockDisplayStyle.Centered with { Color = SchemeColor.Error });
         }
 
         gui.allocator = RectAllocator.Stretch;
@@ -151,7 +152,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
 
     protected override void BuildContents(ImGui gui) {
         gui.spacing = 1.5f;
-        gui.BuildText("Yet Another Factorio Calculator", new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
+        gui.BuildText(LSs.FullName, new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
         if (loading) {
             gui.BuildText(currentLoad1, TextBlockDisplayStyle.Centered);
             gui.BuildText(currentLoad2, TextBlockDisplayStyle.Centered);
@@ -160,8 +161,8 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
             gui.SetNextRebuild(Ui.time + 30);
         }
         else if (downloading) {
-            gui.BuildText("Please wait . . .", TextBlockDisplayStyle.Centered);
-            gui.BuildText("Yafc is downloading the fonts for your language.", TextBlockDisplayStyle.Centered);
+            gui.BuildText(LSs.PleaseWait, TextBlockDisplayStyle.Centered);
+            gui.BuildText(LSs.DownloadingFonts, TextBlockDisplayStyle.Centered);
         }
         else if (errorMessage != null) {
             errorScroll.Build(gui);
@@ -169,41 +170,40 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
 
             using (gui.EnterRow()) {
                 if (thereIsAModToDisable) {
-                    gui.BuildWrappedText("YAFC was unable to load the project. You can disable the problematic mod once by clicking on 'Disable & reload' button, or you can disable it " +
-                                         "permanently for YAFC by copying the mod-folder, disabling the mod in the copy by editing mod-list.json, and pointing YAFC to the copy.");
+                    gui.BuildWrappedText(LSs.UnableToLoadWithMod);
                 }
                 else {
-                    gui.BuildWrappedText("YAFC cannot proceed because it was unable to load the project.");
+                    gui.BuildWrappedText(LSs.UnableToLoad);
                 }
             }
 
             using (gui.EnterRow()) {
-                if (gui.BuildLink("More info")) {
+                if (gui.BuildLink(LSs.MoreInfo)) {
                     ShowDropDown(gui, gui.lastRect, ProjectErrorMoreInfo, new Padding(0.5f), 30f);
                 }
             }
 
             using (gui.EnterRow()) {
-                if (gui.BuildButton("Copy to clipboard", SchemeColor.Grey)) {
+                if (gui.BuildButton(LSs.CopyToClipboard, SchemeColor.Grey)) {
                     _ = SDL.SDL_SetClipboardText(errorMessage);
                 }
-                if (thereIsAModToDisable && gui.BuildButton("Disable & reload").WithTooltip(gui, "Disable this mod until you close YAFC or change the mod folder.")) {
+                if (thereIsAModToDisable && gui.BuildButton(LSs.DisableAndReload).WithTooltip(gui, LSs.DisableAndReloadHint)) {
                     FactorioDataSource.DisableMod(errorMod!);
                     errorMessage = null;
                     LoadProject();
                 }
-                if (gui.RemainingRow().BuildButton("Back")) {
+                if (gui.RemainingRow().BuildButton(LSs.BackButton)) {
                     errorMessage = null;
                     Rebuild();
                 }
             }
         }
         else {
-            BuildPathSelect(gui, path, "Project file location", "You can leave it empty for a new project", EditType.Workspace);
-            BuildPathSelect(gui, dataPath, "Factorio Data location*\nIt should contain folders 'base' and 'core'",
-                "e.g. C:/Games/Steam/SteamApps/common/Factorio/data", EditType.Factorio);
-            BuildPathSelect(gui, modsPath, "Factorio Mods location (optional)\nIt should contain file 'mod-list.json'",
-                "If you don't use separate mod folder, leave it empty", EditType.Mods);
+            BuildPathSelect(gui, path, LSs.WelcomeProjectFileLocation, LSs.WelcomeProjectFileLocationHint, EditType.Workspace);
+            BuildPathSelect(gui, dataPath, LSs.WelcomeDataLocation,
+                LSs.WelcomeDataLocationHint, EditType.Factorio);
+            BuildPathSelect(gui, modsPath, LSs.WelcomeModLocation,
+                LSs.WelcomeModLocationHint, EditType.Mods);
 
             using (gui.EnterRow()) {
                 gui.allocator = RectAllocator.RightRow;
@@ -216,11 +216,11 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                     gui.ShowDropDown(languageScroll.Build);
                 }
 
-                gui.BuildText("In-game objects language:");
+                gui.BuildText(LSs.WelcomeLanguageHeader);
             }
 
             using (gui.EnterRowWithHelpIcon("""When enabled it will try to find a more recent autosave. Disable if you want to load your manual save only.""", false)) {
-                if (gui.BuildCheckBox("Load most recent (auto-)save", Preferences.Instance.useMostRecentSave,
+                if (gui.BuildCheckBox(LSs.WelcomeLoadAutosave, Preferences.Instance.useMostRecentSave,
                         out useMostRecentSave)) {
                     Preferences.Instance.useMostRecentSave = useMostRecentSave;
                     Preferences.Instance.Save();
@@ -231,16 +231,14 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                     If checked, YAFC will only suggest production or consumption recipes that have a net production or consumption of that item or fluid.
                     For example, kovarex enrichment will not be suggested when adding recipes that produce U-238 or consume U-235.
                     """, false)) {
-                _ = gui.BuildCheckBox("Use net production/consumption when analyzing recipes", netProduction, out netProduction);
+                _ = gui.BuildCheckBox(LSs.WelcomeUseNetProduction, netProduction, out netProduction);
             }
 
-            string softwareRenderHint = "If checked, the main project screen will not use hardware-accelerated rendering.\n\n" +
-                "Enable this setting if YAFC crashes after loading without an error message, or if you know that your computer's " +
-                "graphics hardware does not support modern APIs (e.g. DirectX 12 on Windows).";
+            string softwareRenderHint = LSs.WelcomeSoftwareRenderHint;
 
             using (gui.EnterRowWithHelpIcon(softwareRenderHint, false)) {
                 bool forceSoftwareRenderer = Preferences.Instance.forceSoftwareRenderer;
-                _ = gui.BuildCheckBox("Force software rendering in project screen", forceSoftwareRenderer, out forceSoftwareRenderer);
+                _ = gui.BuildCheckBox(LSs.WelcomeSoftwareRender, forceSoftwareRenderer, out forceSoftwareRenderer);
 
                 if (forceSoftwareRenderer != Preferences.Instance.forceSoftwareRenderer) {
                     Preferences.Instance.forceSoftwareRenderer = forceSoftwareRenderer;
@@ -250,15 +248,15 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
 
             using (gui.EnterRow()) {
                 if (Preferences.Instance.recentProjects.Length > 1) {
-                    if (gui.BuildButton("Recent projects", SchemeColor.Grey)) {
+                    if (gui.BuildButton(LSs.RecentProjects, SchemeColor.Grey)) {
                         gui.ShowDropDown(BuildRecentProjectsDropdown, 35f);
                     }
                 }
-                if (gui.BuildButton(Icon.Help).WithTooltip(gui, "About YAFC")) {
+                if (gui.BuildButton(Icon.Help).WithTooltip(gui, LSs.AboutYafc)) {
                     _ = new AboutScreen(this);
                 }
 
-                if (gui.BuildButton(Icon.DarkMode).WithTooltip(gui, "Toggle dark mode")) {
+                if (gui.BuildButton(Icon.DarkMode).WithTooltip(gui, LSs.ToggleDarkMode)) {
                     Preferences.Instance.darkMode = !Preferences.Instance.darkMode;
                     RenderingUtils.SetColorScheme(Preferences.Instance.darkMode);
                     Preferences.Instance.Save();
@@ -272,19 +270,15 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
 
     private void ProjectErrorMoreInfo(ImGui gui) {
 
-        gui.BuildWrappedText("Check that these mods load in Factorio.");
-        gui.BuildWrappedText("YAFC only supports loading mods that were loaded in Factorio before. If you add or remove mods or change startup settings, " +
-            "you need to load those in Factorio and then close the game because Factorio saves mod-list.json only when exiting.");
-        gui.BuildWrappedText("Check that Factorio loads mods from the same folder as YAFC.");
-        gui.BuildWrappedText("If that doesn't help, try removing the mods that have several versions, or are disabled, or don't have the required dependencies.");
+        gui.BuildWrappedText(LSs.LoadErrorAdvice);
 
         // The whole line is underlined if the allocator is not set to LeftAlign
         gui.allocator = RectAllocator.LeftAlign;
-        if (gui.BuildLink("If all else fails, then create an issue on GitHub")) {
+        if (gui.BuildLink(LSs.LoadErrorCreateIssue)) {
             Ui.VisitLink(AboutScreen.Github);
         }
 
-        gui.BuildWrappedText("Please attach a new-game save file to sync mods, versions, and settings.");
+        gui.BuildWrappedText(LSs.LoadErrorCreateIssueWithInformation);
     }
 
     private void DoLanguageList(ImGui gui, SortedList<string, LanguageInfo> list, bool listFontSupported) {
@@ -307,9 +301,9 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                     }
                     else {
                         gui.ShowDropDown(async gui => {
-                            gui.BuildText("Yafc will download a suitable font before it restarts.\nThis may take a minute or two.", TextBlockDisplayStyle.WrappedText);
+                            gui.BuildText(LSs.WelcomeAlertDownloadFont, TextBlockDisplayStyle.WrappedText);
                             gui.allocator = RectAllocator.Center;
-                            if (gui.BuildButton("Confirm")) {
+                            if (gui.BuildButton(LSs.Confirm)) {
                                 gui.CloseDropdown();
                                 downloading = true;
                                 // Jump through several hoops to download an appropriate Noto Sans font.
@@ -364,37 +358,36 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
     private void LanguageSelection(ImGui gui) {
         gui.spacing = 0f;
         gui.allocator = RectAllocator.LeftAlign;
-        gui.BuildText("Mods may not support your language, using English as a fallback.", TextBlockDisplayStyle.WrappedText);
+        gui.BuildText(LSs.WelcomeAlertEnglishFallback, TextBlockDisplayStyle.WrappedText);
         gui.AllocateSpacing(0.5f);
 
         DoLanguageList(gui, languageMapping, true);
         if (!Program.hasOverriddenFont) {
             gui.AllocateSpacing(0.5f);
 
-            string unsupportedLanguageMessage = "These languages are not supported by the current font. Click the language to restart with a suitable font, or click 'Select font' to select a custom font.";
-            gui.BuildText(unsupportedLanguageMessage, TextBlockDisplayStyle.WrappedText);
+            gui.BuildText((string)LSs.WelcomeAlertNeedADifferentFont, TextBlockDisplayStyle.WrappedText);
             gui.AllocateSpacing(0.5f);
         }
         DoLanguageList(gui, languageMapping, false);
 
         gui.AllocateSpacing(0.5f);
-        if (gui.BuildButton("Select font")) {
+        if (gui.BuildButton(LSs.WelcomeSelectFont)) {
             SelectFont();
         }
 
         if (Preferences.Instance.overrideFont != null) {
             gui.BuildText(Preferences.Instance.overrideFont, TextBlockDisplayStyle.WrappedText);
-            if (gui.BuildLink("Reset font to default")) {
+            if (gui.BuildLink(LSs.WelcomeResetFont)) {
                 Preferences.Instance.overrideFont = null;
                 languageScroll.RebuildContents();
                 Preferences.Instance.Save();
             }
         }
-        gui.BuildText("Restart Yafc to switch to the selected font.", TextBlockDisplayStyle.WrappedText);
+        gui.BuildText(LSs.WelcomeResetFontRestart, TextBlockDisplayStyle.WrappedText);
     }
 
     private async void SelectFont() {
-        string? result = await new FilesystemScreen("Override font", "Override font that YAFC uses", "Ok", null, FilesystemScreen.Mode.SelectFile, null, this, null, null);
+        string? result = await new FilesystemScreen(LSs.OverrideFont, LSs.OverrideFontLong, LSs.Ok, null, FilesystemScreen.Mode.SelectFile, null, this, null, null);
         if (result == null) {
             return;
         }
@@ -419,19 +412,19 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
         bool projectExists = File.Exists(path);
 
         if (projectExists) {
-            createText = "Load '" + Path.GetFileNameWithoutExtension(path) + "'";
+            createText = LSs.LoadProjectName.L(Path.GetFileNameWithoutExtension(path));
         }
         else if (path != "") {
             string? directory = Path.GetDirectoryName(path);
             if (!Directory.Exists(directory)) {
-                createText = "Project directory does not exist";
+                createText = LSs.WelcomeAlertMissingDirectory;
                 canCreate = false;
                 return;
             }
-            createText = "Create '" + Path.GetFileNameWithoutExtension(path) + "'";
+            createText = LSs.WelcomeCreateProjectName.L(Path.GetFileNameWithoutExtension(path));
         }
         else {
-            createText = "Create new project";
+            createText = LSs.WelcomeCreateUnnamedProject;
         }
 
         canCreate = factorioValid && modsValid;
@@ -441,7 +434,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
         gui.BuildText(description, TextBlockDisplayStyle.WrappedText);
         gui.spacing = 0.5f;
         using (gui.EnterGroup(default, RectAllocator.RightRow)) {
-            if (gui.BuildButton("...")) {
+            if (gui.BuildButton(LSs.WelcomeBrowseButton)) {
                 ShowFileSelect(description, path, editType);
             }
 
@@ -558,19 +551,19 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
         FilesystemScreen.Mode fsMode;
 
         if (type == EditType.Workspace) {
-            buttonText = "Select";
+            buttonText = LSs.Select;
             location = Path.GetDirectoryName(path);
             fsMode = FilesystemScreen.Mode.SelectOrCreateFile;
             fileExtension = "yafc";
         }
         else {
-            buttonText = "Select folder";
+            buttonText = LSs.SelectFolder;
             location = path;
             fsMode = FilesystemScreen.Mode.SelectFolder;
             fileExtension = null;
         }
 
-        string? result = await new FilesystemScreen("Select folder", description, buttonText, location, fsMode, "", this, GetFolderFilter(type), fileExtension);
+        string? result = await new FilesystemScreen(LSs.SelectFolder, description, buttonText, location, fsMode, "", this, GetFolderFilter(type), fileExtension);
 
         if (result != null) {
             if (type == EditType.Factorio) {

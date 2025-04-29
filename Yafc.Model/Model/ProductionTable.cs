@@ -7,6 +7,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using Google.OrTools.LinearSolver;
 using Serilog;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -607,14 +608,14 @@ match:
             }
             else {
                 if (result == Solver.ResultStatus.INFEASIBLE) {
-                    return "YAFC failed to solve the model and to find deadlock loops. As a result, the model was not updated.";
+                    return LSs.ProductionTableNoSolutionAndNoDeadlocks;
                 }
 
                 if (result == Solver.ResultStatus.ABNORMAL) {
-                    return "This model has numerical errors (probably too small or too large numbers) and cannot be solved";
+                    return LSs.ProductionTableNumericalErrors;
                 }
 
-                return "Unaccounted error: MODEL_" + result;
+                return LSs.ProductionTableUnexpectedError.L(result);
             }
         }
 
@@ -643,7 +644,7 @@ match:
 
         CalculateFlow(null);
 
-        return builtCountExceeded ? "This model requires more buildings than are currently built" : null;
+        return builtCountExceeded ? LSs.ProductionTableRequiresMoreBuildings : null;
     }
 
     /// <summary>

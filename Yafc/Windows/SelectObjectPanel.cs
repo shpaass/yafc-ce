@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Numerics;
 using SDL2;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -111,7 +112,7 @@ public abstract class SelectObjectPanel<T> : PseudoScreenWithResult<T> {
             gui.AllocateSpacing();
         }
 
-        if (gui.BuildSearchBox(list.filter, out var newFilter, "Start typing for search", setKeyboardFocus: SetKeyboardFocus.OnFirstPanelDraw)) {
+        if (gui.BuildSearchBox(list.filter, out var newFilter, LSs.TypeForSearchHint, setKeyboardFocus: SetKeyboardFocus.OnFirstPanelDraw)) {
             list.filter = newFilter;
         }
 

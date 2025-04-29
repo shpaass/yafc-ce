@@ -9,6 +9,7 @@
     <ItemGroup>
       <InternalsVisibleTo Include="Yafc.Model.Tests" />
       <PackageReference Include="Google.OrTools" Version="9.11.4210" />
+      <ProjectReference Include="..\Yafc.I18n\Yafc.I18n.csproj" />
       <ProjectReference Include="..\Yafc.UI\Yafc.UI.csproj" />
     </ItemGroup>
 

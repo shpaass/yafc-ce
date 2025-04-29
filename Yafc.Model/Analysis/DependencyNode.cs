@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Numerics;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -224,7 +225,7 @@ public abstract class DependencyNode {
                 foreach (var dependency in dependencies) {
                     if (!isFirst) {
                         using (gui.EnterGroup(new(1, .25f))) {
-                            gui.BuildText("-- OR --", Font.productionTableHeader);
+                            gui.BuildText(LSs.DependencyOrBar, Font.productionTableHeader);
                         }
                         gui.DrawRectangle(gui.lastRect - offset, SchemeColor.GreyAlt);
                     }

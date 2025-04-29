@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -17,7 +18,7 @@ namespace Yafc;
 /// GUI system.
 /// </para>
 /// </summary>
-public class FlatHierarchy<TRow, TGroup>(DataGrid<TRow> grid, Action<ImGui, TGroup>? drawTableHeader, string emptyGroupMessage = "This is an empty group", bool buildExpandedGroupRows = true)
+public class FlatHierarchy<TRow, TGroup>(DataGrid<TRow> grid, Action<ImGui, TGroup>? drawTableHeader, LocalizableString0 emptyGroupMessage, bool buildExpandedGroupRows = true)
     where TRow : ModelObject<TGroup>, IGroupedElement<TGroup> where TGroup : ModelObject<ModelObject>, IElementGroup<TRow> {
 
     // These two arrays contain:

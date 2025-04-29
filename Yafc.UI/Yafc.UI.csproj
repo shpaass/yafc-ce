@@ -14,4 +14,8 @@
       <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Yafc.I18n\Yafc.I18n.csproj" />
+    </ItemGroup>
+
 </Project>

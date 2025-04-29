@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using SDL2;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -191,7 +192,7 @@ public static class ImmediateWidgets {
                 gui.BuildText(extraText, TextBlockDisplayStyle.Default(color));
             }
             _ = gui.RemainingRow();
-            gui.BuildText(obj == null ? "None" : obj.target.locName, TextBlockDisplayStyle.WrappedText with { Color = color });
+            gui.BuildText(obj == null ? LSs.FactorioObjectNone : obj.target.locName, TextBlockDisplayStyle.WrappedText with { Color = color });
         }
 
         return gui.BuildFactorioObjectButtonBackground(gui.lastRect, obj, tooltipOptions: tooltipOptions);
@@ -236,7 +237,7 @@ public static class ImmediateWidgets {
                 }
             }
 
-            if (list.Count > options.MaxCount && gui.BuildButton("See full list") && gui.CloseDropdown()) {
+            if (list.Count > options.MaxCount && gui.BuildButton(LSs.SeeFullListButton) && gui.CloseDropdown()) {
                 if (options.Multiple) {
                     SelectMultiObjectPanel.Select(list, options.Header, selectItem, options.Ordering, options.Checkmark, options.YellowMark);
                 }
@@ -253,11 +254,11 @@ public static class ImmediateWidgets {
                 selectItem(selected);
                 _ = gui.CloseDropdown();
             }
-            if (gui.BuildRedButton("Clear") && gui.CloseDropdown()) {
+            if (gui.BuildRedButton(LSs.ClearButton) && gui.CloseDropdown()) {
                 selectItem(null);
             }
 
-            if (list.Count > options.MaxCount && gui.BuildButton("See full list") && gui.CloseDropdown()) {
+            if (list.Count > options.MaxCount && gui.BuildButton(LSs.SeeFullListButton) && gui.CloseDropdown()) {
                 SelectSingleObjectPanel.SelectWithNone(list, options.Header, selectItem, options.Ordering);
             }
         }
@@ -293,14 +294,13 @@ public static class ImmediateWidgets {
             case UnitOfMeasure.PerSecond:
             case UnitOfMeasure.FluidPerSecond:
             case UnitOfMeasure.ItemPerSecond:
-                string perSecond = DataUtils.FormatAmountRaw(amount.Value, 1f, "/s", DataUtils.PreciseFormat);
-                string perMinute = DataUtils.FormatAmountRaw(amount.Value, 60f, "/m", DataUtils.PreciseFormat);
-                string perHour = DataUtils.FormatAmountRaw(amount.Value, 3600f, "/h", DataUtils.PreciseFormat);
+                string perSecond = DataUtils.FormatAmountRaw(amount.Value, 1f, LSs.PerSecondSuffix, DataUtils.PreciseFormat);
+                string perMinute = DataUtils.FormatAmountRaw(amount.Value, 60f, LSs.PerMinuteSuffix, DataUtils.PreciseFormat);
+                string perHour = DataUtils.FormatAmountRaw(amount.Value, 3600f, LSs.PerHourSuffix, DataUtils.PreciseFormat);
                 text = perSecond + "\n" + perMinute + "\n" + perHour;
 
                 if (goods.target is Item item) {
-                    text += "\n";
-                    text += DataUtils.FormatAmount(MathF.Abs(item.stackSize / amount.Value), UnitOfMeasure.Second) + " per stack";
+                    text += "\n" + LSs.SecondsPerStack.L(DataUtils.FormatAmount(MathF.Abs(item.stackSize / amount.Value), UnitOfMeasure.Second));
                 }
 
                 break;
@@ -386,19 +386,21 @@ public static class ImmediateWidgets {
     /// </summary>
     /// <param name="quality">The <see cref="Quality"/> to initially display selected, if any.</param>
     /// <param name="newQuality">The <see cref="Quality"/> selected by the user.</param>
-    /// <param name="header">The header text to draw, defaults to "Select quality"</param>
+    /// <param name="header">The localizable string for the text to draw, defaults to <see cref="LSs.SelectQuality"/></param>
     /// <returns><see langword="true"/> if the user selected a quality. <see langword="false"/> if they did not, or if the loaded mods do not provide multiple qualities.</returns>
-    public static bool BuildQualityList(this ImGui gui, Quality? quality, [NotNullWhen(true), NotNullIfNotNull(nameof(quality))] out Quality? newQuality, string header = "Select quality", bool drawCentered = false) {
+    public static bool BuildQualityList(this ImGui gui, Quality? quality, [NotNullWhen(true), NotNullIfNotNull(nameof(quality))] out Quality? newQuality, LocalizableString0? headerKey = null, bool drawCentered = false) {
         newQuality = quality;
         if (Quality.Normal.nextQuality == null) {
             return false; // Nothing to do; normal quality is the only one defined.
         }
 
+        headerKey ??= LSs.SelectQuality;
+
         if (drawCentered) {
-            gui.BuildText(header, TextBlockDisplayStyle.Centered with { Font = Font.productionTableHeader });
+            gui.BuildText(headerKey, TextBlockDisplayStyle.Centered with { Font = Font.productionTableHeader });
         }
         else {
-            gui.BuildText(header, Font.productionTableHeader);
+            gui.BuildText(headerKey, Font.productionTableHeader);
         }
 
         using ImGui.OverlappingAllocations controller = gui.StartOverlappingAllocations(false);

@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -188,16 +189,13 @@ public class Milestones : Analysis {
         bool hasAutomatableRocketLaunch = result[Database.objectsByTypeName["Special.launch"]] != 0;
         List<FactorioObject> milestonesNotReachable = [.. milestones.Except(sortedMilestones)];
         if (accessibleObjects < Database.objects.count / 2) {
-            warnings.Error("More than 50% of all in-game objects appear to be inaccessible in this project with your current mod list. This can have a variety of reasons like objects " +
-                "being accessible via scripts," + MaybeBug + MilestoneAnalysisIsImportant + UseDependencyExplorer, ErrorSeverity.AnalysisWarning);
+            warnings.Error(LSs.MilestoneAnalysisMostInaccessible, ErrorSeverity.AnalysisWarning);
         }
         else if (!hasAutomatableRocketLaunch) {
-            warnings.Error("Rocket launch appear to be inaccessible. This means that rocket may not be launched in this mod pack, or it requires mod script to spawn or unlock some items," +
-                MaybeBug + MilestoneAnalysisIsImportant + UseDependencyExplorer, ErrorSeverity.AnalysisWarning);
+            warnings.Error(LSs.MilestoneAnalysisNoRocketLaunch, ErrorSeverity.AnalysisWarning);
         }
         else if (milestonesNotReachable.Count > 0) {
-            warnings.Error("There are some milestones that are not accessible: " + string.Join(", ", milestonesNotReachable.Select(x => x.locName)) +
-                ". You may remove these from milestone list," + MaybeBug + MilestoneAnalysisIsImportant + UseDependencyExplorer, ErrorSeverity.AnalysisWarning);
+            warnings.Error(LSs.MilestoneAnalysisInaccessibleMilestones.L(string.Join(LSs.ListSeparator, milestonesNotReachable.Select(x => x.locName))), ErrorSeverity.AnalysisWarning);
         }
 
         logger.Information("Milestones calculation finished in {ElapsedTime}ms.", time.ElapsedMilliseconds);
@@ -259,10 +257,4 @@ public class Milestones : Analysis {
 
         return accessibleWithoutPruning;
     }
-
-    private const string MaybeBug = " or it might be due to a bug inside a mod or YAFC.";
-    private const string MilestoneAnalysisIsImportant = "\nA lot of YAFC's systems rely on objects being accessible, so some features may not work as intended.";
-    private const string UseDependencyExplorer = "\n\nFor this reason YAFC has a Dependency Explorer that allows you to manually enable some of the core recipes. " +
-        "YAFC will iteratively try to unlock all the dependencies after each recipe you manually enabled. " +
-        "For most modpacks it's enough to unlock a few early recipes like any special recipes for plates that everything in the mod is based on.";
 }

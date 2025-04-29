@@ -1,4 +1,5 @@
-﻿using Yafc.Model;
+﻿using Yafc.I18n;
+using Yafc.Model;
 using Yafc.UI;
 
 namespace Yafc;
@@ -23,13 +24,13 @@ public class ErrorListPanel : PseudoScreen {
     public static void Show(ErrorCollector collector) => _ = MainScreen.Instance.ShowPseudoScreen(new ErrorListPanel(collector));
     public override void Build(ImGui gui) {
         if (collector.severity == ErrorSeverity.Critical) {
-            BuildHeader(gui, "Loading failed");
+            BuildHeader(gui, LSs.ErrorLoadingFailed);
         }
         else if (collector.severity >= ErrorSeverity.MinorDataLoss) {
-            BuildHeader(gui, "Loading completed with errors");
+            BuildHeader(gui, LSs.ErrorButLoadingSucceeded);
         }
         else {
-            BuildHeader(gui, "Analysis warnings");
+            BuildHeader(gui, LSs.AnalysisWarnings);
         }
 
         verticalList.Build(gui);

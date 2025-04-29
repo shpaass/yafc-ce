@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -39,7 +40,7 @@ public class ObjectTooltip : Tooltip {
         using (gui.EnterGroup(new Padding(1f, 0.5f), RectAllocator.LeftAlign, spacing: 0f)) {
             string name = target.text;
             if (tooltipOptions.ShowTypeInHeader && target is not Goods) {
-                name = name + " (" + target.target.type + ")";
+                name = LSs.NameWithType.L(name, target.target.type);
             }
 
             gui.BuildText(name, new TextBlockDisplayStyle(Font.header, true));
@@ -101,7 +102,7 @@ doneDrawing:;
         const int itemsPerRow = 9;
         int count = objects.Count;
         if (count == 0) {
-            gui.BuildText("Nothing", TextBlockDisplayStyle.HintText);
+            gui.BuildText(LSs.TooltipNothingToList, TextBlockDisplayStyle.HintText);
             return;
         }
 
@@ -137,7 +138,7 @@ doneDrawing:;
         }
 
         if (index < count) {
-            gui.BuildText("... and " + (count - index) + " more");
+            gui.BuildText(LSs.TooltipAndMoreInList.L((count - index)));
         }
     }
 
@@ -184,11 +185,11 @@ doneDrawing:;
             }
 
             if (!target.IsAccessible()) {
-                string message = "This " + target.type + " is inaccessible, or it is only accessible through mod or map script. Middle click to open dependency analyzer to investigate.";
+                string message = LSs.TooltipNotAccessible.L(target.type);
                 gui.BuildText(message, TextBlockDisplayStyle.WrappedText);
             }
             else if (!target.IsAutomatable()) {
-                string message = "This " + target.type + " cannot be fully automated. This means that it requires either manual crafting, or manual labor such as cutting trees";
+                string message = LSs.TooltipNotAutomatable.L(target.type);
                 gui.BuildText(message, TextBlockDisplayStyle.WrappedText);
             }
             else {
@@ -196,29 +197,29 @@ doneDrawing:;
             }
 
             if (target.IsAccessibleWithCurrentMilestones() && !target.IsAutomatableWithCurrentMilestones()) {
-                gui.BuildText("This " + target.type + " cannot be fully automated at current milestones.", TextBlockDisplayStyle.WrappedText);
+                gui.BuildText(LSs.TooltipNotAutomatableYet.L(target.type), TextBlockDisplayStyle.WrappedText);
             }
 
             if (target.specialType != FactorioObjectSpecialType.Normal) {
-                gui.BuildText("Special: " + target.specialType);
+                gui.BuildText(LSs.TooltipHasUntranslatedSpecialType.L(target.specialType));
             }
         }
     }
 
-    private static readonly Dictionary<EntityEnergyType, string> EnergyDescriptions = new Dictionary<EntityEnergyType, string>
+    private static readonly Dictionary<EntityEnergyType, LocalizableString1> EnergyDescriptions = new()
     {
-        {EntityEnergyType.Electric, "Power usage: "},
-        {EntityEnergyType.Heat, "Heat energy usage: "},
-        {EntityEnergyType.Labor, "Labor energy usage: "},
-        {EntityEnergyType.Void, "Free energy usage: "},
-        {EntityEnergyType.FluidFuel, "Fluid fuel energy usage: "},
-        {EntityEnergyType.FluidHeat, "Fluid heat energy usage: "},
-        {EntityEnergyType.SolidFuel, "Solid fuel energy usage: "},
+        {EntityEnergyType.Electric, LSs.EnergyElectricity},
+        {EntityEnergyType.Heat, LSs.EnergyHeat},
+        {EntityEnergyType.Labor, LSs.EnergyLabor},
+        {EntityEnergyType.Void, LSs.EnergyFree},
+        {EntityEnergyType.FluidFuel, LSs.EnergyFluidFuel},
+        {EntityEnergyType.FluidHeat, LSs.EnergyFluidHeat},
+        {EntityEnergyType.SolidFuel, LSs.EnergySolidFuel},
     };
 
     private void BuildEntity(Entity entity, Quality quality, ImGui gui) {
         if (entity.loot.Length > 0) {
-            BuildSubHeader(gui, "Loot");
+            BuildSubHeader(gui, LSs.TooltipHeaderLoot);
             using (gui.EnterGroup(contentPadding)) {
                 foreach (var product in entity.loot) {
                     BuildItem(gui, product);
@@ -228,42 +229,43 @@ doneDrawing:;
 
         if (entity.mapGenerated) {
             using (gui.EnterGroup(contentPadding)) {
-                gui.BuildText("Generates on map (estimated density: " + (entity.mapGenDensity <= 0f ? "unknown" : DataUtils.FormatAmount(entity.mapGenDensity, UnitOfMeasure.None)) + ")",
+                gui.BuildText(entity.mapGenDensity <= 0 ? LSs.MapGenerationDensityUnknown
+                    : LSs.MapGenerationDensity.L(DataUtils.FormatAmount(entity.mapGenDensity, UnitOfMeasure.None)),
                     TextBlockDisplayStyle.WrappedText);
             }
         }
 
         if (entity is EntityCrafter crafter) {
             if (crafter.recipes.Length > 0) {
-                BuildSubHeader(gui, "Crafts");
+                BuildSubHeader(gui, LSs.EntityCrafts);
                 using (gui.EnterGroup(contentPadding)) {
                     BuildIconRow(gui, crafter.recipes, 2);
                     if (crafter.CraftingSpeed(quality) != 1f) {
-                        gui.BuildText("Crafting speed: " + DataUtils.FormatAmount(crafter.CraftingSpeed(quality), UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.EntityCraftingSpeed.L(DataUtils.FormatAmount(crafter.CraftingSpeed(quality), UnitOfMeasure.Percent)));
                     }
 
                     Effect baseEffect = crafter.effectReceiver.baseEffect;
                     if (baseEffect.speed != 0f) {
-                        gui.BuildText("Crafting speed: " + DataUtils.FormatAmount(baseEffect.speed, UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.EntityCraftingSpeed.L(DataUtils.FormatAmount(baseEffect.speed, UnitOfMeasure.Percent)));
                     }
                     if (baseEffect.productivity != 0f) {
-                        gui.BuildText("Crafting productivity: " + DataUtils.FormatAmount(baseEffect.productivity, UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.EntityCraftingProductivity.L(DataUtils.FormatAmount(baseEffect.productivity, UnitOfMeasure.Percent)));
                     }
                     if (baseEffect.consumption != 0f) {
-                        gui.BuildText("Energy consumption: " + DataUtils.FormatAmount(baseEffect.consumption, UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.EntityEnergyConsumption.L(DataUtils.FormatAmount(baseEffect.consumption, UnitOfMeasure.Percent)));
                     }
 
                     if (crafter.allowedEffects != AllowedEffects.None) {
-                        gui.BuildText("Module slots: " + crafter.moduleSlots);
+                        gui.BuildText(LSs.EntityModuleSlots.L(crafter.moduleSlots));
                         if (crafter.allowedEffects != AllowedEffects.All) {
-                            gui.BuildText("Only allowed effects: " + crafter.allowedEffects, TextBlockDisplayStyle.WrappedText);
+                            gui.BuildText(LSs.AllowedModuleEffectsUntranslatedList.L(crafter.allowedEffects), TextBlockDisplayStyle.WrappedText);
                         }
                     }
                 }
             }
 
             if (crafter.inputs != null) {
-                BuildSubHeader(gui, "Allowed inputs:");
+                BuildSubHeader(gui, LSs.LabAllowedInputs);
                 using (gui.EnterGroup(contentPadding)) {
                     BuildIconRow(gui, crafter.inputs, 2);
                 }
@@ -272,23 +274,23 @@ doneDrawing:;
 
         float spoilTime = entity.GetSpoilTime(quality); // The spoiling rate setting does not apply to entities.
         if (spoilTime != 0f) {
-            BuildSubHeader(gui, "Perishable");
+            BuildSubHeader(gui, LSs.Perishable);
             using (gui.EnterGroup(contentPadding)) {
                 if (entity.spoilResult != null) {
-                    gui.BuildText($"After {DataUtils.FormatTime(spoilTime)} of no production, spoils into");
+                    gui.BuildText(LSs.TooltipEntitySpoilsAfterNoProduction.L(DataUtils.FormatTime(spoilTime)));
                     gui.BuildFactorioObjectButtonWithText(entity.spoilResult.With(quality), iconDisplayStyle: IconDisplayStyle.Default with { AlwaysAccessible = true });
                 }
                 else {
-                    gui.BuildText($"Expires after {DataUtils.FormatTime(spoilTime)} of no production");
+                    gui.BuildText(LSs.TooltipEntityExpiresAfterNoProduction.L(DataUtils.FormatTime(spoilTime)));
                 }
                 tooltipOptions.ExtraSpoilInformation?.Invoke(gui);
             }
         }
 
         if (entity.energy != null) {
-            string energyUsage = EnergyDescriptions[entity.energy.type] + DataUtils.FormatAmount(entity.Power(quality), UnitOfMeasure.Megawatt);
+            string energyUsage = EnergyDescriptions[entity.energy.type].L(DataUtils.FormatAmount(entity.Power(quality), UnitOfMeasure.Megawatt));
             if (entity.energy.drain > 0f) {
-                energyUsage += " + " + DataUtils.FormatAmount(entity.energy.drain, UnitOfMeasure.Megawatt);
+                energyUsage = LSs.TooltipAddDrainEnergy.L(energyUsage, DataUtils.FormatAmount(entity.energy.drain, UnitOfMeasure.Megawatt));
             }
 
             BuildSubHeader(gui, energyUsage);
@@ -302,15 +304,15 @@ doneDrawing:;
                         TextBlockDisplayStyle emissionStyle = TextBlockDisplayStyle.Default(SchemeColor.BackgroundText);
                         if (amount < 0f) {
                             emissionStyle = TextBlockDisplayStyle.Default(SchemeColor.Green);
-                            gui.BuildText("This building absorbs " + name, emissionStyle);
-                            gui.BuildText($"Absorption: {DataUtils.FormatAmount(-amount, UnitOfMeasure.None)} {name} per minute", emissionStyle);
+                            gui.BuildText(LSs.EntityAbsorbsPollution.L(name), emissionStyle);
+                            gui.BuildText(LSs.TooltipEntityAbsorbsPollution.L(DataUtils.FormatAmount(-amount, UnitOfMeasure.None), name), emissionStyle);
                         }
                         else {
                             if (amount >= 20f) {
                                 emissionStyle = TextBlockDisplayStyle.Default(SchemeColor.Error);
-                                gui.BuildText("This building contributes to global warning!", emissionStyle);
+                                gui.BuildText(LSs.EntityHasHighPollution, emissionStyle);
                             }
-                            gui.BuildText($"Emission: {DataUtils.FormatAmount(amount, UnitOfMeasure.None)} {name} per minute", emissionStyle);
+                            gui.BuildText(LSs.TooltipEntityEmitsPollution.L(DataUtils.FormatAmount(amount, UnitOfMeasure.None), name), emissionStyle);
                         }
                     }
                 }
@@ -321,7 +323,7 @@ doneDrawing:;
             using (gui.EnterGroup(contentPadding))
             using (gui.EnterRow(0)) {
                 gui.AllocateRect(0, 1.5f);
-                gui.BuildText($"Requires {DataUtils.FormatAmount(entity.heatingPower, UnitOfMeasure.Megawatt)} heat on cold planets.");
+                gui.BuildText(LSs.TooltipEntityRequiresHeat.L(DataUtils.FormatAmount(entity.heatingPower, UnitOfMeasure.Megawatt)));
             }
         }
 
@@ -329,29 +331,26 @@ doneDrawing:;
 
         switch (entity) {
             case EntityBelt belt:
-                miscText = "Belt throughput (Items): " + DataUtils.FormatAmount(belt.beltItemsPerSecond, UnitOfMeasure.PerSecond);
+                miscText = LSs.BeltThroughput.L(DataUtils.FormatAmount(belt.beltItemsPerSecond, UnitOfMeasure.PerSecond));
                 break;
             case EntityInserter inserter:
-                miscText = "Swing time: " + DataUtils.FormatAmount(inserter.inserterSwingTime, UnitOfMeasure.Second);
+                miscText = LSs.InserterSwingTime.L(DataUtils.FormatAmount(inserter.inserterSwingTime, UnitOfMeasure.Second));
                 break;
             case EntityBeacon beacon:
-                miscText = "Beacon efficiency: " + DataUtils.FormatAmount(beacon.BeaconEfficiency(quality), UnitOfMeasure.Percent);
+                miscText = LSs.BeaconEfficiency.L(DataUtils.FormatAmount(beacon.BeaconEfficiency(quality), UnitOfMeasure.Percent));
                 break;
             case EntityAccumulator accumulator:
-                miscText = "Accumulator charge: " + DataUtils.FormatAmount(accumulator.AccumulatorCapacity(quality), UnitOfMeasure.Megajoule);
+                miscText = LSs.AccumulatorCapacity.L(DataUtils.FormatAmount(accumulator.AccumulatorCapacity(quality), UnitOfMeasure.Megajoule));
                 break;
             case EntityAttractor attractor:
                 if (attractor.baseCraftingSpeed > 0f) {
-                    miscText = "Power production (average usable): " + DataUtils.FormatAmount(attractor.CraftingSpeed(quality), UnitOfMeasure.Megawatt);
-                    miscText += $"\n    Build in a {attractor.ConstructionGrid(quality)}-tile square grid";
-                    miscText += "\nProtection range: " + DataUtils.FormatAmount(attractor.Range(quality), UnitOfMeasure.None);
-                    miscText += "\nCollection efficiency: " + DataUtils.FormatAmount(attractor.Efficiency(quality), UnitOfMeasure.Percent);
+                    miscText = LSs.LightningAttractorExtraInfo.L(DataUtils.FormatAmount(attractor.CraftingSpeed(quality), UnitOfMeasure.Megawatt), attractor.ConstructionGrid(quality), DataUtils.FormatAmount(attractor.Range(quality), UnitOfMeasure.None), DataUtils.FormatAmount(attractor.Efficiency(quality), UnitOfMeasure.Percent));
                 }
 
                 break;
             case EntityCrafter solarPanel:
                 if (solarPanel.baseCraftingSpeed > 0f && entity.factorioType == "solar-panel") {
-                    miscText = "Power production (average): " + DataUtils.FormatAmount(solarPanel.CraftingSpeed(quality), UnitOfMeasure.Megawatt);
+                    miscText = LSs.SolarPanelAverageProduction.L(DataUtils.FormatAmount(solarPanel.CraftingSpeed(quality), UnitOfMeasure.Megawatt));
                 }
                 break;
         }
@@ -366,12 +365,12 @@ doneDrawing:;
     private void BuildGoods(Goods goods, Quality quality, ImGui gui) {
         if (goods.showInExplorers) {
             using (gui.EnterGroup(contentPadding)) {
-                gui.BuildText("Middle mouse button to open Never Enough Items Explorer for this " + goods.type, TextBlockDisplayStyle.WrappedText);
+                gui.BuildText(LSs.OpenNeieMiddleClickHint.L(goods.type), TextBlockDisplayStyle.WrappedText);
             }
         }
 
         if (goods.production.Length > 0) {
-            BuildSubHeader(gui, "Made with");
+            BuildSubHeader(gui, LSs.TooltipHeaderProductionRecipes);
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, goods.production, 2);
                 if (tooltipOptions.HintLocations.HasFlag(HintLocations.OnProducingRecipes)) {
@@ -382,14 +381,14 @@ doneDrawing:;
         }
 
         if (goods.miscSources.Length > 0) {
-            BuildSubHeader(gui, "Sources");
+            BuildSubHeader(gui, LSs.TooltipHeaderMiscellaneousSources);
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, goods.miscSources, 2);
             }
         }
 
         if (goods.usages.Length > 0) {
-            BuildSubHeader(gui, "Needed for");
+            BuildSubHeader(gui, LSs.TooltipHeaderConsumptionRecipes);
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, goods.usages, 4);
                 if (tooltipOptions.HintLocations.HasFlag(HintLocations.OnConsumingRecipes)) {
@@ -400,10 +399,10 @@ doneDrawing:;
         }
 
         if (goods is Item { spoilResult: FactorioObject spoiled } perishable) {
-            BuildSubHeader(gui, "Perishable");
+            BuildSubHeader(gui, LSs.Perishable);
             using (gui.EnterGroup(contentPadding)) {
                 float spoilTime = perishable.GetSpoilTime(quality) / Project.current.settings.spoilingRate;
-                gui.BuildText($"After {DataUtils.FormatTime(spoilTime)}, spoils into");
+                gui.BuildText(LSs.ItemSpoils.L(DataUtils.FormatTime(spoilTime)));
                 gui.BuildFactorioObjectButtonWithText(spoiled, iconDisplayStyle: IconDisplayStyle.Default with { AlwaysAccessible = true });
                 tooltipOptions.ExtraSpoilInformation?.Invoke(gui);
             }
@@ -411,10 +410,10 @@ doneDrawing:;
 
         if (goods.fuelFor.Length > 0) {
             if (goods.fuelValue > 0f) {
-                BuildSubHeader(gui, "Fuel value " + DataUtils.FormatAmount(goods.fuelValue, UnitOfMeasure.Megajoule) + " used for:");
+                BuildSubHeader(gui, LSs.FuelValueCanBeUsed.L(DataUtils.FormatAmount(goods.fuelValue, UnitOfMeasure.Megajoule)));
             }
             else {
-                BuildSubHeader(gui, "Can be used as fuel for:");
+                BuildSubHeader(gui, LSs.FuelValueZeroCanBeUsed);
             }
 
             using (gui.EnterGroup(contentPadding)) {
@@ -430,40 +429,40 @@ doneDrawing:;
             }
 
             if (item.placeResult != null) {
-                BuildSubHeader(gui, "Place result");
+                BuildSubHeader(gui, LSs.TooltipHeaderItemPlacementResult);
                 using (gui.EnterGroup(contentPadding)) {
                     BuildItem(gui, item.placeResult);
                 }
             }
 
             if (item is Module { moduleSpecification: ModuleSpecification moduleSpecification }) {
-                BuildSubHeader(gui, "Module parameters");
+                BuildSubHeader(gui, LSs.TooltipHeaderModuleProperties);
                 using (gui.EnterGroup(contentPadding)) {
                     if (moduleSpecification.baseProductivity != 0f) {
-                        gui.BuildText("Productivity: " + DataUtils.FormatAmount(moduleSpecification.Productivity(quality), UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.ProductivityProperty.L(DataUtils.FormatAmount(moduleSpecification.Productivity(quality), UnitOfMeasure.Percent)));
                     }
 
                     if (moduleSpecification.baseSpeed != 0f) {
-                        gui.BuildText("Speed: " + DataUtils.FormatAmount(moduleSpecification.Speed(quality), UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.SpeedProperty.L(DataUtils.FormatAmount(moduleSpecification.Speed(quality), UnitOfMeasure.Percent)));
                     }
 
                     if (moduleSpecification.baseConsumption != 0f) {
-                        gui.BuildText("Consumption: " + DataUtils.FormatAmount(moduleSpecification.Consumption(quality), UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.ConsumptionProperty.L(DataUtils.FormatAmount(moduleSpecification.Consumption(quality), UnitOfMeasure.Percent)));
                     }
 
                     if (moduleSpecification.basePollution != 0f) {
-                        gui.BuildText("Pollution: " + DataUtils.FormatAmount(moduleSpecification.Pollution(quality), UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.PollutionProperty.L(DataUtils.FormatAmount(moduleSpecification.Pollution(quality), UnitOfMeasure.Percent)));
                     }
 
                     if (moduleSpecification.baseQuality != 0f) {
-                        gui.BuildText("Quality: " + DataUtils.FormatAmount(moduleSpecification.Quality(quality), UnitOfMeasure.Percent));
+                        gui.BuildText(LSs.QualityProperty.L(DataUtils.FormatAmount(moduleSpecification.Quality(quality), UnitOfMeasure.Percent)));
                     }
                 }
             }
 
             using (gui.EnterGroup(contentPadding)) {
-                gui.BuildText("Stack size: " + item.stackSize);
-                gui.BuildText("Rocket capacity: " + DataUtils.FormatAmount(item.rocketCapacity, UnitOfMeasure.None));
+                gui.BuildText(LSs.ItemStackSize.L(item.stackSize));
+                gui.BuildText(LSs.ItemRocketCapacity.L(DataUtils.FormatAmount(item.rocketCapacity, UnitOfMeasure.None)));
             }
         }
     }
@@ -488,43 +487,42 @@ doneDrawing:;
                 float waste = rec.RecipeWaste();
                 if (waste > 0.01f) {
                     int wasteAmount = MathUtils.Round(waste * 100f);
-                    string wasteText = ". (Wasting " + wasteAmount + "% of YAFC cost)";
                     TextBlockDisplayStyle style = TextBlockDisplayStyle.WrappedText with { Color = wasteAmount < 90 ? SchemeColor.BackgroundText : SchemeColor.Error };
                     if (recipe.products.Length == 1) {
-                        gui.BuildText("YAFC analysis: There are better recipes to create " + recipe.products[0].goods.locName + wasteText, style);
+                        gui.BuildText(LSs.AnalysisBetterRecipesToCreate.L(recipe.products[0].goods.locName, wasteAmount), style);
                     }
                     else if (recipe.products.Length > 0) {
-                        gui.BuildText("YAFC analysis: There are better recipes to create each of the products" + wasteText, style);
+                        gui.BuildText(LSs.AnalysisBetterRecipesToCreateAll.L(wasteAmount), style);
                     }
                     else {
-                        gui.BuildText("YAFC analysis: This recipe wastes useful products. Don't do this recipe.", style);
+                        gui.BuildText(LSs.AnalysisWastesUsefulProducts, style);
                     }
                 }
             }
             if (recipe.flags.HasFlags(RecipeFlags.UsesFluidTemperature)) {
-                gui.BuildText("Uses fluid temperature");
+                gui.BuildText(LSs.RecipeUsesFluidTemperature);
             }
 
             if (recipe.flags.HasFlags(RecipeFlags.UsesMiningProductivity)) {
-                gui.BuildText("Uses mining productivity");
+                gui.BuildText(LSs.RecipeUsesMiningProductivity);
             }
 
             if (recipe.flags.HasFlags(RecipeFlags.ScaleProductionWithPower)) {
-                gui.BuildText("Production scaled with power");
+                gui.BuildText(LSs.RecipeProductionScalesWithPower);
             }
         }
 
         if (recipe is Recipe { products.Length: > 0 } && !(recipe.products.Length == 1 && recipe.products[0].IsSimple)) {
-            BuildSubHeader(gui, "Products");
+            BuildSubHeader(gui, LSs.TooltipHeaderRecipeProducts);
             using (gui.EnterGroup(contentPadding)) {
-                string? extraText = recipe is Recipe { preserveProducts: true } ? ", preserved until removed from the machine" : null;
+                string? extraText = recipe is Recipe { preserveProducts: true } ? LSs.ProductSuffixPreserved : null;
                 foreach (var product in recipe.products) {
                     BuildItem(gui, product, extraText);
                 }
             }
         }
 
-        BuildSubHeader(gui, "Made in");
+        BuildSubHeader(gui, LSs.TooltipHeaderRecipeCrafters);
         using (gui.EnterGroup(contentPadding)) {
             BuildIconRow(gui, recipe.crafters, 2);
         }
@@ -532,7 +530,7 @@ doneDrawing:;
         List<Module> allowedModules = [.. Database.allModules.Where(recipe.CanAcceptModule)];
 
         if (allowedModules.Count > 0) {
-            BuildSubHeader(gui, "Allowed modules");
+            BuildSubHeader(gui, LSs.TooltipHeaderAllowedModules);
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, allowedModules, 1);
             }
@@ -556,7 +554,7 @@ doneDrawing:;
         }
 
         if (recipe is Recipe lockedRecipe && !lockedRecipe.enabled) {
-            BuildSubHeader(gui, "Unlocked by");
+            BuildSubHeader(gui, LSs.TooltipHeaderUnlockedByTechnologies);
             using (gui.EnterGroup(contentPadding)) {
                 if (lockedRecipe.technologyUnlock.Length > 2) {
                     BuildIconRow(gui, lockedRecipe.technologyUnlock, 1);
@@ -594,19 +592,19 @@ doneDrawing:;
 
         if (!technology.enabled) {
             using (gui.EnterGroup(contentPadding)) {
-                gui.BuildText("This technology is disabled and cannot be researched.", TextBlockDisplayStyle.WrappedText);
+                gui.BuildText(LSs.TechnologyIsDisabled, TextBlockDisplayStyle.WrappedText);
             }
         }
 
         if (technology.prerequisites.Length > 0) {
-            BuildSubHeader(gui, "Prerequisites");
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyPrerequisites);
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.prerequisites, 1);
             }
         }
 
         if (isResearchTriggerCraft) {
-            BuildSubHeader(gui, "Item crafting required");
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyItemCrafting);
             using (gui.EnterGroup(contentPadding)) {
                 using var grid = gui.EnterInlineGrid(3f);
                 grid.Next();
@@ -614,46 +612,46 @@ doneDrawing:;
             }
         }
         else if (isResearchTriggerCapture) {
-            BuildSubHeader(gui, technology.triggerEntities.Count == 1 ? "Capture this entity" : "Capture any entity");
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyCapture.L(technology.triggerEntities.Count));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.triggerEntities, 2);
             }
         }
         else if (isResearchTriggerMine) {
-            BuildSubHeader(gui, technology.triggerEntities.Count == 1 ? "Mine this entity" : "Mine any entity");
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyMineEntity.L(technology.triggerEntities.Count));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.triggerEntities, 2);
             }
         }
         else if (isResearchTriggerBuild) {
-            BuildSubHeader(gui, technology.triggerEntities.Count == 1 ? "Build this entity" : "Build any entity");
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyBuildEntity.L(technology.triggerEntities.Count));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.triggerEntities, 2);
             }
         }
         else if (isResearchTriggerPlatform) {
             List<Item> items = [.. Database.items.all.Where(i => i.factorioType == "space-platform-starter-pack")];
-            BuildSubHeader(gui, items.Count == 1 ? "Launch this item" : "Launch any item");
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyLaunchItem.L(items.Count));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, items, 2);
             }
         }
         else if (isResearchTriggerLaunch) {
-            BuildSubHeader(gui, "Launch this item");
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyLaunchItem.L(1));
             using (gui.EnterGroup(contentPadding)) {
                 gui.BuildFactorioObjectButtonWithText(technology.triggerItem);
             }
         }
 
         if (technology.unlockRecipes.Count > 0) {
-            BuildSubHeader(gui, "Unlocks recipes");
+            BuildSubHeader(gui, LSs.TooltipHeaderUnlocksRecipes);
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.unlockRecipes, 2);
             }
         }
 
         if (technology.unlockLocations.Count > 0) {
-            BuildSubHeader(gui, "Unlocks locations");
+            BuildSubHeader(gui, LSs.TooltipHeaderUnlocksLocations);
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.unlockLocations, 2);
             }
@@ -661,7 +659,7 @@ doneDrawing:;
 
         var packs = TechnologyScienceAnalysis.Instance.allSciencePacks[technology];
         if (packs.Length > 0) {
-            BuildSubHeader(gui, "Total science required");
+            BuildSubHeader(gui, LSs.TooltipHeaderTotalScienceRequired);
             using (gui.EnterGroup(contentPadding)) {
                 using var grid = gui.EnterInlineGrid(3f);
                 foreach (var pack in packs) {
@@ -675,25 +673,25 @@ doneDrawing:;
     private static void BuildQuality(Quality quality, ImGui gui) {
         using (gui.EnterGroup(contentPadding)) {
             if (quality.UpgradeChance > 0) {
-                gui.BuildText("Upgrade chance: " + DataUtils.FormatAmount(quality.UpgradeChance, UnitOfMeasure.Percent) + " (multiplied by module bonus)");
+                gui.BuildText(LSs.TooltipQualityUpgradeChance.L(DataUtils.FormatAmount(quality.UpgradeChance, UnitOfMeasure.Percent)));
             }
         }
 
-        BuildSubHeader(gui, "Quality bonuses");
+        BuildSubHeader(gui, LSs.TooltipHeaderQualityBonuses);
         using (gui.EnterGroup(contentPadding)) {
             if (quality == Quality.Normal) {
-                gui.BuildText("Normal quality provides no bonuses.", TextBlockDisplayStyle.WrappedText);
+                gui.BuildText(LSs.TooltipNoNormalBonuses, TextBlockDisplayStyle.WrappedText);
                 return;
             }
 
             gui.allocator = RectAllocator.LeftAlign;
             (string left, string right)[] text = [
-                ("Crafting speed:", '+' + DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent)),
-                ("Accumulator capacity:", '+' + DataUtils.FormatAmount(quality.AccumulatorCapacityBonus, UnitOfMeasure.Percent)),
-                ("Module effects:", '+' + DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent) + '*'),
-                ("Beacon transmission efficiency:", '+' + DataUtils.FormatAmount(quality.BeaconTransmissionBonus, UnitOfMeasure.None)),
-                ("Time before spoiling:", '+' + DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent)),
-                ("Lightning attractor range & efficiency:", '+' + DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent)),
+                (LSs.TooltipQualityCraftingSpeed, LSs.QualityBonusValue.L(DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent))),
+                (LSs.TooltipQualityAccumulatorCapacity, LSs.QualityBonusValue.L(DataUtils.FormatAmount(quality.AccumulatorCapacityBonus, UnitOfMeasure.Percent))),
+                (LSs.TooltipQualityModuleEffects, LSs.QualityBonusValueWithFootnote.L(DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent))),
+                (LSs.TooltipQualityBeaconTransmission, LSs.QualityBonusValue.L(DataUtils.FormatAmount(quality.BeaconTransmissionBonus, UnitOfMeasure.None))),
+                (LSs.TooltipQualityTimeBeforeSpoiling, LSs.QualityBonusValue.L(DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent))),
+                (LSs.TooltipQualityLightningAttractor, LSs.QualityBonusValue.L(DataUtils.FormatAmount(quality.StandardBonus, UnitOfMeasure.Percent))),
             ];
 
             float rightWidth = text.Max(t => gui.GetTextDimensions(out _, t.right).X);
@@ -704,7 +702,7 @@ doneDrawing:;
                 Rect rect = new(gui.statePosition.Width - rightWidth, gui.lastRect.Y, rightWidth, gui.lastRect.Height);
                 gui.DrawText(rect, right);
             }
-            gui.BuildText("* Only applied to beneficial module effects.", TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(LSs.TooltipQualityModuleFootnote, TextBlockDisplayStyle.WrappedText);
         }
     }
 

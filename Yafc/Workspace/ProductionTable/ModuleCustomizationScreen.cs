@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -38,22 +39,22 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
     }
 
     public override void Build(ImGui gui) {
-        BuildHeader(gui, "Module customization");
+        BuildHeader(gui, LSs.ModuleCustomization);
         if (template != null) {
             using (gui.EnterRow()) {
                 if (gui.BuildFactorioObjectButton(template.icon, ButtonDisplayStyle.Default) == Click.Left) {
-                    SelectSingleObjectPanel.SelectWithNone(Database.objects.all, "Select icon", x => {
+                    SelectSingleObjectPanel.SelectWithNone(Database.objects.all, LSs.SelectIcon, x => {
                         template.RecordUndo().icon = x;
                         Rebuild();
                     });
                 }
 
-                if (gui.BuildTextInput(template.name, out string newName, "Enter name", delayed: true) && newName != "") {
+                if (gui.BuildTextInput(template.name, out string newName, LSs.ModuleCustomizationNameHint, delayed: true) && newName != "") {
                     template.RecordUndo().name = newName;
                 }
             }
 
-            gui.BuildText("Filter by crafting buildings (Optional):");
+            gui.BuildText(LSs.ModuleCustomizationFilterBuildings);
             using var grid = gui.EnterInlineGrid(2f, 1f);
 
             for (int i = 0; i < template.filterEntities.Count; i++) {
@@ -78,32 +79,32 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
                 }
 
                 SelectSingleObjectPanel.Select(Database.allCrafters.Where(isSuitable),
-                                               "Add module template filter",
+                                               LSs.ModuleCustomizationAddFilterBuilding,
                                                doToSelectedItem);
             }
         }
 
         if (modules == null) {
-            if (gui.BuildButton("Enable custom modules")) {
+            if (gui.BuildButton(LSs.ModuleCustomizationEnable)) {
                 modules = new ModuleTemplateBuilder();
             }
         }
         else {
             ModuleEffects effects = new ModuleEffects();
             if (recipe == null || recipe.entity?.target.moduleSlots > 0) {
-                gui.BuildText("Internal modules:", Font.subheader);
-                gui.BuildText("Leave zero amount to fill the remaining slots");
+                gui.BuildText(LSs.ModuleCustomizationInternalModules, Font.subheader);
+                gui.BuildText(LSs.ModuleCustomizationLeaveZeroHint);
                 DrawRecipeModules(gui, null, ref effects);
             }
             else {
-                gui.BuildText("This building doesn't have module slots, but can be affected by beacons");
+                gui.BuildText(LSs.ModuleCustomizationBeaconsOnly);
             }
 
-            gui.BuildText("Beacon modules:", Font.subheader);
+            gui.BuildText(LSs.ModuleCustomizationBeaconModules, Font.subheader);
 
             if (modules.beacon == null) {
-                gui.BuildText("Use default parameters");
-                if (gui.BuildButton("Override beacons as well")) {
+                gui.BuildText(LSs.ModuleCustomizationUsingDefaultBeacons);
+                if (gui.BuildButton(LSs.ModuleCustomizationOverrideBeacons)) {
                     SelectBeacon(gui);
                 }
 
@@ -118,7 +119,7 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
                     SelectBeacon(gui);
                 }
 
-                string modulesNotBeacons = "Input the amount of modules, not the amount of beacons. Single beacon can hold " + modules.beacon.target.moduleSlots + " modules.";
+                string modulesNotBeacons = LSs.ModuleCustomizationUseNumberOfModulesInBeacons.L(modules.beacon.target.moduleSlots);
                 gui.BuildText(modulesNotBeacons, TextBlockDisplayStyle.WrappedText);
                 DrawRecipeModules(gui, modules.beacon, ref effects);
             }
@@ -142,25 +143,25 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
 
             if (recipe != null) {
                 float craftingSpeed = (recipe.entity?.GetCraftingSpeed() ?? 1f) * effects.speedMod;
-                gui.BuildText("Current effects:", Font.subheader);
-                gui.BuildText("Productivity bonus: " + DataUtils.FormatAmount(effects.productivity, UnitOfMeasure.Percent));
-                gui.BuildText("Speed bonus: " + DataUtils.FormatAmount(effects.speedMod - 1, UnitOfMeasure.Percent) + " (Crafting speed: " +
-                    DataUtils.FormatAmount(craftingSpeed, UnitOfMeasure.None) + ")");
-                gui.BuildText("Quality bonus: " + DataUtils.FormatAmount(effects.qualityMod, UnitOfMeasure.Percent) + " (multiplied by quality upgrade chance)");
+                gui.BuildText(LSs.ModuleCustomizationCurrentEffects, Font.subheader);
+                gui.BuildText(LSs.ModuleCustomizationProductivityBonus.L(DataUtils.FormatAmount(effects.productivity, UnitOfMeasure.Percent)));
+                gui.BuildText(LSs.ModuleCustomizationSpeedBonus.L(DataUtils.FormatAmount(effects.speedMod - 1, UnitOfMeasure.Percent), DataUtils.FormatAmount(craftingSpeed, UnitOfMeasure.None)));
+                gui.BuildText(LSs.ModuleCustomizationQualityBonus.L(DataUtils.FormatAmount(effects.qualityMod, UnitOfMeasure.Percent)));
 
-                string energyUsageLine = "Energy usage: " + DataUtils.FormatAmount(effects.energyUsageMod, UnitOfMeasure.Percent);
+                string energyUsageLine = LSs.ModuleCustomizationEnergyUsage.L(DataUtils.FormatAmount(effects.energyUsageMod, UnitOfMeasure.Percent));
 
                 if (recipe.entity != null) {
                     float power = effects.energyUsageMod * recipe.entity.GetPower() / recipe.entity.target.energy.effectivity;
                     if (!recipe.recipe.target.flags.HasFlagAny(RecipeFlags.UsesFluidTemperature | RecipeFlags.ScaleProductionWithPower) && recipe.entity != null) {
-                        energyUsageLine += " (" + DataUtils.FormatAmount(power, UnitOfMeasure.Megawatt) + " per building)";
+                        energyUsageLine = LSs.ModuleCustomizationEnergyUsagePerBuilding.L(DataUtils.FormatAmount(effects.energyUsageMod, UnitOfMeasure.Percent),
+                            DataUtils.FormatAmount(power, UnitOfMeasure.Megawatt));
                     }
 
                     gui.BuildText(energyUsageLine);
 
                     float pps = craftingSpeed * (1f + MathF.Max(0f, effects.productivity)) / recipe.recipe.target.time;
-                    gui.BuildText("Overall crafting speed (including productivity): " + DataUtils.FormatAmount(pps, UnitOfMeasure.PerSecond));
-                    gui.BuildText("Energy cost per recipe output: " + DataUtils.FormatAmount(power / pps, UnitOfMeasure.Megajoule));
+                    gui.BuildText(LSs.ModuleCustomizationOverallSpeed.L(DataUtils.FormatAmount(pps, UnitOfMeasure.PerSecond)));
+                    gui.BuildText(LSs.ModuleCustomizationEnergyCostPerOutput.L(DataUtils.FormatAmount(power / pps, UnitOfMeasure.Megajoule)));
                 }
                 else {
                     gui.BuildText(energyUsageLine);
@@ -170,18 +171,18 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
 
         gui.AllocateSpacing(3f);
         using (gui.EnterRow(allocator: RectAllocator.RightRow)) {
-            if (template == null && gui.BuildButton("Cancel")) {
+            if (template == null && gui.BuildButton(LSs.Cancel)) {
                 Close();
             }
-            if (template != null && gui.BuildButton("Cancel (partial)")) {
+            if (template != null && gui.BuildButton(LSs.PartialCancel)) {
                 Close();
             }
-            if (gui.BuildButton("Done")) {
+            if (gui.BuildButton(LSs.Done)) {
                 CloseWithResult(modules);
             }
 
             gui.allocator = RectAllocator.LeftRow;
-            if (modules != null && recipe != null && gui.BuildRedButton("Remove module customization")) {
+            if (modules != null && recipe != null && gui.BuildRedButton(LSs.ModuleCustomizationRemove)) {
                 CloseWithResult(null);
             }
         }
@@ -192,13 +193,13 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
             gui.BuildObjectQualitySelectDropDown(Database.allBeacons, sel => {
                 modules.beacon = sel;
                 contents.Rebuild();
-            }, new("Select beacon"), Quality.Normal);
+            }, new(LSs.SelectBeacon), Quality.Normal);
         }
         else {
             gui.BuildObjectQualitySelectDropDownWithNone(Database.allBeacons, sel => {
                 modules.beacon = sel;
                 contents.Rebuild();
-            }, new("Select beacon"), modules.beacon.quality, quality => {
+            }, new(LSs.SelectBeacon), modules.beacon.quality, quality => {
                 modules.beacon = modules.beacon.With(quality);
                 contents.Rebuild();
             });
@@ -237,7 +238,7 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
                             list[idx] = (sel, list[idx].fixedCount);
                         }
                         gui.Rebuild();
-                    }, new("Select module", DataUtils.FavoriteModule), list[idx].module.quality, quality => {
+                    }, new(LSs.SelectModule, DataUtils.FavoriteModule), list[idx].module.quality, quality => {
                         list[idx] = list[idx] with { module = list[idx].module.target.With(quality) };
                         gui.Rebuild();
                     });
@@ -266,7 +267,7 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
             gui.BuildObjectQualitySelectDropDown(GetModules(beacon), sel => {
                 list.Add(new(sel, 0));
                 gui.Rebuild();
-            }, new("Select module", DataUtils.FavoriteModule), Quality.Normal);
+            }, new(LSs.SelectModule, DataUtils.FavoriteModule), Quality.Normal);
         }
     }
 

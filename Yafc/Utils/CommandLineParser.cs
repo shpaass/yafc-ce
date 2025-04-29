@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using Yafc.I18n;
 
 namespace Yafc;
 
@@ -30,7 +31,7 @@ public static class CommandLineParser {
         if (!args[0].StartsWith("--")) {
             projectDefinition.dataPath = args[0];
             if (!Directory.Exists(projectDefinition.dataPath)) {
-                lastError = $"Data path '{projectDefinition.dataPath}' does not exist.";
+                lastError = LSs.CommandLineErrorPathDoesNotExist.L(LSs.FolderTypeData, projectDefinition.modsPath);
                 return null;
             }
         }
@@ -42,12 +43,12 @@ public static class CommandLineParser {
                         projectDefinition.modsPath = args[++i];
 
                         if (!Directory.Exists(projectDefinition.modsPath)) {
-                            lastError = $"Mods path '{projectDefinition.modsPath}' does not exist.";
+                            lastError = LSs.CommandLineErrorPathDoesNotExist.L(LSs.FolderTypeMods, projectDefinition.modsPath);
                             return null;
                         }
                     }
                     else {
-                        lastError = "Missing argument for --mods-path.";
+                        lastError = LSs.MissingCommandLineArgument.L("--mods-path");
                         return null;
                     }
                     break;
@@ -58,12 +59,12 @@ public static class CommandLineParser {
                         string? directory = Path.GetDirectoryName(projectDefinition.path);
 
                         if (!Directory.Exists(directory)) {
-                            lastError = $"Project directory for '{projectDefinition.path}' does not exist.";
+                            lastError = LSs.CommandLineErrorPathDoesNotExist.L(LSs.FolderTypeProject, projectDefinition.path);
                             return null;
                         }
                     }
                     else {
-                        lastError = "Missing argument for --project-file.";
+                        lastError = LSs.MissingCommandLineArgument.L("--project-file");
                         return null;
                     }
                     break;
@@ -77,7 +78,7 @@ public static class CommandLineParser {
                     break;
 
                 default:
-                    lastError = $"Unknown argument '{args[i]}'.";
+                    lastError = LSs.CommandLineErrorUnknownArgument.L(args[i]);
                     return null;
             }
         }
@@ -85,52 +86,7 @@ public static class CommandLineParser {
         return projectDefinition;
     }
 
-    public static void PrintHelp() => Console.WriteLine(@"Usage:
-Yafc [<data-path> [--mods-path <path>] [--project-file <path>] [--help]
-
-Description:
-    Yafc can be started without any arguments. However, if arguments are supplied, it is
-    mandatory that the first argument is the path to the data directory of Factorio. The
-    other arguments are optional in any case.
-
-Options:
-    <data-path>
-        Path of the data directory (mandatory if other arguments are supplied)
-
-    --mods-path <path>
-        Path of the mods directory (optional)
-
-    --project-file <path>
-        Path of the project file (optional)
-
-    --help
-        Display this help message and exit
-
-Examples:
-    1. Starting Yafc without any arguments:
-       $ ./Yafc
-       This opens the welcome screen.
-
-    2. Starting Yafc with a project path:
-       $ ./Yafc path/to/my/project.yafc
-       Skips the welcome screen and loads the project. If the project has not been
-       opened before, then uses the start-settings of the most-recently-opened project.
-
-    3. Starting Yafc with the path to the data directory of Factorio:
-       $ ./Yafc Factorio/data
-       This opens a fresh project and loads the game data from the supplied directory.
-       Fails if the directory does not exist.
-
-    4. Starting Yafc with the paths to the data directory and a project file:
-       $ ./Yafc Factorio/data --project-file my-project.yafc
-       This opens the supplied project and loads the game data from the supplied data
-       directory. Fails if the directory and/or the project file do not exist.
-
-    5. Starting Yafc with the paths to the data & mods directories and a project file:
-       $ ./Yafc Factorio/data --mods-path Factorio/mods --project-file my-project.yafc
-       This opens the supplied project and loads the game data and mods from the supplied
-       data and mods directories. Fails if any of the directories and/or the project file
-       do not exist.");
+    public static void PrintHelp() => Console.WriteLine(LSs.ConsoleHelpMessage);
 
     /// <summary>
     /// Loads the project from the given path. <br/>

@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Google.OrTools.LinearSolver;
 using Serilog;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -160,10 +161,10 @@ public static partial class DataUtils {
             T? element = null;
 
             if (list.Any(t => t.IsAccessible())) {
-                recipeHint = "Hint: Complete milestones to enable ctrl+click";
+                recipeHint = LSs.CtrlClickHintCompleteMilestones;
             }
             else {
-                recipeHint = "Hint: Mark a recipe as accessible to enable ctrl+click";
+                recipeHint = LSs.CtrlClickHintMarkAccessible;
             }
 
             foreach (T elem in list) {
@@ -175,11 +176,11 @@ public static partial class DataUtils {
                 if (userFavorites.Contains(elem)) {
                     if (!acceptOnlyFavorites || element == null) {
                         element = elem;
-                        recipeHint = "Hint: ctrl+click to add your favorited recipe";
+                        recipeHint = LSs.CtrlClickHintWillAddFavorite;
                         acceptOnlyFavorites = true;
                     }
                     else {
-                        recipeHint = "Hint: Cannot ctrl+click with multiple favorited recipes";
+                        recipeHint = LSs.CtrlClickHintMultipleFavorites;
 
                         return null;
                     }
@@ -187,11 +188,11 @@ public static partial class DataUtils {
                 else if (!acceptOnlyFavorites) {
                     if (element == null) {
                         element = elem;
-                        recipeHint = excludeSpecial ? "Hint: ctrl+click to add the accessible normal recipe" : "Hint: ctrl+click to add the accessible recipe";
+                        recipeHint = excludeSpecial ? LSs.CtrlClickHintWillAddNormal : LSs.CtrlClickHintWillAddSpecial;
                     }
                     else {
                         element = null;
-                        recipeHint = "Hint: Set a favorite recipe to add it with ctrl+click";
+                        recipeHint = LSs.CtrlClickHintSetFavorite;
                         acceptOnlyFavorites = true;
                     }
                 }
@@ -542,26 +543,26 @@ public static partial class DataUtils {
         _ = amountBuilder.Clear();
 
         if (time < 10f) {
-            return $"{time:#.#} seconds";
+            return LSs.FormatTimeInSeconds.L(time.ToString("#.#"));
         }
 
         if (time < 60f) {
-            return $"{time:#} seconds";
+            return LSs.FormatTimeInSeconds.L(time.ToString("#"));
         }
 
         if (time < 600f) {
-            return $"{time / 60f:#.#} minutes";
+            return LSs.FormatTimeInMinutes.L((time / 60f).ToString("#.#"));
         }
 
         if (time < 3600f) {
-            return $"{time / 60f:#} minutes";
+            return LSs.FormatTimeInMinutes.L((time / 60f).ToString("#"));
         }
 
         if (time < 36000f) {
-            return $"{time / 3600f:#.#} hours";
+            return LSs.FormatTimeInHours.L((time / 3600f).ToString("#.#"));
         }
 
-        return $"{time / 3600f:#} hours";
+        return LSs.FormatTimeInHours.L((time / 3600f).ToString("#"));
     }
 
     public static string FormatAmount(float amount, UnitOfMeasure unit, bool precise = false) {

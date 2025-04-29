@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -31,11 +32,11 @@ public class ModuleFillerParametersScreen : PseudoScreen {
                 DrawBelowHeader = gui => {
                     using (gui.EnterRow()) {
                         // Allocate the width now, but draw the text later so it can be vertically centered.
-                        Rect rect = gui.AllocateTextRect(out _, "Affected by " + element.Value.beaconCount, TextBlockDisplayStyle.Default(SchemeColor.None));
+                        Rect rect = gui.AllocateTextRect(out _, LSs.AffectedByNBeacons.L(element.Value.beaconCount), TextBlockDisplayStyle.Default(SchemeColor.None));
                         gui.BuildFactorioObjectIcon(element.Value.beacon, ButtonDisplayStyle.ProductionTableUnscaled);
                         rect.Height = gui.lastRect.Height;
-                        gui.DrawText(rect, "Affected by " + element.Value.beaconCount);
-                        gui.BuildText("each containing " + element.Value.beacon.target.moduleSlots);
+                        gui.DrawText(rect, LSs.AffectedByNBeacons.L(element.Value.beaconCount));
+                        gui.BuildText(LSs.EachContainingNModules.L(element.Value.beacon.target.moduleSlots));
                         gui.BuildFactorioObjectIcon(element.Value.beaconModule, ButtonDisplayStyle.ProductionTableUnscaled);
                     }
                 }
@@ -44,7 +45,7 @@ public class ModuleFillerParametersScreen : PseudoScreen {
         gui.DrawIcon(new(gui.lastRect.TopRight - new Vector2(1.25f, 0), new Vector2(1.25f, 1.25f)), config.beaconModule.target.icon, SchemeColor.Source);
         switch (click) {
             case GoodsWithAmountEvent.LeftButtonClick:
-                SelectSingleObjectPanel.SelectQualityWithNone(Database.usableBeacons, "Select beacon", selectedBeacon => {
+                SelectSingleObjectPanel.SelectQualityWithNone(Database.usableBeacons, LSs.SelectBeacon, selectedBeacon => {
 
                     if (selectedBeacon is null) {
                         _ = modules.overrideCrafterBeacons.Remove(crafter);
@@ -60,11 +61,11 @@ public class ModuleFillerParametersScreen : PseudoScreen {
                     }
 
                     overrideList.data = [.. modules.overrideCrafterBeacons];
-                }, modules.overrideCrafterBeacons[crafter].beacon.quality, noneTooltip: "Click here to remove the current override.");
+                }, modules.overrideCrafterBeacons[crafter].beacon.quality, noneTooltip: LSs.ModuleFillerRemoveCurrentOverrideHint);
                 break;
             case GoodsWithAmountEvent.RightButtonClick:
                 SelectSingleObjectPanel.SelectQualityWithNone(Database.allModules.Where(m => modules.overrideCrafterBeacons[crafter].beacon.target.CanAcceptModule(m.moduleSpecification)),
-                    "Select beacon module", selectedModule => {
+                    LSs.SelectBeaconModule, selectedModule => {
 
                         if (selectedModule is null) {
                             _ = modules.overrideCrafterBeacons.Remove(crafter);
@@ -74,7 +75,7 @@ public class ModuleFillerParametersScreen : PseudoScreen {
                         }
 
                         overrideList.data = [.. modules.overrideCrafterBeacons];
-                    }, modules.overrideCrafterBeacons[crafter].beaconModule.quality, noneTooltip: "Click here to remove the current override.");
+                    }, modules.overrideCrafterBeacons[crafter].beaconModule.quality, noneTooltip: LSs.ModuleFillerRemoveCurrentOverrideHint);
                 break;
             case GoodsWithAmountEvent.TextEditing when amount.Value >= 0:
                 modules.overrideCrafterBeacons[crafter] = modules.overrideCrafterBeacons[crafter] with { beaconCount = (int)amount.Value };
@@ -95,13 +96,13 @@ public class ModuleFillerParametersScreen : PseudoScreen {
         }
 
         if (payback <= 0f) {
-            gui.BuildText("Use no modules");
+            gui.BuildText(LSs.UseNoModules);
         }
         else if (payback >= float.MaxValue) {
-            gui.BuildText("Use best modules");
+            gui.BuildText(LSs.UseBestModules);
         }
         else {
-            gui.BuildText("Modules payback estimate: " + DataUtils.FormatTime(payback), TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(LSs.ModuleFillerPaybackEstimate.L(DataUtils.FormatTime(payback)), TextBlockDisplayStyle.WrappedText);
         }
     }
 
@@ -114,27 +115,27 @@ public class ModuleFillerParametersScreen : PseudoScreen {
         IObjectWithQuality<EntityBeacon>? defaultBeacon = beacon.With(Quality.MaxAccessible);
         IObjectWithQuality<Module>? beaconFillerModule = defaultBeaconModule.With(Quality.MaxAccessible);
 
-        BuildHeader(gui, "Module autofill parameters");
+        BuildHeader(gui, LSs.ModuleFillerHeaderAutofill);
         BuildSimple(gui, modules);
-        if (gui.BuildCheckBox("Fill modules in miners", modules.fillMiners, out bool newFill)) {
+        if (gui.BuildCheckBox(LSs.ModuleFillerFillMiners, modules.fillMiners, out bool newFill)) {
             modules.fillMiners = newFill;
         }
 
         gui.AllocateSpacing();
-        gui.BuildText("Filler module:", Font.subheader);
-        gui.BuildText("Use this module when autofill doesn't add anything (for example when productivity modules doesn't fit)", TextBlockDisplayStyle.WrappedText);
+        gui.BuildText(LSs.ModuleFillerModule, Font.subheader);
+        gui.BuildText(LSs.ModuleFillerModuleHint, TextBlockDisplayStyle.WrappedText);
         if (gui.BuildFactorioObjectButtonWithText(modules.fillerModule) == Click.Left) {
-            SelectSingleObjectPanel.SelectQualityWithNone(Database.allModules, "Select filler module", select => modules.fillerModule = select, modules.fillerModule?.quality);
+            SelectSingleObjectPanel.SelectQualityWithNone(Database.allModules, LSs.ModuleFillerSelectModule, select => modules.fillerModule = select, modules.fillerModule?.quality);
         }
 
         gui.AllocateSpacing();
-        gui.BuildText("Beacons & beacon modules:", Font.subheader);
+        gui.BuildText(LSs.ModuleFillerHeaderBeacons, Font.subheader);
         if (defaultBeacon is null || beaconFillerModule is null) {
-            gui.BuildText("Your mods contain no beacons, or no modules that can be put into beacons.");
+            gui.BuildText(LSs.ModuleFillerNoBeacons);
         }
         else {
             if (gui.BuildFactorioObjectButtonWithText(modules.beacon) == Click.Left) {
-                SelectSingleObjectPanel.SelectQualityWithNone(Database.allBeacons, "Select beacon", select => {
+                SelectSingleObjectPanel.SelectQualityWithNone(Database.allBeacons, LSs.SelectBeacon, select => {
                     modules.beacon = select;
                     if (modules.beaconModule != null && (modules.beacon == null || !modules.beacon.target.CanAcceptModule(modules.beaconModule))) {
                         modules.beaconModule = null;
@@ -146,35 +147,34 @@ public class ModuleFillerParametersScreen : PseudoScreen {
 
             if (gui.BuildFactorioObjectButtonWithText(modules.beaconModule) == Click.Left) {
                 SelectSingleObjectPanel.SelectQualityWithNone(Database.allModules.Where(x => modules.beacon?.target.CanAcceptModule(x.moduleSpecification) ?? false),
-                    "Select module for beacon", select => modules.beaconModule = select, modules.beaconModule?.quality);
+                    LSs.ModuleFillerSelectBeaconModule, select => modules.beaconModule = select, modules.beaconModule?.quality);
             }
 
             using (gui.EnterRow()) {
-                gui.BuildText("Beacons per building: ");
+                gui.BuildText(LSs.ModuleFillerBeaconsPerBuilding);
                 DisplayAmount amount = modules.beaconsPerBuilding;
 
                 if (gui.BuildFloatInput(amount, TextBoxDisplayStyle.ModuleParametersTextInput) && (int)amount.Value > 0) {
                     modules.beaconsPerBuilding = (int)amount.Value;
                 }
             }
-            gui.BuildText("Please note that beacons themselves are not part of the calculation", TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(LSs.ModuleFillerBeaconsNotCalculated, TextBlockDisplayStyle.WrappedText);
 
             gui.AllocateSpacing();
-            gui.BuildText("Override beacons:", Font.subheader);
+            gui.BuildText(LSs.ModuleFillerOverrideBeacons, Font.subheader);
 
             if (modules.overrideCrafterBeacons.Count > 0) {
                 using (gui.EnterGroup(new Padding(1, 0, 0, 0))) {
-                    gui.BuildText("Click to change beacon, right-click to change module", topOffset: -0.5f);
-                    gui.BuildText("Select the 'none' item in either prompt to remove the override.", topOffset: -0.5f);
+                    gui.BuildText(LSs.ModuleFillerOverrideBeaconsHint, TextBlockDisplayStyle.WrappedText, topOffset: -0.5f);
                 }
             }
             gui.AllocateSpacing(.5f);
             overrideList.Build(gui);
 
             using (gui.EnterRow(allocator: RectAllocator.Center)) {
-                if (gui.BuildButton("Add an override for a building type")) {
+                if (gui.BuildButton(LSs.ModuleFillerAddBeaconOverride)) {
                     SelectMultiObjectPanel.Select(Database.allCrafters.Where(x => x.allowedEffects != AllowedEffects.None && !modules.overrideCrafterBeacons.ContainsKey(x)),
-                        "Add exception(s) for:",
+                        LSs.ModuleFillerSelectOverriddenCrafter,
                         crafter => {
                             modules.overrideCrafterBeacons[crafter] = new BeaconOverrideConfiguration(modules.beacon ?? defaultBeacon, modules.beaconsPerBuilding,
                                 modules.beaconModule ?? beaconFillerModule);
@@ -184,7 +184,7 @@ public class ModuleFillerParametersScreen : PseudoScreen {
             }
         }
 
-        if (gui.BuildButton("Done")) {
+        if (gui.BuildButton(LSs.Done)) {
             Close();
         }
 

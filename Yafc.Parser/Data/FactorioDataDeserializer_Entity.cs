@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -152,7 +153,7 @@ internal partial class FactorioDataDeserializer {
 
     private Recipe CreateLaunchRecipe(EntityCrafter entity, Recipe recipe, int partsRequired, int outputCount) {
         string launchCategory = SpecialNames.RocketCraft + entity.name;
-        var launchRecipe = CreateSpecialRecipe(recipe, launchCategory, "launch");
+        var launchRecipe = CreateSpecialRecipe(recipe, launchCategory, LSs.SpecialRecipeLaunch);
         recipeCrafters.Add(entity, launchCategory);
         launchRecipe.ingredients = [.. recipe.products.Select(x => new Ingredient(x.goods, x.amount * partsRequired))];
         launchRecipe.products = [new Product(rocketLaunch, outputCount)];
@@ -265,7 +266,7 @@ internal partial class FactorioDataDeserializer {
 
                 // otherwise convert boiler production to a recipe
                 string category = SpecialNames.BoilerRecipe + boiler.name;
-                var recipe = CreateSpecialRecipe(output, category, "boiling to " + targetTemp + "°");
+                var recipe = CreateSpecialRecipe(output, category, LSs.SpecialRecipeBoiling);
                 recipeCrafters.Add(boiler, category);
                 recipe.flags |= RecipeFlags.UsesFluidTemperature;
                 // TODO: input fluid amount now depends on its temperature, using min temperature should be OK for non-modded
@@ -466,7 +467,7 @@ internal partial class FactorioDataDeserializer {
                 if (table.Get("fluid_box", out LuaTable? fluidBox) && fluidBox.Get("fluid", out string? fluidName)) {
                     var pumpingFluid = GetFluidFixedTemp(fluidName, 0);
                     string recipeCategory = SpecialNames.PumpingRecipe + pumpingFluid.name;
-                    recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, "pumping");
+                    recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, LSs.SpecialRecipePumping);
                     recipeCrafters.Add(pump, recipeCategory);
                     pump.energy = voidEntityEnergy;
 
@@ -545,7 +546,7 @@ internal partial class FactorioDataDeserializer {
             if (factorioType == "resource") {
                 // mining resource is processed as a recipe
                 _ = table.Get("category", out string category, "basic-solid");
-                var recipe = CreateSpecialRecipe(entity, SpecialNames.MiningRecipe + category, "mining");
+                var recipe = CreateSpecialRecipe(entity, SpecialNames.MiningRecipe + category, LSs.SpecialRecipeMining);
                 recipe.flags = RecipeFlags.UsesMiningProductivity;
                 recipe.time = minable.Get("mining_time", 1f);
                 recipe.products = products;
@@ -568,7 +569,7 @@ internal partial class FactorioDataDeserializer {
             else if (factorioType == "plant") {
                 // harvesting plants is processed as a recipe
                 foreach (var seed in plantResults.Where(x => x.Value == name).Select(x => x.Key)) {
-                    var recipe = CreateSpecialRecipe(seed, SpecialNames.PlantRecipe, "planting");
+                    var recipe = CreateSpecialRecipe(seed, SpecialNames.PlantRecipe, LSs.SpecialRecipePlanting);
                     recipe.time = table.Get("growth_ticks", 0) / 60f;
                     recipe.ingredients = [new Ingredient(seed, 1)];
                     recipe.products = products;
@@ -642,7 +643,7 @@ internal partial class FactorioDataDeserializer {
         Entity chunk = DeserializeCommon<Entity>(table, "asteroid-chunk");
         Item asteroid = GetObject<Item>(chunk.name);
         if (asteroid.showInExplorers) { // don't create mining recipes for parameter chunks.
-            Recipe recipe = CreateSpecialRecipe(asteroid, SpecialNames.AsteroidCapture, "mining");
+            Recipe recipe = CreateSpecialRecipe(asteroid, SpecialNames.AsteroidCapture, LSs.SpecialRecipeMining);
             recipe.time = 1;
             recipe.ingredients = [];
             recipe.products = [new Product(asteroid, 1)];

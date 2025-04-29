@@ -51,7 +51,7 @@ public static class BlueprintUtilities {
 
     public static string ExportRequesterChests(string name, IReadOnlyList<(IObjectWithQuality<Item> item, int amount)> goods, EntityContainer chest, bool copyToClipboard = true) {
         if (chest.logisticSlotsCount <= 0) {
-            throw new NotSupportedException("Chest does not have logistic slots");
+            throw new ArgumentException("Chest does not have logistic slots");
         }
 
         int combinatorCount = ((goods.Count - 1) / chest.logisticSlotsCount) + 1;

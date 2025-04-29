@@ -3,13 +3,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Numerics;
 using System.Text.Json;
 using System.Threading.Tasks;
 using SDL2;
 using Serilog;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -57,7 +57,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         tabBar = new MainScreenTabBar(this);
         allPages = new VirtualScrollList<ProjectPage>(30, new Vector2(float.PositiveInfinity, 2f), BuildPage, collapsible: true);
 
-        Create("Yet Another Factorio Calculator CE v" + YafcLib.version.ToString(3), display, Preferences.Instance.initialMainScreenWidth,
+        Create(LSs.FullNameWithVersion.L(YafcLib.version.ToString(3)), display, Preferences.Instance.initialMainScreenWidth,
             Preferences.Instance.initialMainScreenHeight, Preferences.Instance.maximizeMainScreen);
         SetProject(project);
 
@@ -249,15 +249,13 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
                 gui.ShowDropDown(gui.lastRect, SettingsDropdown, new Padding(0f, 0f, 0f, 0.5f));
             }
 
-            if (gui.BuildButton(Icon.Plus).WithTooltip(gui, "Create production sheet (Ctrl+" +
-                ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_T) + ")")) {
+            if (gui.BuildButton(Icon.Plus).WithTooltip(gui, LSs.CreateProductionSheet.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_T)))) {
 
                 ProductionTableView.CreateProductionSheet();
             }
 
             gui.allocator = RectAllocator.RightRow;
-            if (gui.BuildButton(Icon.DropDown, SchemeColor.None, SchemeColor.Grey).WithTooltip(gui, "List and search all pages (Ctrl+Shift+" +
-                ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_F) + ")") || showSearchAll) {
+            if (gui.BuildButton(Icon.DropDown, SchemeColor.None, SchemeColor.Grey).WithTooltip(gui, LSs.ListAndSearchAll.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_F))) || showSearchAll) {
                 showSearchAll = false;
                 updatePageList();
                 ShowDropDown(gui, gui.lastRect, missingPagesDropdown, new Padding(0f, 0f, 0f, 0.5f), 30f);
@@ -331,7 +329,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
     }
 
-    private static void ShowNeie() => SelectSingleObjectPanel.Select(Database.goods.explorable, "Open NEIE", NeverEnoughItemsPanel.Show);
+    private static void ShowNeie() => SelectSingleObjectPanel.Select(Database.goods.explorable, LSs.OpenNeie, NeverEnoughItemsPanel.Show);
 
     private void SetSearch(SearchQuery searchQuery) {
         pageSearch = searchQuery;
@@ -348,7 +346,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
     }
 
     private void BuildSearch(ImGui gui) {
-        gui.BuildText("Find on page:");
+        gui.BuildText(LSs.SearchHeader);
         gui.AllocateSpacing();
         gui.allocator = RectAllocator.RightRow;
         if (gui.BuildButton(Icon.Close)) {
@@ -368,73 +366,73 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
 
     private void SettingsDropdown(ImGui gui) {
         gui.boxColor = SchemeColor.Background;
-        if (gui.BuildContextMenuButton("Undo", "Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_Z)) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.Undo, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_Z))) && gui.CloseDropdown()) {
             project.undo.PerformUndo();
         }
 
-        if (gui.BuildContextMenuButton("Save", "Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_S)) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.Save, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_S))) && gui.CloseDropdown()) {
             SaveProject().CaptureException();
         }
 
-        if (gui.BuildContextMenuButton("Save As") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.SaveAs) && gui.CloseDropdown()) {
             SaveProjectAs().CaptureException();
         }
 
-        if (gui.BuildContextMenuButton("Find on page", "Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_F)) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.FindOnPage, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_F))) && gui.CloseDropdown()) {
             ShowSearch();
         }
 
-        if (gui.BuildContextMenuButton("Load another project (Same mods)") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.LoadWithSameMods) && gui.CloseDropdown()) {
             LoadProjectLight();
         }
 
-        if (gui.BuildContextMenuButton("Return to starting screen") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.ReturnToWelcomeScreen) && gui.CloseDropdown()) {
             LoadProjectHeavy();
         }
 
-        BuildSubHeader(gui, "Tools");
-        if (gui.BuildContextMenuButton("Milestones") && gui.CloseDropdown()) {
+        BuildSubHeader(gui, LSs.MenuHeaderTools);
+        if (gui.BuildContextMenuButton(LSs.Milestones) && gui.CloseDropdown()) {
             _ = ShowPseudoScreen(new MilestonesPanel());
         }
 
-        if (gui.BuildContextMenuButton("Preferences") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.MenuPreferences) && gui.CloseDropdown()) {
             PreferencesScreen.ShowPreviousState();
         }
 
-        if (gui.BuildContextMenuButton("Summary") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.MenuSummary) && gui.CloseDropdown()) {
             ShowSummaryTab();
         }
 
-        if (gui.BuildContextMenuButton("Summary (Legacy)") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.MenuLegacySummary) && gui.CloseDropdown()) {
             ProjectPageSettingsPanel.Show(null, (name, icon) => Instance.AddProjectPage(name, icon, typeof(ProductionSummary), true, true));
         }
 
-        if (gui.BuildContextMenuButton("Never Enough Items Explorer", "Ctrl+" + ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_N)) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.Neie, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_N))) && gui.CloseDropdown()) {
             ShowNeie();
         }
 
-        if (gui.BuildContextMenuButton("Dependency Explorer") && gui.CloseDropdown()) {
-            SelectSingleObjectPanel.Select(Database.objects.explorable, "Open Dependency Explorer", DependencyExplorer.Show);
+        if (gui.BuildContextMenuButton(LSs.DependencyExplorer) && gui.CloseDropdown()) {
+            SelectSingleObjectPanel.Select(Database.objects.explorable, LSs.OpenDependencyExplorer, DependencyExplorer.Show);
         }
 
-        if (gui.BuildContextMenuButton("Import page from clipboard", disabled: !ImGuiUtils.HasClipboardText()) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.ImportFromClipboard, disabled: !ImGuiUtils.HasClipboardText()) && gui.CloseDropdown()) {
             ProjectPageSettingsPanel.LoadProjectPageFromClipboard();
         }
 
-        BuildSubHeader(gui, "Extra");
+        BuildSubHeader(gui, LSs.MenuHeaderExtra);
 
-        if (gui.BuildContextMenuButton("Run Factorio")) {
+        if (gui.BuildContextMenuButton(LSs.MenuRunFactorio)) {
             string factorioPath = DataUtils.dataPath + "/../bin/x64/factorio";
             string? args = string.IsNullOrEmpty(DataUtils.modsPath) ? null : "--mod-directory \"" + DataUtils.modsPath + "\"";
             _ = Process.Start(new ProcessStartInfo(factorioPath, args!) { UseShellExecute = true }); // null-forgiving: ProcessStartInfo permits null args.
             _ = gui.CloseDropdown();
         }
 
-        if (gui.BuildContextMenuButton("Check for updates") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.MenuCheckForUpdates) && gui.CloseDropdown()) {
             DoCheckForUpdates();
         }
 
-        if (gui.BuildContextMenuButton("About YAFC") && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.MenuAbout) && gui.CloseDropdown()) {
             _ = new AboutScreen(this);
         }
     }
@@ -477,13 +475,16 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
     }
 
     private async Task<bool> ConfirmUnsavedChanges() {
-        string unsavedCount = "You have " + project.unsavedChangesCount + " unsaved changes";
-        if (!string.IsNullOrEmpty(project.attachedFileName)) {
-            unsavedCount += " to " + project.attachedFileName;
+        string unsavedCount;
+        if (string.IsNullOrEmpty(project.attachedFileName)) {
+            unsavedCount = LSs.AlertUnsavedChanges.L(project.unsavedChangesCount);
+        }
+        else {
+            unsavedCount = LSs.AlertUnsavedChangesInFile.L(project.unsavedChangesCount, project.attachedFileName);
         }
 
         saveConfirmationActive = true;
-        var (hasChoice, choice) = await MessageBox.Show("Save unsaved changes?", unsavedCount, "Save", "Don't save");
+        var (hasChoice, choice) = await MessageBox.Show(LSs.QuerySaveChanges, unsavedCount, LSs.Save, LSs.DontSave);
         saveConfirmationActive = false;
         if (!hasChoice) {
             return false;
@@ -511,21 +512,21 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
             var release = JsonSerializer.Deserialize<GithubReleaseInfo>(result)!;
             string version = release.tag_name.StartsWith('v') ? release.tag_name[1..] : release.tag_name;
             if (new Version(version) > YafcLib.version) {
-                var (_, answer) = await MessageBox.Show("New version available!", "There is a new version available: " + release.tag_name, "Visit release page", "Close");
+                var (_, answer) = await MessageBox.Show(LSs.NewVersionAvailable, LSs.NewVersionNumber.L(release.tag_name), LSs.VisitReleasePage, LSs.Close);
                 if (answer) {
                     Ui.VisitLink(release.html_url);
                 }
 
                 return;
             }
-            MessageBox.Show("No newer version", "You are running the latest version!", "Ok");
+            MessageBox.Show(LSs.NoNewerVersion, LSs.RunningLatestVersion, LSs.Ok);
         }
         catch (Exception) {
             MessageBox.Show((hasAnswer, answer) => {
                 if (answer) {
                     Ui.VisitLink(AboutScreen.Github + "/releases");
                 }
-            }, "Network error", "There were an error while checking versions.", "Open releases url", "Close");
+            }, LSs.NetworkError, LSs.ErrorWhileCheckingForNewVersion, LSs.VisitReleasePage, LSs.Close);
         }
     }
 
@@ -563,7 +564,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         if (summaryPage == null) {
 
             summaryPage = new ProjectPage(project, typeof(Summary), SummaryGuid) {
-                name = "Summary",
+                name = LSs.MenuSummary,
             };
             project.pages.Add(summaryPage);
         }
@@ -637,9 +638,9 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
     }
 
     private async Task<bool> SaveProjectAs() {
-        string? projectPath = await new FilesystemScreen("Save project", "Save project as", "Save",
+        string? projectPath = await new FilesystemScreen(LSs.SaveProjectWindowTitle, LSs.SaveProjectWindowHeader, LSs.Save,
             string.IsNullOrEmpty(project.attachedFileName) ? null : Path.GetDirectoryName(project.attachedFileName),
-            FilesystemScreen.Mode.SelectOrCreateFile, "project", this, null, "yafc");
+            FilesystemScreen.Mode.SelectOrCreateFile, LSs.DefaultFileName, this, null, "yafc");
         if (projectPath != null) {
             project.Save(projectPath);
             Preferences.Instance.AddProject(DataUtils.dataPath, DataUtils.modsPath, projectPath, DataUtils.netProduction);
@@ -664,8 +665,8 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
 
         string? projectDirectory = string.IsNullOrEmpty(project.attachedFileName) ? null : Path.GetDirectoryName(project.attachedFileName);
-        string? path = await new FilesystemScreen("Load project", "Load another .yafc project", "Select", projectDirectory,
-            FilesystemScreen.Mode.SelectOrCreateFile, "project", this, null, "yafc");
+        string? path = await new FilesystemScreen(LSs.LoadProjectWindowTitle, LSs.LoadProjectWindowHeader, LSs.SelectProject, projectDirectory,
+            FilesystemScreen.Mode.SelectOrCreateFile, LSs.DefaultFileName, this, null, "yafc");
 
         if (path == null) {
             return;
@@ -678,7 +679,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
             SetProject(project);
         }
         catch (Exception ex) {
-            errors.Exception(ex, "Critical loading exception", ErrorSeverity.Important);
+            errors.Exception(ex, LSs.ErrorCriticalLoadingException, ErrorSeverity.Important);
         }
         if (errors.severity != ErrorSeverity.None) {
             ErrorListPanel.Show(errors);
@@ -749,7 +750,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         ShowTooltip(gui, rect, x => {
             pageView.BuildPageTooltip(x, page.content);
             if (isMiddleEdit) {
-                x.BuildText("Middle mouse button to edit", TextBlockDisplayStyle.WrappedText with { Color = SchemeColor.BackgroundTextFaint });
+                x.BuildText(LSs.SearchAllMiddleMouseToEditHint, TextBlockDisplayStyle.WrappedText with { Color = SchemeColor.BackgroundTextFaint });
             }
         });
     }

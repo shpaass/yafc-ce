@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Numerics;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -76,10 +77,10 @@ public class SelectMultiObjectPanel : SelectObjectPanel<IEnumerable<FactorioObje
     public override void Build(ImGui gui) {
         base.Build(gui);
         using (gui.EnterGroup(default, RectAllocator.Center)) {
-            if (gui.BuildButton("OK")) {
+            if (gui.BuildButton(LSs.Ok)) {
                 CloseWithResult(results);
             }
-            gui.BuildText("Hint: ctrl+click to select multiple", TextBlockDisplayStyle.HintText);
+            gui.BuildText(LSs.SelectMultipleObjectsHint, TextBlockDisplayStyle.HintText);
         }
     }
 

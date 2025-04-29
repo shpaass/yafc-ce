@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -39,26 +40,23 @@ public class MilestonesPanel : PseudoScreen {
     public override void Build(ImGui gui) {
         instance = milestonesWidget;
         gui.spacing = 1f;
-        BuildHeader(gui, "Milestones");
-        gui.BuildText("Please select objects that you already have access to:");
+        BuildHeader(gui, LSs.Milestones);
+        gui.BuildText(LSs.MilestonesHeader);
         gui.AllocateSpacing(2f);
         milestonesWidget.Build(gui);
         gui.AllocateSpacing(2f);
-        gui.BuildText("For your convenience, YAFC will show objects you DON'T have access to based on this selection", TextBlockDisplayStyle.WrappedText);
-        gui.BuildText("These are called 'Milestones'. By default all science packs and locations are added as milestones, but this does not have to be this way! " +
-                      "You can define your own milestones: Any item, recipe, entity or technology may be added as a milestone. For example you can add advanced " +
-                      "electronic circuits as a milestone, and YAFC will display everything that is locked behind those circuits", TextBlockDisplayStyle.WrappedText);
+        gui.BuildText(LSs.MilestonesDescription, TextBlockDisplayStyle.WrappedText);
         using (gui.EnterRow()) {
-            if (gui.BuildButton("Edit milestones", SchemeColor.Grey)) {
+            if (gui.BuildButton(LSs.MilestonesEdit, SchemeColor.Grey)) {
                 MilestonesEditor.Show();
             }
 
-            if (gui.BuildButton("Edit tech progression settings")) {
+            if (gui.BuildButton(LSs.MilestonesEditSettings)) {
                 Close();
                 PreferencesScreen.ShowProgression();
             }
 
-            if (gui.RemainingRow().BuildButton("Done")) {
+            if (gui.RemainingRow().BuildButton(LSs.Done)) {
                 Close();
             }
         }

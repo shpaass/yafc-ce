@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SDL2;
+using Yafc.I18n;
 
 namespace Yafc.UI;
 
@@ -263,18 +264,18 @@ public static class ImGuiUtils {
         return click;
     }
 
-    public static bool BuildRadioGroup(this ImGui gui, IReadOnlyList<string> options, int selected, out int newSelected,
+    public static bool BuildRadioGroup(this ImGui gui, IReadOnlyList<LocalizableString0> options, int selected, out int newSelected,
                                        SchemeColor textColor = SchemeColor.None, bool enabled = true)
-        => gui.BuildRadioGroup([.. options.Select(o => (o, (string?)null))], selected, out newSelected, textColor, enabled);
+        => gui.BuildRadioGroup([.. options.Select(o => (o, (LocalizableString0?)null))], selected, out newSelected, textColor, enabled);
 
-    public static bool BuildRadioGroup(this ImGui gui, IReadOnlyList<(string option, string? tooltip)> options, int selected,
+    public static bool BuildRadioGroup(this ImGui gui, IReadOnlyList<(LocalizableString0 option, LocalizableString0? tooltip)> options, int selected,
                                        out int newSelected, SchemeColor textColor = SchemeColor.None, bool enabled = true) {
         newSelected = selected;
 
         for (int i = 0; i < options.Count; i++) {
             ButtonEvent evt = BuildRadioButton(gui, options[i].option, selected == i, textColor, enabled);
 
-            if (!string.IsNullOrEmpty(options[i].tooltip)) {
+            if (options[i].tooltip != null) {
                 _ = evt.WithTooltip(gui, options[i].tooltip!);
             }
             if (evt) {
@@ -434,9 +435,10 @@ public static class ImGuiUtils {
         return true;
     }
 
-    public static bool BuildSearchBox(this ImGui gui, SearchQuery searchQuery, out SearchQuery newQuery, string placeholder = "Search", SetKeyboardFocus setKeyboardFocus = SetKeyboardFocus.No) {
+    public static bool BuildSearchBox(this ImGui gui, SearchQuery searchQuery, out SearchQuery newQuery, string? placeholder = null, SetKeyboardFocus setKeyboardFocus = SetKeyboardFocus.No) {
         newQuery = searchQuery;
 
+        placeholder ??= LSs.SearchHint;
         if (gui.BuildTextInput(searchQuery.query, out string newText, placeholder, Icon.Search, setKeyboardFocus: setKeyboardFocus)) {
             newQuery = new SearchQuery(newText);
             return true;

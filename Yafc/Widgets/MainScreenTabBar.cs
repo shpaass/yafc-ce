@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using SDL2;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -108,23 +109,23 @@ public class MainScreenTabBar {
     private void PageRightClickDropdown(ImGui gui, ProjectPage page) {
         bool isSecondary = screen.secondaryPage == page;
         bool isActive = screen.activePage == page;
-        if (gui.BuildContextMenuButton("Edit properties")) {
+        if (gui.BuildContextMenuButton(LSs.EditPageProperties)) {
             _ = gui.CloseDropdown();
             ProjectPageSettingsPanel.Show(page);
         }
         if (!isSecondary && !isActive) {
-            if (gui.BuildContextMenuButton("Open as secondary", "Ctrl+Click")) {
+            if (gui.BuildContextMenuButton(LSs.OpenSecondaryPage, LSs.ShortcutCtrlClick)) {
                 _ = gui.CloseDropdown();
                 screen.SetSecondaryPage(page);
             }
         }
         else if (isSecondary) {
-            if (gui.BuildContextMenuButton("Close secondary", "Ctrl+Click")) {
+            if (gui.BuildContextMenuButton(LSs.CloseSecondaryPage, LSs.ShortcutCtrlClick)) {
                 _ = gui.CloseDropdown();
                 screen.SetSecondaryPage(null);
             }
         }
-        if (gui.BuildContextMenuButton("Duplicate")) {
+        if (gui.BuildContextMenuButton(LSs.DuplicatePage)) {
             _ = gui.CloseDropdown();
             if (ProjectPageSettingsPanel.ClonePage(page) is { } copy) {
                 screen.project.RecordUndo().pages.Add(copy);

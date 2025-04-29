@@ -1,84 +1,81 @@
-﻿using Yafc.UI;
+﻿using Yafc.I18n;
+using Yafc.UI;
 
 namespace Yafc;
 
 public class AboutScreen : WindowUtility {
     public const string Github = "https://github.com/have-fun-was-taken/yafc-ce";
 
-    public AboutScreen(Window parent) : base(ImGuiUtils.DefaultScreenPadding) => Create("About YAFC-CE", 50, parent);
+    public AboutScreen(Window parent) : base(ImGuiUtils.DefaultScreenPadding) => Create(LSs.AboutYafc, 50, parent);
 
     protected override void BuildContents(ImGui gui) {
         gui.allocator = RectAllocator.Center;
-        gui.BuildText("Yet Another Factorio Calculator", new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
-        gui.BuildText("(Community Edition)", TextBlockDisplayStyle.Centered);
-        gui.BuildText("Copyright 2020-2021 ShadowTheAge", TextBlockDisplayStyle.Centered);
-        gui.BuildText("Copyright 2024 YAFC Community", TextBlockDisplayStyle.Centered);
+        gui.BuildText(LSs.FullName, new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
+        gui.BuildText(LSs.AboutCommunityEdition, TextBlockDisplayStyle.Centered);
+        gui.BuildText(LSs.AboutCopyrightShadow, TextBlockDisplayStyle.Centered);
+        gui.BuildText(LSs.AboutCopyrightCommunity, TextBlockDisplayStyle.Centered);
         gui.allocator = RectAllocator.LeftAlign;
         gui.AllocateSpacing(1.5f);
 
-        string gnuMessage = "This program is free software: you can redistribute it and/or modify it under the terms of the GNU General Public " +
-            "License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.";
-        gui.BuildText(gnuMessage, TextBlockDisplayStyle.WrappedText);
+        gui.BuildText(LSs.AboutCopyleftGpl3, TextBlockDisplayStyle.WrappedText);
 
-        string noWarrantyMessage = "This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the " +
-            "implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.";
-        gui.BuildText(noWarrantyMessage, TextBlockDisplayStyle.WrappedText);
+        gui.BuildText(LSs.AboutWarrantyDisclaimer, TextBlockDisplayStyle.WrappedText);
 
         using (gui.EnterRow(0.3f)) {
-            gui.BuildText("Full license text:");
+            gui.BuildText(LSs.AboutFullLicenseText);
             BuildLink(gui, "https://gnu.org/licenses/gpl-3.0.html");
         }
 
         using (gui.EnterRow(0.3f)) {
-            gui.BuildText("Github YAFC-CE page and documentation:");
+            gui.BuildText(LSs.AboutGithubPage);
             BuildLink(gui, Github);
         }
 
         gui.AllocateSpacing(1.5f);
-        gui.BuildText("Free and open-source third-party libraries used:", Font.subheader);
-        BuildLink(gui, "https://dotnet.microsoft.com/", "Microsoft .NET core and libraries");
+        gui.BuildText(LSs.AboutLibraries, Font.subheader);
+        BuildLink(gui, "https://dotnet.microsoft.com/", LSs.AboutDotNetCore);
 
         using (gui.EnterRow(0.3f)) {
             BuildLink(gui, "https://libsdl.org/index.php", "Simple DirectMedia Layer 2.0");
-            gui.BuildText("and");
+            gui.BuildText(LSs.AboutAnd);
             BuildLink(gui, "https://github.com/flibitijibibo/SDL2-CS", "SDL2-CS");
         }
 
         using (gui.EnterRow(0.3f)) {
-            gui.BuildText("Libraries for SDL2:");
+            gui.BuildText(LSs.AboutSdl2Libraries);
             BuildLink(gui, "http://libpng.org/pub/png/libpng.html", "libpng,");
             BuildLink(gui, "http://libjpeg.sourceforge.net/", "libjpeg,");
             BuildLink(gui, "https://freetype.org", "libfreetype");
-            gui.BuildText("and");
+            gui.BuildText(LSs.AboutAnd);
             BuildLink(gui, "https://zlib.net/", "zlib");
         }
 
         using (gui.EnterRow(0.3f)) {
             gui.BuildText("Google");
             BuildLink(gui, "https://developers.google.com/optimization", "OR-Tools,");
-            BuildLink(gui, "https://fonts.google.com/specimen/Roboto", "Roboto font family");
-            BuildLink(gui, "https://fonts.google.com/noto", "Noto Sans font family");
-            gui.BuildText("and");
-            BuildLink(gui, "https://material.io/resources/icons", "Material Design Icon collection");
+            BuildLink(gui, "https://fonts.google.com/specimen/Roboto", LSs.AboutRobotoFontFamily);
+            BuildLink(gui, "https://fonts.google.com/noto", LSs.AboutNotoSansFamily);
+            gui.BuildText(LSs.AboutAnd);
+            BuildLink(gui, "https://material.io/resources/icons", LSs.AboutMaterialDesignIcon);
         }
 
         using (gui.EnterRow(0.3f)) {
             BuildLink(gui, "https://lua.org/", "Lua 5.2");
-            gui.BuildText("plus");
-            BuildLink(gui, "https://github.com/pkulchenko/serpent", "Serpent library");
-            gui.BuildText("and small bits from");
+            gui.BuildText(LSs.AboutPlus);
+            BuildLink(gui, "https://github.com/pkulchenko/serpent", LSs.AboutSerpentLibrary);
+            gui.BuildText(LSs.AboutAndSmallBits);
             BuildLink(gui, "https://github.com/NLua", "NLua");
         }
 
         using (gui.EnterRow(0.3f)) {
-            BuildLink(gui, "https://wiki.factorio.com/", "Documentation on Factorio Wiki");
-            gui.BuildText("and");
-            BuildLink(gui, "https://lua-api.factorio.com/latest/", "Factorio API reference");
+            BuildLink(gui, "https://wiki.factorio.com/", LSs.AboutFactorioWiki);
+            gui.BuildText(LSs.AboutAnd);
+            BuildLink(gui, "https://lua-api.factorio.com/latest/", LSs.AboutFactorioLuaApi);
         }
 
         gui.AllocateSpacing(1.5f);
         gui.allocator = RectAllocator.Center;
-        gui.BuildText("Factorio name, content and materials are trademarks and copyrights of Wube Software");
+        gui.BuildText(LSs.AboutFactorioTrademarkDisclaimer);
         BuildLink(gui, "https://factorio.com/");
     }
 

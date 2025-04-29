@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -45,16 +46,16 @@ public partial class MainScreen {
                 }
                 gui.SetTextInputFocus(gui.lastContentRect, query.query);
 
-                gui.BuildText("Search in:");
+                gui.BuildText(LSs.SearchAllHeader);
                 using (gui.EnterRow()) {
-                    buildCheckbox(gui, "Page name", ref checkboxValues[(int)PageSearchOption.PageName]);
-                    buildCheckbox(gui, "Desired products", ref checkboxValues[(int)PageSearchOption.DesiredProducts]);
-                    buildCheckbox(gui, "Recipes", ref checkboxValues[(int)PageSearchOption.Recipes]);
+                    buildCheckbox(gui, LSs.SearchAllLocationPageName, ref checkboxValues[(int)PageSearchOption.PageName]);
+                    buildCheckbox(gui, LSs.SearchAllLocationOutputs, ref checkboxValues[(int)PageSearchOption.DesiredProducts]);
+                    buildCheckbox(gui, LSs.SearchAllLocationRecipes, ref checkboxValues[(int)PageSearchOption.Recipes]);
                 }
                 using (gui.EnterRow()) {
-                    buildCheckbox(gui, "Ingredients", ref checkboxValues[(int)PageSearchOption.Ingredients]);
-                    buildCheckbox(gui, "Extra products", ref checkboxValues[(int)PageSearchOption.ExtraProducts]);
-                    if (gui.BuildCheckBox("All", checkboxValues.All(x => x), out bool checkAll)) {
+                    buildCheckbox(gui, LSs.SearchAllLocationInputs, ref checkboxValues[(int)PageSearchOption.Ingredients]);
+                    buildCheckbox(gui, LSs.SearchAllLocationExtraOutputs, ref checkboxValues[(int)PageSearchOption.ExtraProducts]);
+                    if (gui.BuildCheckBox(LSs.SearchAllLocationAll, checkboxValues.All(x => x), out bool checkAll)) {
                         if (checkAll) {
                             // Save the previous state, so we can restore it if necessary.
                             Array.Copy(checkboxValues, previousCheckboxValues, (int)PageSearchOption.MustBeLastValue);
@@ -68,9 +69,9 @@ public partial class MainScreen {
                     }
                 }
                 using (gui.EnterRow()) {
-                    buildRadioButton(gui, "Localized names", SearchNameMode.Localized);
-                    buildRadioButton(gui, "Internal names", SearchNameMode.Internal);
-                    buildRadioButton(gui, "Both", SearchNameMode.Both);
+                    buildRadioButton(gui, LSs.SearchAllLocalizedStrings, SearchNameMode.Localized);
+                    buildRadioButton(gui, LSs.SearchAllInternalStrings, SearchNameMode.Internal);
+                    buildRadioButton(gui, LSs.SearchAllBothStrings, SearchNameMode.Both);
                 }
             }
 

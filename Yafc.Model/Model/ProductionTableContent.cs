@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -630,7 +631,7 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     public bool visible { get; internal set; } = true;
 
     public RecipeRow(ProductionTable owner, IObjectWithQuality<RecipeOrTechnology> recipe) : base(owner) {
-        this.recipe = recipe ?? throw new ArgumentNullException(nameof(recipe), "Recipe does not exist");
+        this.recipe = recipe ?? throw new ArgumentNullException(nameof(recipe), LSs.LoadErrorRecipeDoesNotExist);
 
         links = new RecipeLinks {
             ingredients = new ProductionLink[recipe.target.ingredients.Length],
@@ -841,7 +842,7 @@ public class ProductionLink(ProductionTable group, IObjectWithQuality<Goods> goo
         HasProductionAndConsumption = HasProduction | HasConsumption,
     }
 
-    public IObjectWithQuality<Goods> goods { get; } = goods ?? throw new ArgumentNullException(nameof(goods), "Linked product does not exist");
+    public IObjectWithQuality<Goods> goods { get; } = goods ?? throw new ArgumentNullException(nameof(goods), LSs.LoadErrorLinkedProductDoesNotExist);
     public float amount { get; set; }
     public LinkAlgorithm algorithm { get; set; }
     public UnitOfMeasure flowUnitOfMeasure => goods.target.flowUnitOfMeasure;
@@ -868,27 +869,27 @@ public class ProductionLink(ProductionTable group, IObjectWithQuality<Goods> goo
     public IEnumerable<string> LinkWarnings {
         get {
             if (!flags.HasFlags(Flags.HasProduction)) {
-                yield return "This link has no production (Link ignored)";
+                yield return LSs.LinkWarningNoProduction;
             }
 
             if (!flags.HasFlags(Flags.HasConsumption)) {
-                yield return "This link has no consumption (Link ignored)";
+                yield return LSs.LinkWarningNoConsumption;
             }
 
             if (flags.HasFlags(Flags.ChildNotMatched)) {
-                yield return "Nested table link has unmatched production/consumption. These unmatched products are not captured by this link.";
+                yield return LSs.LinkWarningUnmatchedNestedLink;
             }
 
             if (!flags.HasFlags(Flags.HasProductionAndConsumption) && owner.owner is RecipeRow recipeRow && recipeRow.FindLink(goods, out _)) {
-                yield return "Nested tables have their own set of links that DON'T connect to parent links. To connect this product to the outside, remove this link.";
+                yield return LSs.LinkMessageRemoveToLinkWithParent;
             }
 
             if (flags.HasFlags(Flags.LinkRecursiveNotMatched)) {
                 if (notMatchedFlow <= 0f) {
-                    yield return "YAFC was unable to satisfy this link (Negative feedback loop). This doesn't mean that this link is the problem, but it is part of the loop.";
+                    yield return LSs.LinkWarningNegativeFeedback;
                 }
                 else {
-                    yield return "YAFC was unable to satisfy this link (Overproduction). You can allow overproduction for this link to solve the error.";
+                    yield return LSs.LinkWarningNeedsOverproduction;
                 }
             }
         }

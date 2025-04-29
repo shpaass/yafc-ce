@@ -1,6 +1,7 @@
 ﻿using System;
 using SDL2;
 using Serilog;
+using Yafc.I18n;
 
 namespace Yafc.UI;
 
@@ -41,15 +42,15 @@ public class ExceptionScreen : WindowUtility {
         gui.BuildText(ex.StackTrace, TextBlockDisplayStyle.WrappedText);
 
         using (gui.EnterRow(0.5f, RectAllocator.RightRow)) {
-            if (gui.BuildButton("Close")) {
+            if (gui.BuildButton(LSs.Close)) {
                 Close();
             }
 
-            if (gui.BuildButton("Ignore future errors", SchemeColor.Grey)) {
+            if (gui.BuildButton(LSs.IgnoreFutureErrors, SchemeColor.Grey)) {
                 ignoreAll = true;
                 Close();
             }
-            if (gui.BuildButton("Copy to clipboard", SchemeColor.Grey)) {
+            if (gui.BuildButton(LSs.CopyToClipboard, SchemeColor.Grey)) {
                 _ = SDL.SDL_SetClipboardText(ex.Message + "\n\n" + ex.StackTrace);
             }
         }

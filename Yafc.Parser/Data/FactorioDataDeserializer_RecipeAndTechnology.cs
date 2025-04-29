@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using Yafc.I18n;
 using Yafc.Model;
 
 namespace Yafc.Parser;
@@ -354,7 +355,7 @@ internal partial class FactorioDataDeserializer {
                 EnsureLaunchRecipe(item, null);
                 break;
             default:
-                errorCollector.Error($"Research trigger of {technology.typeDotName} has an unsupported type {type}", ErrorSeverity.MinorDataLoss);
+                errorCollector.Error(LSs.ResearchHasAnUnsupportedTriggerType.L(technology.typeDotName, type), ErrorSeverity.MinorDataLoss);
                 break;
         }
     }

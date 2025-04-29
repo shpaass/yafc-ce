@@ -4,6 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Numerics;
 using System.Threading.Tasks;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -26,7 +27,7 @@ public class SummaryView : ProjectPageView<Summary> {
     }
 
     private class SummaryTabColumn : TextDataColumn<ProjectPage> {
-        public SummaryTabColumn() : base("Tab", firstColumnWidth) {
+        public SummaryTabColumn() : base(LSs.Page, firstColumnWidth) {
         }
 
         public override void BuildElement(ImGui gui, ProjectPage page) {
@@ -51,7 +52,7 @@ public class SummaryView : ProjectPageView<Summary> {
         }
     }
 
-    private sealed class SummaryDataColumn(SummaryView view) : TextDataColumn<ProjectPage>("Linked", float.MaxValue) {
+    private sealed class SummaryDataColumn(SummaryView view) : TextDataColumn<ProjectPage>(LSs.SummaryColumnLinked, float.MaxValue) {
         public override void BuildElement(ImGui gui, ProjectPage page) {
             if (page?.contentType != typeof(ProductionTable)) {
                 return;
@@ -232,7 +233,7 @@ public class SummaryView : ProjectPageView<Summary> {
         base.BuildHeader(gui);
 
         gui.allocator = RectAllocator.Center;
-        gui.BuildText("Production Sheet Summary", new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
+        gui.BuildText(LSs.SummaryHeader, new TextBlockDisplayStyle(Font.header, Alignment: RectAlignment.Middle));
         gui.allocator = RectAllocator.LeftAlign;
     }
 
@@ -259,13 +260,13 @@ public class SummaryView : ProjectPageView<Summary> {
         using (gui.EnterRow()) {
             _ = gui.AllocateRect(0, 2); // Increase row height to 2, for vertical centering.
 
-            if (gui.BuildCheckBox("Only show issues", model?.showOnlyIssues ?? false, out bool newValue)) {
+            if (gui.BuildCheckBox(LSs.SummaryOnlyShowIssues, model?.showOnlyIssues ?? false, out bool newValue)) {
                 model!.showOnlyIssues = newValue; // null-forgiving: when model is null, the page is no longer being displayed, so no clicks can happen.
                 Recalculate();
             }
 
-            using (gui.EnterRowWithHelpIcon("Attempt to match production and consumption of all linked products on the displayed pages.\n\nYou will often have to click this button multiple times to fully balance production.", false)) {
-                if (gui.BuildButton("Auto balance")) {
+            using (gui.EnterRowWithHelpIcon(LSs.SummaryAutoBalanceHint, false)) {
+                if (gui.BuildButton(LSs.SummaryAutoBalance)) {
                     await AutoBalance();
                 }
             }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -36,7 +37,7 @@ public class ProductionSummaryEntry(ProductionSummaryGroup owner) : ModelObject<
     protected internal override void AfterDeserialize() {
         // Must be either page reference, or subgroup, not both
         if (subgroup == null && page == null) {
-            throw new NotSupportedException("Referenced page does not exist");
+            throw new NotSupportedException(LSs.LoadErrorReferencedPageNotFound);
         }
 
         if (subgroup != null && page != null) {
@@ -70,10 +71,10 @@ public class ProductionSummaryEntry(ProductionSummaryGroup owner) : ModelObject<
     public string name {
         get {
             if (page != null) {
-                return page.page?.name ?? "Page missing";
+                return page.page?.name ?? LSs.LegacySummaryPageMissing;
             }
 
-            return "Broken entry";
+            return LSs.LegacySummaryBrokenEntry;
         }
     }
 
@@ -155,7 +156,7 @@ public class ProductionSummaryEntry(ProductionSummaryGroup owner) : ModelObject<
 }
 
 public class ProductionSummaryColumn(ProductionSummary owner, IObjectWithQuality<Goods> goods) : ModelObject<ProductionSummary>(owner) {
-    public IObjectWithQuality<Goods> goods { get; } = goods ?? throw new ArgumentNullException(nameof(goods), "Object does not exist");
+    public IObjectWithQuality<Goods> goods { get; } = goods ?? throw new ArgumentNullException(nameof(goods), LSs.LoadErrorObjectDoesNotExist);
 }
 
 public class ProductionSummary : ProjectPageContents, IComparer<(IObjectWithQuality<Goods> goods, float amount)> {

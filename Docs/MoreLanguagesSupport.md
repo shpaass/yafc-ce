@@ -1,6 +1,6 @@
 # YAFC support for more languages
 
-You can ask Yafc to display non-English names for Factorio objects from the Welcome screen:
+You can ask Yafc to display non-English text from the Welcome screen:
 - On the Welcome screen, click the language name (probably "English") next to "In-game objects language:"
 - Select your language from the drop-down that appears.
 - If your language uses non-European glyphs, it may appear at the bottom of the list.

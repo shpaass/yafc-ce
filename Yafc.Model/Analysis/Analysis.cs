@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Yafc.I18n;
 
 namespace Yafc.Model;
 
@@ -16,7 +17,7 @@ public abstract class Analysis {
 
     public static void ProcessAnalyses(IProgress<(string, string)> progress, Project project, ErrorCollector errors) {
         foreach (var analysis in analyses) {
-            progress.Report(("Running analysis algorithms", analysis.GetType().Name));
+            progress.Report((LSs.ProgressRunningAnalysis, analysis.GetType().Name));
             analysis.Compute(project, errors);
         }
     }

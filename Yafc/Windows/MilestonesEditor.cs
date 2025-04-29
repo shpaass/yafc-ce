@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Numerics;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -44,15 +45,14 @@ public class MilestonesEditor : PseudoScreen {
     }
 
     public override void Build(ImGui gui) {
-        BuildHeader(gui, "Milestone editor");
+        BuildHeader(gui, LSs.MilestoneEditor);
         milestoneList.Build(gui);
 
-        string milestoneHintText = "Hint: You can reorder milestones. When an object is locked behind a milestone, the first inaccessible milestone will be shown. " +
-            "Also when there is a choice between different milestones, first will be chosen";
+        string milestoneHintText = LSs.MilestoneDescription;
         gui.BuildText(milestoneHintText, TextBlockDisplayStyle.WrappedText with { Color = SchemeColor.BackgroundTextFaint });
 
         using (gui.EnterRow()) {
-            if (gui.BuildButton("Auto sort milestones", SchemeColor.Grey)) {
+            if (gui.BuildButton(LSs.MilestoneAutoSort, SchemeColor.Grey)) {
                 ErrorCollector collector = new ErrorCollector();
                 Milestones.Instance.ComputeWithParameters(Project.current, collector, [.. Project.current.settings.milestones], true);
 
@@ -62,8 +62,8 @@ public class MilestonesEditor : PseudoScreen {
 
                 milestoneList.RebuildContents();
             }
-            if (gui.BuildButton("Add milestone")) {
-                SelectMultiObjectPanel.Select(Database.objects.explorable.Except(Project.current.settings.milestones), "Add new milestone", AddMilestone);
+            if (gui.BuildButton(LSs.MilestoneAdd)) {
+                SelectMultiObjectPanel.Select(Database.objects.explorable.Except(Project.current.settings.milestones), LSs.MilestoneAddNew, AddMilestone);
             }
         }
     }
@@ -72,7 +72,7 @@ public class MilestonesEditor : PseudoScreen {
         var settings = Project.current.settings;
 
         if (settings.milestones.Contains(obj)) {
-            MessageBox.Show("Cannot add milestone", "Milestone already exists", "Ok");
+            MessageBox.Show(LSs.MilestoneCannotAdd, LSs.MilestoneCannotAddAlreadyExists, LSs.Ok);
             return;
         }
 

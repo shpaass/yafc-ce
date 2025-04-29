@@ -1,4 +1,5 @@
 ﻿using System.Numerics;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -55,7 +56,7 @@ public class ModuleTemplateConfiguration : PseudoScreen {
     }
 
     public override void Build(ImGui gui) {
-        BuildHeader(gui, "Module templates");
+        BuildHeader(gui, LSs.ModuleTemplates);
         templateList.Build(gui);
         if (pageToDelete != null) {
             _ = Project.current.RecordUndo().sharedModuleTemplates.Remove(pageToDelete);
@@ -63,7 +64,7 @@ public class ModuleTemplateConfiguration : PseudoScreen {
             pageToDelete = null;
         }
         using (gui.EnterRow(0.5f, RectAllocator.RightRow)) {
-            if (gui.BuildButton("Create", active: newPageName != "")) {
+            if (gui.BuildButton(LSs.Create, active: newPageName != "")) {
                 ProjectModuleTemplate template = new(Project.current, newPageName);
                 Project.current.RecordUndo().sharedModuleTemplates.Add(template);
                 newPageName = "";
@@ -71,7 +72,7 @@ public class ModuleTemplateConfiguration : PseudoScreen {
                 RefreshList();
             }
 
-            _ = gui.RemainingRow().BuildTextInput(newPageName, out newPageName, "Create new template", setKeyboardFocus: SetKeyboardFocus.OnFirstPanelDraw);
+            _ = gui.RemainingRow().BuildTextInput(newPageName, out newPageName, LSs.CreateNewTemplateHint, setKeyboardFocus: SetKeyboardFocus.OnFirstPanelDraw);
         }
     }
 }

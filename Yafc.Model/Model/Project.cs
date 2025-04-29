@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.Serialization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using Yafc.I18n;
 
 namespace Yafc.Model;
 
@@ -87,7 +88,7 @@ public class Project : ModelObject {
             return read(path, collector, useMostRecent);
         }
         catch when (useMostRecent) {
-            collector.Error("Fatal error reading the latest autosave. Loading the base file instead.", ErrorSeverity.Important);
+            collector.Error(LSs.ErrorLoadingAutosave, ErrorSeverity.Important);
             return read(path, collector, false);
         }
 
@@ -144,11 +145,11 @@ public class Project : ModelObject {
         project = SerializationMap<Project>.DeserializeFromJson(null, ref reader, context);
 
         if (!reader.IsFinalBlock) {
-            collector.Error("Json was not consumed to the end!", ErrorSeverity.MajorDataLoss);
+            collector.Error(LSs.LoadErrorDidNotReadAllData, ErrorSeverity.MajorDataLoss);
         }
 
         if (project == null) {
-            throw new SerializationException("Unable to load project file");
+            throw new SerializationException(LSs.LoadErrorUnableToLoadFile);
         }
 
         project.justCreated = false;
@@ -156,7 +157,7 @@ public class Project : ModelObject {
 
         if (version != currentYafcVersion) {
             if (version > currentYafcVersion) {
-                collector.Error("This file was created with future YAFC version. This may lose data.", ErrorSeverity.Important);
+                collector.Error(LSs.LoadWarningNewerVersion, ErrorSeverity.Important);
             }
 
             project.yafcVersion = currentYafcVersion.ToString();

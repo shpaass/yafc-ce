@@ -5,6 +5,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Yafc.I18n;
 
 namespace Yafc.Model;
 
@@ -151,7 +152,7 @@ internal class ReadOnlyReferenceSerializer<TOwner, TPropertyType> :
         var instance = getter(owner);
 
         if (instance == null) {
-            context.Error("Project contained an unexpected object", ErrorSeverity.MinorDataLoss);
+            context.Error(LSs.LoadWarningUnexpectedObject, ErrorSeverity.MinorDataLoss);
             reader.Skip();
         }
         else if (instance.GetType() == typeof(TPropertyType)) {

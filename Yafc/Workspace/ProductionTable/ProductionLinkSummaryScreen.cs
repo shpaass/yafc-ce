@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using SDL2;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -24,27 +25,27 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
     }
 
     private void BuildScrollArea(ImGui gui) {
-        gui.BuildText("Production: " + DataUtils.FormatAmount(totalInput, link.flowUnitOfMeasure), Font.subheader);
+        gui.BuildText(LSs.LinkSummaryProduction.L(DataUtils.FormatAmount(totalInput, link.flowUnitOfMeasure)), Font.subheader);
         BuildFlow(gui, input, totalInput, false);
         if (link.capturedRecipes.Any(r => r is not RecipeRow)) {
             // captured recipes that are not user-visible RecipeRows imply the existence of implicit links
             using (gui.EnterRow()) {
                 gui.AllocateRect(0, ButtonDisplayStyle.Default.Size);
-                gui.BuildText("Plus additional production from implicit links");
+                gui.BuildText(LSs.LinkSummaryImplicitLinks);
             }
         }
         gui.spacing = 0.5f;
-        gui.BuildText("Consumption: " + DataUtils.FormatAmount(totalOutput, link.flowUnitOfMeasure), Font.subheader);
+        gui.BuildText(LSs.LinkSummaryConsumption.L(DataUtils.FormatAmount(totalOutput, link.flowUnitOfMeasure)), Font.subheader);
         BuildFlow(gui, output, totalOutput, true);
         if (link.amount != 0) {
             gui.spacing = 0.5f;
-            gui.BuildText((link.amount > 0 ? "Requested production: " : "Requested consumption: ") + DataUtils.FormatAmount(MathF.Abs(link.amount),
-                link.flowUnitOfMeasure), new TextBlockDisplayStyle(Font.subheader, Color: SchemeColor.GreenAlt));
+            gui.BuildText((link.amount > 0 ? LSs.LinkSummaryRequestedProduction : LSs.LinkSummaryRequestedConsumption).L(DataUtils.FormatAmount(MathF.Abs(link.amount),
+                link.flowUnitOfMeasure)), new TextBlockDisplayStyle(Font.subheader, Color: SchemeColor.GreenAlt));
         }
         if (link.flags.HasFlags(ProductionLink.Flags.LinkNotMatched) && totalInput != totalOutput + link.amount) {
             float amount = totalInput - totalOutput - link.amount;
             gui.spacing = 0.5f;
-            gui.BuildText((amount > 0 ? "Overproduction: " : "Overconsumption: ") + DataUtils.FormatAmount(MathF.Abs(amount), link.flowUnitOfMeasure),
+            gui.BuildText((amount > 0 ? LSs.LinkSummaryOverproduction : LSs.LinkSummaryOverconsumption).L(DataUtils.FormatAmount(MathF.Abs(amount), link.flowUnitOfMeasure)),
                 new TextBlockDisplayStyle(Font.subheader, Color: SchemeColor.Error));
         }
         ShowRelatedLinks(gui);
@@ -81,25 +82,25 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         var color = 1;
         gui.spacing = 0.75f;
         if (childLinks.Values.Any(e => e.Any())) {
-            gui.BuildText("Child links: ", Font.productionTableHeader);
+            gui.BuildText(LSs.LinkSummaryChildLinks, Font.productionTableHeader);
             foreach (var relTable in childLinks.Values) {
                 BuildFlow(gui, relTable, relTable.Sum(e => Math.Abs(e.flow)), false, color++);
             }
         }
         if (parentLinks.Values.Any(e => e.Any())) {
-            gui.BuildText("Parent links: ", Font.productionTableHeader);
+            gui.BuildText(LSs.LinkSummaryParentLinks, Font.productionTableHeader);
             foreach (var relTable in parentLinks.Values) {
                 BuildFlow(gui, relTable, relTable.Sum(e => Math.Abs(e.flow)), false, color++);
             }
         }
         if (otherLinks.Values.Any(e => e.Any())) {
-            gui.BuildText("Unrelated links: ", Font.productionTableHeader);
+            gui.BuildText(LSs.LinkSummaryUnrelatedLinks, Font.productionTableHeader);
             foreach (var relTable in otherLinks.Values) {
                 BuildFlow(gui, relTable, relTable.Sum(e => Math.Abs(e.flow)), false, color++);
             }
         }
         if (unlinked.Any()) {
-            gui.BuildText("Unlinked: ", Font.subheader);
+            gui.BuildText(LSs.LinkSummaryUnlinked, Font.subheader);
             BuildFlow(gui, unlinked, 0, false);
         }
     }
@@ -129,17 +130,17 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         .Any(e => parents.Contains(e.owner));
 
     public override void Build(ImGui gui) {
-        BuildHeader(gui, "Link summary");
+        BuildHeader(gui, LSs.LinkSummary);
         using (gui.EnterRow()) {
-            gui.BuildText("Exploring link for: ", topOffset: 0.5f);
-            _ = gui.BuildFactorioObjectButtonWithText(link.goods, tooltipOptions: DrawParentRecipes(link.owner, "link"));
+            gui.BuildText(LSs.LinkSummaryHeader, topOffset: 0.5f);
+            _ = gui.BuildFactorioObjectButtonWithText(link.goods, tooltipOptions: DrawParentRecipes(link.owner, LSs.LinkSummaryLinkNestedUnder));
         }
         scrollArea.Build(gui);
-        if (gui.BuildButton("Remove link", link.owner.allLinks.Contains(link) ? SchemeColor.Primary : SchemeColor.Grey)) {
+        if (gui.BuildButton(LSs.RemoveLink, link.owner.allLinks.Contains(link) ? SchemeColor.Primary : SchemeColor.Grey)) {
             DestroyLink(link);
             Close();
         }
-        if (gui.BuildButton("Done")) {
+        if (gui.BuildButton(LSs.Done)) {
             Close();
         }
     }
@@ -155,7 +156,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         gui.spacing = 0f;
         foreach (var (row, flow) in list) {
             string amount = DataUtils.FormatAmount(flow, link.flowUnitOfMeasure);
-            if (gui.BuildFactorioObjectButtonWithText(row.recipe, amount, tooltipOptions: DrawParentRecipes(row.owner, "recipe")) == Click.Left) {
+            if (gui.BuildFactorioObjectButtonWithText(row.recipe, amount, tooltipOptions: DrawParentRecipes(row.owner, LSs.LinkSummaryRecipeNestedUnder)) == Click.Left) {
                 // Find the corresponding links associated with the clicked recipe,
                 IEnumerable<IObjectWithQuality<Goods>> goods = (isLinkOutput ? row.Products.Select(p => p.Goods) : row.Ingredients.Select(i => i.Goods))!;
                 Dictionary<IObjectWithQuality<Goods>, ProductionLink> links = goods
@@ -177,7 +178,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
 
                 void drawLinks(ImGui gui) {
                     if (links.Count == 0) {
-                        string text = isLinkOutput ? "This recipe has no linked products." : "This recipe has no linked ingredients";
+                        string text = isLinkOutput ? LSs.LinkSummaryNoProducts : LSs.LinkSummaryNoIngredients;
                         gui.BuildText(text, TextBlockDisplayStyle.ErrorText);
                     }
                     else {
@@ -186,7 +187,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
                             comparer = DataUtils.CustomFirstItemComparer(mainProduct, comparer);
                         }
 
-                        string header = isLinkOutput ? "Select product link to inspect" : "Select ingredient link to inspect";
+                        string header = isLinkOutput ? LSs.LinkSummarySelectProduct : LSs.LinkSummarySelectIngredient;
                         ObjectSelectOptions<IObjectWithQuality<Goods>> options = new(header, comparer, int.MaxValue);
                         if (gui.BuildInlineObjectList(links.Keys, out IObjectWithQuality<Goods>? selected, options) && gui.CloseDropdown()) {
                             changeLinkView(links[selected]);
@@ -228,7 +229,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
     /// <param name="table">The first table to consider when determining what recipe rows to report.</param>
     /// <param name="type">"link" or "recipe", for the text "This X is nested under:"</param>
     /// <returns>A <see cref="DrawBelowHeader"/> that will draw the appropriate information when called.</returns>
-    private static DrawBelowHeader DrawParentRecipes(ProductionTable table, string type) => gui => {
+    private static DrawBelowHeader DrawParentRecipes(ProductionTable table, LocalizableString0 type) => gui => {
         // Collect the parent recipes (equivalently, the table headers of all tables that contain table)
         Stack<RecipeRow> parents = new();
         while (table?.owner is RecipeRow row) {
@@ -237,7 +238,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         }
 
         if (parents.Count > 0) {
-            gui.BuildText($"This {type} is nested under:", TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(type, TextBlockDisplayStyle.WrappedText);
 
             // Draw the parents with nesting
             float padding = 0.5f;

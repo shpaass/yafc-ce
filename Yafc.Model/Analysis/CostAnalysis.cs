@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using Google.OrTools.LinearSolver;
 using Serilog;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -51,14 +52,14 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
 
         Dictionary<Goods, float> sciencePackUsage = [];
         if (!onlyCurrentMilestones && project.preferences.targetTechnology != null) {
-            itemAmountPrefix = "Estimated amount for " + project.preferences.targetTechnology.locName + ": ";
+            itemAmountPrefix = LSs.CostAnalysisEstimatedAmountFor.L(project.preferences.targetTechnology.locName);
 
             foreach (var spUsage in TechnologyScienceAnalysis.Instance.allSciencePacks[project.preferences.targetTechnology]) {
                 sciencePackUsage[spUsage.goods] = spUsage.amount;
             }
         }
         else {
-            itemAmountPrefix = "Estimated amount for all researches: ";
+            itemAmountPrefix = LSs.CostAnalysisEstimatedAmount;
 
             foreach (Technology technology in Database.technologies.all.ExceptExcluded(this)) {
                 if (technology.IsAccessible() && technology.ingredients is not null) {
@@ -352,7 +353,7 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
         }
         else {
             if (!onlyCurrentMilestones) {
-                warnings.Error("Cost analysis was unable to process this modpack. This may indicate a bug in Yafc.", ErrorSeverity.AnalysisWarning);
+                warnings.Error(LSs.CostAnalysisFailed, ErrorSeverity.AnalysisWarning);
             }
         }
 
@@ -362,45 +363,40 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
         workspaceSolver.Dispose();
     }
 
-    private static readonly StringBuilder sb = new StringBuilder();
     public static string GetDisplayCost(FactorioObject goods) {
         float cost = goods.Cost();
         float costNow = goods.Cost(true);
         if (float.IsPositiveInfinity(cost)) {
-            return "YAFC analysis: Unable to find a way to fully automate this";
+            return LSs.AnalysisNotAutomatable;
         }
-
-        _ = sb.Clear();
 
         float compareCost = cost;
         float compareCostNow = costNow;
-        string costPrefix;
+        string finalCost;
 
         if (goods is Fluid) {
             compareCost = cost * 50;
             compareCostNow = costNow * 50;
-            costPrefix = "YAFC cost per 50 units of fluid:";
+            finalCost = LSs.CostAnalysisFluidCost.L(DataUtils.FormatAmount(compareCost, UnitOfMeasure.None));
         }
         else if (goods is Item) {
-            costPrefix = "YAFC cost per item:";
+            finalCost = LSs.CostAnalysisItemCost.L(DataUtils.FormatAmount(compareCost, UnitOfMeasure.None));
         }
         else if (goods is Special special && special.isPower) {
-            costPrefix = "YAFC cost per 1 MW:";
+            finalCost = LSs.CostAnalysisEnergyCost.L(DataUtils.FormatAmount(compareCost, UnitOfMeasure.None));
         }
         else if (goods is Recipe) {
-            costPrefix = "YAFC cost per recipe:";
+            finalCost = LSs.CostAnalysisRecipeCost.L(DataUtils.FormatAmount(compareCost, UnitOfMeasure.None));
         }
         else {
-            costPrefix = "YAFC cost:";
+            finalCost = LSs.CostAnalysisGenericCost.L(DataUtils.FormatAmount(compareCost, UnitOfMeasure.None));
         }
-
-        _ = sb.Append(costPrefix).Append(" ¥").Append(DataUtils.FormatAmount(compareCost, UnitOfMeasure.None));
 
         if (compareCostNow > compareCost && !float.IsPositiveInfinity(compareCostNow)) {
-            _ = sb.Append(" (Currently ¥").Append(DataUtils.FormatAmount(compareCostNow, UnitOfMeasure.None)).Append(')');
+            return LSs.CostAnalysisWithCurrentCost.L(finalCost, DataUtils.FormatAmount(compareCostNow, UnitOfMeasure.None));
         }
 
-        return sb.ToString();
+        return finalCost;
     }
 
     public static float GetBuildingHours(Recipe recipe, float flow) => recipe.time * flow * (1000f / 3600f);

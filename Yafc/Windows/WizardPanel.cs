@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Yafc.I18n;
 using Yafc.UI;
 
 #nullable disable warnings // Disabling nullable for legacy code.
@@ -33,7 +34,7 @@ public class WizardPanel : PseudoScreen {
         bool valid = true;
         pages[page](gui, ref valid);
         using (gui.EnterRow(allocator: RectAllocator.RightRow)) {
-            if (gui.BuildButton(page >= pages.Count - 1 ? "Finish" : "Next", active: valid)) {
+            if (gui.BuildButton(page >= pages.Count - 1 ? LSs.WizardFinish : LSs.WizardNext, active: valid)) {
                 if (page < pages.Count - 1) {
                     page++;
                 }
@@ -42,11 +43,11 @@ public class WizardPanel : PseudoScreen {
                     finish();
                 }
             }
-            if (page > 0 && gui.BuildButton("Previous")) {
+            if (page > 0 && gui.BuildButton(LSs.WizardPrevious)) {
                 page--;
             }
 
-            gui.BuildText("Step " + (page + 1) + " of " + pages.Count);
+            gui.BuildText(LSs.WizardStepXOfY.L((page + 1), pages.Count));
         }
     }
 }

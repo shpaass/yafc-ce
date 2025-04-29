@@ -137,7 +137,7 @@ public static partial class FactorioDataSource {
             string infoFile = Path.Combine(entry, "info.json");
 
             if (File.Exists(infoFile)) {
-                progress.Report(("Initializing", entry));
+                progress.Report((LSs.ProgressInitializing, entry));
                 ModInfo info = new(entry, File.ReadAllBytes(infoFile));
                 mods.Add(info);
             }
@@ -190,13 +190,13 @@ public static partial class FactorioDataSource {
         try {
             CurrentLoadingMod = null;
             string modSettingsPath = Path.Combine(modPath, "mod-settings.dat");
-            progress.Report(("Initializing", "Loading mod list"));
+            progress.Report((LSs.ProgressInitializing, LSs.ProgressLoadingModList));
             string modListPath = Path.Combine(modPath, "mod-list.json");
             Dictionary<string, Version> versionSpecifiers = [];
 
             bool hasModList = File.Exists(modListPath);
             if (hasModList) {
-                var mods = JsonSerializer.Deserialize<ModList>(File.ReadAllText(modListPath)) ?? throw new($"Could not read mod list from {modListPath}");
+                var mods = JsonSerializer.Deserialize<ModList>(File.ReadAllText(modListPath)) ?? throw new(LSs.CouldNotReadModList.L(modListPath));
                 allMods = mods.mods.Where(x => x.enabled).Select(x => x.name).ToDictionary(x => x, x => (ModInfo)null!);
                 versionSpecifiers = mods.mods.Where(x => x.enabled && !string.IsNullOrEmpty(x.version)).ToDictionary(x => x.name, x => Version.Parse(x.version!)); // null-forgiving: null version strings are filtered by the Where.
             }
@@ -274,7 +274,7 @@ public static partial class FactorioDataSource {
             }
 
             if (missingMod != null) {
-                throw new NotSupportedException("Mod not found: " + missingMod + ". Try loading this pack in Factorio first.");
+                throw new NotSupportedException(LSs.ModNotFoundTryInFactorio.L(missingMod));
             }
 
             List<string> modsToDisable = [];
@@ -298,7 +298,7 @@ public static partial class FactorioDataSource {
             } while (modsToDisable.Count > 0);
 
             CurrentLoadingMod = null;
-            progress.Report(("Initializing", "Creating Lua context"));
+            progress.Report((LSs.ProgressInitializing, LSs.ProgressCreatingLuaContext));
 
             HashSet<string> modsToLoad = [.. allMods.Keys];
             string[] modLoadOrder = new string[modsToLoad.Count];
@@ -318,7 +318,7 @@ public static partial class FactorioDataSource {
                     }
                 }
                 if (currentLoadBatch.Count == 0) {
-                    throw new NotSupportedException("Mods dependencies are circular. Unable to load mods: " + string.Join(", ", modsToLoad));
+                    throw new NotSupportedException(LSs.CircularModDependencies.L(string.Join(LSs.ListSeparator, modsToLoad)));
                 }
 
                 foreach (string mod in currentLoadBatch) {
@@ -376,7 +376,7 @@ public static partial class FactorioDataSource {
             FactorioDataDeserializer deserializer = new FactorioDataDeserializer(factorioVersion ?? defaultFactorioVersion);
             var project = deserializer.LoadData(projectPath, dataContext.data, (LuaTable)dataContext.defines["prototypes"]!, netProduction, progress, errorCollector, renderIcons, useLatestSave);
             logger.Information("Completed!");
-            progress.Report(("Completed!", ""));
+            progress.Report((LSs.ProgressCompleted, ""));
 
             return project;
         }

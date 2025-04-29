@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using Yafc.I18n;
 using Yafc.UI;
 [assembly: InternalsVisibleTo("Yafc.Parser")]
 
@@ -47,14 +48,14 @@ public abstract class FactorioObject : IFactorioObjectWrapper, IComparable<Facto
 
     string IFactorioObjectWrapper.text => locName;
 
-    public void FallbackLocalization(FactorioObject? other, string description) {
+    public void FallbackLocalization(FactorioObject? other, LocalizableString1 description) {
         if (locName == null) {
             if (other == null) {
                 locName = name;
             }
             else {
                 locName = other.locName;
-                locDescr = description + " " + locName;
+                locDescr = description.L(locName);
             }
         }
 
@@ -210,6 +211,7 @@ public class Recipe : RecipeOrTechnology {
 public class Mechanics : Recipe {
     internal FactorioObject source { get; set; } = null!; // null-forgiving: Set by CreateSpecialRecipe
     internal override FactorioObjectSortOrder sortingOrder => FactorioObjectSortOrder.Mechanics;
+    internal LocalizableString localizationKey = null!; // null-forgiving: Set by CreateSpecialRecipe
     public override string type => "Mechanics";
 }
 
@@ -230,11 +232,11 @@ public class Ingredient : IFactorioObjectWrapper {
         get {
             string text = goods.locName;
             if (amount != 1f) {
-                text = amount + "x " + text;
+                text = LSs.IngredientAmount.L(amount, goods.locName);
             }
 
             if (!temperature.IsAny()) {
-                text += " (" + temperature + ")";
+                text = LSs.IngredientAmountWithTemperature.L(amount, goods.locName, temperature);
             }
 
             return text;
@@ -313,27 +315,35 @@ public class Product : IFactorioObjectWrapper {
 
     string IFactorioObjectWrapper.text {
         get {
-            string text = goods.locName;
+            string text;
 
-            if (amountMin != 1f || amountMax != 1f) {
-                text = DataUtils.FormatAmount(amountMax, UnitOfMeasure.None) + "x " + text;
-
-                if (amountMin != amountMax) {
-                    text = DataUtils.FormatAmount(amountMin, UnitOfMeasure.None) + "-" + text;
+            if (probability == 1) {
+                if (amountMin == amountMax) {
+                    text = LSs.ProductAmount.L(DataUtils.FormatAmount(amountMax, UnitOfMeasure.None), goods.locName);
+                }
+                else {
+                    text = LSs.ProductAmountRange.L(DataUtils.FormatAmount(amountMin, UnitOfMeasure.None), DataUtils.FormatAmount(amountMax, UnitOfMeasure.None), goods.locName);
                 }
             }
-            if (probability != 1f) {
-                text = DataUtils.FormatAmount(probability, UnitOfMeasure.Percent) + " " + text;
-            }
-            else if (amountMin == 1 && amountMax == 1) {
-                text = "1x " + text;
+            else {
+                if (amountMin == amountMax) {
+                    if (amountMin == 1) {
+                        text = LSs.ProductProbability.L(DataUtils.FormatAmount(probability, UnitOfMeasure.Percent), goods.locName);
+                    }
+                    else {
+                        text = LSs.ProductProbabilityAmount.L(DataUtils.FormatAmount(probability, UnitOfMeasure.Percent), DataUtils.FormatAmount(amountMax, UnitOfMeasure.None), goods.locName);
+                    }
+                }
+                else {
+                    text = LSs.ProductProbabilityAmountRange.L(DataUtils.FormatAmount(probability, UnitOfMeasure.Percent), DataUtils.FormatAmount(amountMin, UnitOfMeasure.None), DataUtils.FormatAmount(amountMax, UnitOfMeasure.None), goods.locName);
+                }
             }
 
             if (percentSpoiled == 0) {
-                text += ", always fresh";
+                text = LSs.ProductAlwaysFresh.L(text);
             }
             else if (percentSpoiled != null) {
-                text += ", " + DataUtils.FormatAmount(percentSpoiled.Value, UnitOfMeasure.Percent) + " spoiled";
+                text = LSs.ProductFixedSpoilage.L(text, DataUtils.FormatAmount(percentSpoiled.Value, UnitOfMeasure.Percent));
             }
 
             return text;
@@ -1040,10 +1050,10 @@ public struct TemperatureRange(int min, int max) {
 
     public override readonly string ToString() {
         if (min == max) {
-            return min + "°";
+            return LSs.Temperature.L(min);
         }
 
-        return min + "°-" + max + "°";
+        return LSs.TemperatureRange.L(min, max);
     }
 
     public readonly bool Contains(int value) => min <= value && max >= value;

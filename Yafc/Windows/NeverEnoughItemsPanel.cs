@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -121,7 +122,7 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
         foreach (var ingredient in recipe.ingredients) {
             if (gui.BuildFactorioObjectWithAmount(ingredient.goods, ingredient.amount, ButtonDisplayStyle.NeieSmall) == Click.Left) {
                 if (ingredient.variants != null) {
-                    gui.ShowDropDown(imGui => imGui.BuildInlineObjectListAndButton(ingredient.variants, SetItem, new("Accepted fluid variants")));
+                    gui.ShowDropDown(imGui => imGui.BuildInlineObjectListAndButton(ingredient.variants, SetItem, new(LSs.NeieAcceptedVariants)));
                 }
                 else {
                     changing = ingredient.goods;
@@ -186,10 +187,10 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
                 }
                 float bh = CostAnalysis.GetBuildingHours(recipe, entry.recipeFlow);
                 if (bh > 20) {
-                    gui.BuildText(DataUtils.FormatAmount(bh, UnitOfMeasure.None) + "bh", TextBlockDisplayStyle.Centered);
+                    gui.BuildText(LSs.NeieBuildingHoursSuffix.L(DataUtils.FormatAmount(bh, UnitOfMeasure.None)), TextBlockDisplayStyle.Centered);
 
                     _ = gui.BuildButton(gui.lastRect, SchemeColor.None, SchemeColor.Grey)
-                        .WithTooltip(gui, "Building-hours.\nAmount of building-hours required for all researches assuming crafting speed of 1");
+                        .WithTooltip(gui, LSs.NeieBuildingHoursDescription);
                 }
             }
             gui.AllocateSpacing();
@@ -255,7 +256,7 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
     private void DrawEntryFooter(ImGui gui, bool production) {
         if (!production && current.fuelFor.Length > 0) {
             using (gui.EnterGroup(new Padding(0.5f), RectAllocator.LeftAlign)) {
-                gui.BuildText(current.fuelValue > 0f ? "Fuel value " + DataUtils.FormatAmount(current.fuelValue, UnitOfMeasure.Megajoule) + " can be used for:" : "Can be used to fuel:");
+                gui.BuildText(current.fuelValue > 0f ? LSs.FuelValueCanBeUsed.L(DataUtils.FormatAmount(current.fuelValue, UnitOfMeasure.Megajoule)) : LSs.FuelValueZeroCanBeUsed);
                 using var grid = gui.EnterInlineGrid(3f);
                 foreach (var fuelUsage in current.fuelFor) {
                     grid.Next();
@@ -285,10 +286,10 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
             if (status < showRecipesRange) {
                 DrawEntryFooter(gui, production);
                 footerDrawn = true;
-                gui.BuildText(entry.entryStatus == EntryStatus.Special ? "Show special recipes (barreling / voiding)" :
-                    entry.entryStatus == EntryStatus.NotAccessibleWithCurrentMilestones ? "There are more recipes, but they are locked based on current milestones" :
-                    "There are more recipes but they are inaccessible", TextBlockDisplayStyle.WrappedText);
-                if (gui.BuildButton("Show more recipes")) {
+                gui.BuildText(entry.entryStatus == EntryStatus.Special ? LSs.NeieShowSpecialRecipes :
+                    entry.entryStatus == EntryStatus.NotAccessibleWithCurrentMilestones ? LSs.NeieShowLockedRecipes :
+                    LSs.NeieShowInaccessibleRecipes, TextBlockDisplayStyle.WrappedText);
+                if (gui.BuildButton(LSs.NeieShowMoreRecipes)) {
                     ChangeShowStatus(status);
                 }
 
@@ -298,8 +299,10 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
             if (status < prevEntryStatus) {
                 prevEntryStatus = status;
                 using (gui.EnterRow()) {
-                    gui.BuildText(status == EntryStatus.Special ? "Special recipes:" : status == EntryStatus.NotAccessibleWithCurrentMilestones ? "Locked recipes:" : "Inaccessible recipes:");
-                    if (gui.BuildLink("hide")) {
+                    gui.BuildText(status == EntryStatus.Special ? LSs.NeieSpecialRecipes :
+                        status == EntryStatus.NotAccessibleWithCurrentMilestones ? LSs.NeieLockedRecipes : LSs.NeieInaccessibleRecipes);
+
+                    if (gui.BuildLink(LSs.NeieHideRecipes)) {
                         ChangeShowStatus(status + 1);
                     }
                 }
@@ -330,7 +333,7 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
     private void BuildItemUsages(ImGui gui) => DrawEntryList(gui, usages, false);
 
     public override void Build(ImGui gui) {
-        BuildHeader(gui, "Never Enough Items Explorer");
+        BuildHeader(gui, LSs.NeieHeader);
         using (gui.EnterRow()) {
             if (recent.Count == 0) {
                 _ = gui.AllocateRect(0f, 3f);
@@ -356,27 +359,24 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
         }
 
         if (gui.BuildFactorioObjectButtonBackground(gui.lastRect, current, SchemeColor.Grey) == Click.Left) {
-            SelectSingleObjectPanel.Select(Database.goods.explorable, "Select item", SetItem);
+            SelectSingleObjectPanel.Select(Database.goods.explorable, LSs.SelectItem, SetItem);
         }
 
         using (var split = gui.EnterHorizontalSplit(2)) {
             split.Next();
-            gui.BuildText("Production:", Font.subheader);
+            gui.BuildText(LSs.NeieProduction, Font.subheader);
             productionList.Build(gui);
             split.Next();
-            gui.BuildText("Usages:", Font.subheader);
+            gui.BuildText(LSs.NeieUsage, Font.subheader);
             usageList.Build(gui);
         }
         CheckChanging();
         using (gui.EnterRow()) {
-            if (gui.BuildLink("What do colored bars mean?")) {
-                MessageBox.Show("How to read colored bars",
-                    "Blue bar means estimated production or consumption of the thing you selected. Blue bar at 50% means that that recipe produces(consumes) 50% of the product.\n\n" +
-                    "Orange bar means estimated recipe efficiency. If it is not full, the recipe looks inefficient to YAFC.\n\n" +
-                    "It is possible for a recipe to be efficient but not useful - for example a recipe that produces something that is not useful.\n\n" +
-                    "YAFC only estimates things that are required for science recipes. So buildings, belts, weapons, fuel - are not shown in estimations.", "Ok");
+            if (gui.BuildLink(LSs.NeieColoredBarsLink)) {
+                MessageBox.Show(LSs.NeieHowToReadColoredBars,
+                    LSs.NeieColoredBarsDescription, LSs.Ok);
             }
-            if (gui.BuildCheckBox("Current milestones info", atCurrentMilestones, out atCurrentMilestones, allocator: RectAllocator.RightRow)) {
+            if (gui.BuildCheckBox(LSs.NeieCurrentMilestonesCheckbox, atCurrentMilestones, out atCurrentMilestones, allocator: RectAllocator.RightRow)) {
                 Refresh();
             }
         }

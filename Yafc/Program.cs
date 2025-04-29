@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
+using Yafc.I18n;
 using Yafc.Model;
+using Yafc.Parser;
 using Yafc.UI;
 
 namespace Yafc;
@@ -11,6 +13,10 @@ public static class Program {
     private static void Main(string[] args) {
         YafcLib.RegisterDefaultAnalysis();
         Ui.Start();
+
+        // This must happen before Preferences.Instance, where we load the prefs file and the requested translation.
+        FactorioDataSource.LoadYafcLocale("en");
+
         string? overrideFont = Preferences.Instance.overrideFont;
         FontFile? overriddenFontFile = null;
 
@@ -40,11 +46,11 @@ public static class Program {
         ProjectDefinition? cliProject = CommandLineParser.ParseArgs(args);
 
         if (CommandLineParser.errorOccured || CommandLineParser.helpRequested) {
-            Console.WriteLine("YAFC CE v" + YafcLib.version.ToString(3));
+            Console.WriteLine(LSs.YafcWithVersion.L(YafcLib.version.ToString(3)));
             Console.WriteLine();
 
             if (CommandLineParser.errorOccured) {
-                Console.WriteLine($"Error: {CommandLineParser.lastError}");
+                Console.WriteLine(LSs.CommandLineError.L(CommandLineParser.lastError));
                 Console.WriteLine();
                 Environment.ExitCode = 1;
             }

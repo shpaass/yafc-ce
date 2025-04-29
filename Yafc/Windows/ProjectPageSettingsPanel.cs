@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json;
 using SDL2;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -27,13 +28,13 @@ public class ProjectPageSettingsPanel : PseudoScreen {
     }
 
     private void Build(ImGui gui, Action<FactorioObject?> setIcon) {
-        _ = gui.BuildTextInput(name, out name, "Input name", setKeyboardFocus: editingPage == null ? SetKeyboardFocus.OnFirstPanelDraw : SetKeyboardFocus.No);
+        _ = gui.BuildTextInput(name, out name, LSs.PageSettingsNameHint, setKeyboardFocus: editingPage == null ? SetKeyboardFocus.OnFirstPanelDraw : SetKeyboardFocus.No);
         if (gui.BuildFactorioObjectButton(icon, new ButtonDisplayStyle(4f, MilestoneDisplay.None, SchemeColor.Grey) with { UseScaleSetting = false }) == Click.Left) {
-            SelectSingleObjectPanel.Select(Database.objects.all, "Select icon", setIcon);
+            SelectSingleObjectPanel.Select(Database.objects.all, LSs.SelectIcon, setIcon);
         }
 
         if (icon == null && gui.isBuilding) {
-            gui.DrawText(gui.lastRect, "And select icon", RectAlignment.Middle);
+            gui.DrawText(gui.lastRect, LSs.PageSettingsIconHint, RectAlignment.Middle);
         }
     }
 
@@ -41,31 +42,31 @@ public class ProjectPageSettingsPanel : PseudoScreen {
 
     public override void Build(ImGui gui) {
         gui.spacing = 3f;
-        BuildHeader(gui, editingPage == null ? "Create new page" : "Edit page icon and name");
+        BuildHeader(gui, editingPage == null ? LSs.PageSettingsCreateHeader : LSs.PageSettingsEditHeader);
         Build(gui, s => {
             icon = s;
             Rebuild();
         });
 
         using (gui.EnterRow(0.5f, RectAllocator.RightRow)) {
-            if (editingPage == null && gui.BuildButton("Create", active: !string.IsNullOrEmpty(name))) {
+            if (editingPage == null && gui.BuildButton(LSs.Create, active: !string.IsNullOrEmpty(name))) {
                 ReturnPressed();
             }
 
-            if (editingPage != null && gui.BuildButton("OK", active: !string.IsNullOrEmpty(name))) {
+            if (editingPage != null && gui.BuildButton(LSs.Ok, active: !string.IsNullOrEmpty(name))) {
                 ReturnPressed();
             }
 
-            if (gui.BuildButton("Cancel", SchemeColor.Grey)) {
+            if (gui.BuildButton(LSs.Cancel, SchemeColor.Grey)) {
                 Close();
             }
 
-            if (editingPage != null && gui.BuildButton("Other tools", SchemeColor.Grey, active: !string.IsNullOrEmpty(name))) {
+            if (editingPage != null && gui.BuildButton(LSs.PageSettingsOther, SchemeColor.Grey, active: !string.IsNullOrEmpty(name))) {
                 gui.ShowDropDown(OtherToolsDropdown);
             }
 
             gui.allocator = RectAllocator.LeftRow;
-            if (editingPage != null && gui.BuildRedButton("Delete page")) {
+            if (editingPage != null && gui.BuildRedButton(LSs.DeletePage)) {
                 if (editingPage.canDelete) {
                     Project.current.RemovePage(editingPage);
                 }
@@ -94,7 +95,7 @@ public class ProjectPageSettingsPanel : PseudoScreen {
     }
 
     private void OtherToolsDropdown(ImGui gui) {
-        if (editingPage!.guid != MainScreen.SummaryGuid && gui.BuildContextMenuButton("Duplicate page")) { // null-forgiving: This dropdown is not shown when editingPage is null.
+        if (editingPage!.guid != MainScreen.SummaryGuid && gui.BuildContextMenuButton(LSs.DuplicatePage)) { // null-forgiving: This dropdown is not shown when editingPage is null.
             _ = gui.CloseDropdown();
             var project = editingPage.owner;
             if (ClonePage(editingPage) is { } serializedCopy) {
@@ -106,7 +107,7 @@ public class ProjectPageSettingsPanel : PseudoScreen {
             }
         }
 
-        if (editingPage.guid != MainScreen.SummaryGuid && gui.BuildContextMenuButton("Share (export string to clipboard)")) {
+        if (editingPage.guid != MainScreen.SummaryGuid && gui.BuildContextMenuButton(LSs.ExportPageToClipboard)) {
             _ = gui.CloseDropdown();
             var data = JsonUtils.SaveToJson(editingPage);
             using MemoryStream targetStream = new MemoryStream();
@@ -123,14 +124,14 @@ public class ProjectPageSettingsPanel : PseudoScreen {
             _ = SDL.SDL_SetClipboardText(encoded);
         }
 
-        if (editingPage == MainScreen.Instance.activePage && gui.BuildContextMenuButton("Make full page screenshot")) {
+        if (editingPage == MainScreen.Instance.activePage && gui.BuildContextMenuButton(LSs.PageSettingsScreenshot)) {
             // null-forgiving: editingPage is not null, so neither is activePage, and activePage and activePageView become null or not-null together. (see MainScreen.ChangePage)
             var screenshot = MainScreen.Instance.activePageView!.GenerateFullPageScreenshot();
             _ = new ImageSharePanel(screenshot, editingPage.name);
             _ = gui.CloseDropdown();
         }
 
-        if (gui.BuildContextMenuButton("Export calculations (to clipboard)")) {
+        if (gui.BuildContextMenuButton(LSs.PageSettingsExportCalculations)) {
             ExportPage(editingPage);
             _ = gui.CloseDropdown();
         }
@@ -168,9 +169,9 @@ public class ProjectPageSettingsPanel : PseudoScreen {
             Recipe = row.recipe.QualityName();
             Building = ObjectWithQuality.Get(row.entity);
             BuildingCount = row.buildingCount;
-            Fuel = new ExportMaterial(row.fuel?.QualityName() ?? "<No fuel selected>", row.FuelInformation.Amount);
-            Inputs = row.Ingredients.Select(i => new ExportMaterial(i.Goods?.QualityName() ?? "Recipe disabled", i.Amount));
-            Outputs = row.Products.Select(p => new ExportMaterial(p.Goods?.QualityName() ?? "Recipe disabled", p.Amount));
+            Fuel = new ExportMaterial(row.fuel?.QualityName() ?? LSs.ExportNoFuelSelected, row.FuelInformation.Amount);
+            Inputs = row.Ingredients.Select(i => new ExportMaterial(i.Goods?.QualityName() ?? LSs.ExportRecipeDisabled, i.Amount));
+            Outputs = row.Products.Select(p => new ExportMaterial(p.Goods?.QualityName() ?? LSs.ExportRecipeDisabled, p.Amount));
             Beacon = ObjectWithQuality.Get(row.usedModules.beacon);
             BeaconCount = row.usedModules.beaconCount;
 
@@ -231,19 +232,19 @@ public class ProjectPageSettingsPanel : PseudoScreen {
 
             Version version = new Version(DataUtils.ReadLine(bytes, ref index) ?? "");
             if (version > YafcLib.version) {
-                collector.Error("String was created with the newer version of YAFC (" + version + "). Data may be lost.", ErrorSeverity.Important);
+                collector.Error(LSs.AlertImportPageNewerVersion.L(version), ErrorSeverity.Important);
             }
 
             _ = DataUtils.ReadLine(bytes, ref index); // reserved 1
             if (DataUtils.ReadLine(bytes, ref index) != "") // reserved 2 but this time it is required to be empty
 {
-                throw new NotSupportedException("Share string was created with future version of YAFC (" + version + ") and is incompatible");
+                throw new NotSupportedException(LSs.AlertImportPageIncompatibleVersion.L(version));
             }
 
             page = JsonUtils.LoadFromJson<ProjectPage>(new ReadOnlySpan<byte>(bytes, index, (int)ms.Length - index), project, collector);
         }
         catch (Exception ex) {
-            collector.Exception(ex, "Clipboard text does not contain valid YAFC share string", ErrorSeverity.Critical);
+            collector.Exception(ex, LSs.AlertImportPageInvalidString, ErrorSeverity.Critical);
         }
 
         if (page != null) {
@@ -263,8 +264,8 @@ public class ProjectPageSettingsPanel : PseudoScreen {
 
                     project.RecordUndo().pages.Add(page);
                     MainScreen.Instance.SetActivePage(page);
-                }, "Page already exists",
-                "Looks like this page already exists with name '" + existing.name + "'. Would you like to replace it or import as copy?", "Replace", "Import as copy");
+                }, LSs.ImportPageAlreadyExists,
+                LSs.ImportPageAlreadyExistsLong.L(existing.name), LSs.Replace, LSs.ImportAsCopy);
             }
             else {
                 project.RecordUndo().pages.Add(page);

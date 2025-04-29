@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Yafc.I18n;
 using Yafc.Model;
 
 namespace Yafc.Parser;
@@ -72,31 +73,31 @@ internal partial class FactorioDataDeserializer {
             return obj;
         }
 
-        electricity = createSpecialObject(true, SpecialNames.Electricity, "Electricity", "This is an object that represents electric energy",
+        electricity = createSpecialObject(true, SpecialNames.Electricity, LSs.SpecialObjectElectricity, LSs.SpecialObjectElectricityDescription,
             "__core__/graphics/icons/alerts/electricity-icon-unplugged.png", "signal-E");
 
-        heat = createSpecialObject(true, SpecialNames.Heat, "Heat", "This is an object that represents heat energy", "__core__/graphics/arrows/heat-exchange-indication.png", "signal-H");
+        heat = createSpecialObject(true, SpecialNames.Heat, LSs.SpecialObjectHeat, LSs.SpecialObjectHeatDescription, "__core__/graphics/arrows/heat-exchange-indication.png", "signal-H");
 
-        voidEnergy = createSpecialObject(true, SpecialNames.Void, "Void", "This is an object that represents infinite energy", "__core__/graphics/icons/mip/infinity.png", "signal-V");
+        voidEnergy = createSpecialObject(true, SpecialNames.Void, LSs.SpecialObjectVoid, LSs.SpecialObjectVoidDescription, "__core__/graphics/icons/mip/infinity.png", "signal-V");
         voidEnergy.isVoid = true;
         voidEnergy.isLinkable = false;
         voidEnergy.showInExplorers = false;
         rootAccessible.Add(voidEnergy);
 
-        rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, "Rocket launch slot",
-            "This is a slot in a rocket ready to be launched", "__base__/graphics/entity/rocket-silo/rocket-static-pod.png", "signal-R");
+        rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, LSs.SpecialObjectLaunchSlot,
+            LSs.SpecialObjectLaunchSlotDescription, "__base__/graphics/entity/rocket-silo/rocket-static-pod.png", "signal-R");
 
         science = GetObject<Item>("science");
         science.showInExplorers = false;
         Analysis.ExcludeFromAnalysis<CostAnalysis>(science);
         formerAliases["Special.research-unit"] = science;
 
-        generatorProduction = CreateSpecialRecipe(electricity, SpecialNames.GeneratorRecipe, "generating");
+        generatorProduction = CreateSpecialRecipe(electricity, SpecialNames.GeneratorRecipe, LSs.SpecialRecipeGenerating);
         generatorProduction.products = [new Product(electricity, 1f)];
         generatorProduction.flags |= RecipeFlags.ScaleProductionWithPower;
         generatorProduction.ingredients = [];
 
-        reactorProduction = CreateSpecialRecipe(heat, SpecialNames.ReactorRecipe, "generating");
+        reactorProduction = CreateSpecialRecipe(heat, SpecialNames.ReactorRecipe, LSs.SpecialRecipeGenerating);
         reactorProduction.products = [new Product(heat, 1f)];
         reactorProduction.flags |= RecipeFlags.ScaleProductionWithPower;
         reactorProduction.ingredients = [];
@@ -105,8 +106,8 @@ internal partial class FactorioDataDeserializer {
         laborEntityEnergy = new EntityEnergy { type = EntityEnergyType.Labor, effectivity = float.PositiveInfinity };
 
         // Note: These must be Items (or possibly a derived type) so belt capacity can be displayed and set.
-        totalItemInput = createSpecialItem("item-total-input", "Total item consumption", "This item represents the combined total item input of a multi-ingredient recipe. It can be used to set or measure the number of sushi belts required to supply this recipe row.", "__base__/graphics/icons/signal/signal_I.png");
-        totalItemOutput = createSpecialItem("item-total-output", "Total item production", "This item represents the combined total item output of a multi-product recipe. It can be used to set or measure the number of sushi belts required to handle the products of this recipe row.", "__base__/graphics/icons/signal/signal_O.png");
+        totalItemInput = createSpecialItem("item-total-input", LSs.SpecialItemTotalConsumption, LSs.SpecialItemTotalConsumptionDescription, "__base__/graphics/icons/signal/signal_I.png");
+        totalItemOutput = createSpecialItem("item-total-output", LSs.SpecialItemTotalProduction, LSs.SpecialItemTotalProductionDescription, "__base__/graphics/icons/signal/signal_O.png");
         formerAliases["Special.total-item-input"] = totalItemInput;
         formerAliases["Special.total-item-output"] = totalItemOutput;
     }
@@ -471,7 +472,7 @@ internal partial class FactorioDataDeserializer {
             switch (o) {
                 case RecipeOrTechnology recipeOrTechnology:
                     if (recipeOrTechnology is Recipe recipe) {
-                        recipe.FallbackLocalization(recipe.mainProduct, "A recipe to create");
+                        recipe.FallbackLocalization(recipe.mainProduct, LSs.LocalizationFallbackDescriptionRecipeToCreate);
                         recipe.technologyUnlock = recipeUnlockers.GetArray(recipe);
                     }
 
@@ -484,16 +485,15 @@ internal partial class FactorioDataDeserializer {
 
                     if (o is Item item) {
                         if (item.placeResult != null) {
-                            item.FallbackLocalization(item.placeResult, "An item to build");
+                            item.FallbackLocalization(item.placeResult, LSs.LocalizationFallbackDescriptionItemToBuild);
                         }
                     }
                     else if (o is Fluid fluid && fluid.variants != null) {
-                        string temperatureDescr = "Temperature: " + fluid.temperature + "°";
                         if (fluid.locDescr == null) {
-                            fluid.locDescr = temperatureDescr;
+                            fluid.locDescr = LSs.FluidDescriptionTemperatureSolo.L(fluid.temperature);
                         }
                         else {
-                            fluid.locDescr = temperatureDescr + "\n" + fluid.locDescr;
+                            fluid.locDescr = LSs.FluidDescriptionTemperatureAdded.L(fluid.temperature, fluid.locDescr);
                         }
                     }
 
@@ -560,7 +560,7 @@ internal partial class FactorioDataDeserializer {
         }
 
         foreach (var mechanic in allMechanics) {
-            mechanic.locName = mechanic.source.locName + " " + mechanic.locName;
+            mechanic.locName = mechanic.localizationKey.Localize(mechanic.source.locName, mechanic.products.FirstOrDefault()?.goods.fluid?.temperature!);
             mechanic.locDescr = mechanic.source.locDescr;
             mechanic.iconSpec = mechanic.source.iconSpec;
         }
@@ -643,7 +643,7 @@ internal partial class FactorioDataDeserializer {
 
         foreach (var (_, list) in fluidVariants) {
             foreach (var fluid in list) {
-                fluid.locName += " " + fluid.temperature + "°";
+                fluid.locName = LSs.FluidNameWithTemperature.L(fluid.locName, fluid.temperature);
             }
         }
 
@@ -654,7 +654,7 @@ internal partial class FactorioDataDeserializer {
                 && r.specialType is not FactorioObjectSpecialType.Recycling and not FactorioObjectSpecialType.Voiding);
     }
 
-    private Recipe CreateSpecialRecipe(FactorioObject production, string category, string hint) {
+    private Recipe CreateSpecialRecipe(FactorioObject production, string category, LocalizableString specialRecipeKey) {
         string fullName = category + (category.EndsWith('.') ? "" : ".") + production.name;
 
         if (registeredObjects.TryGetValue((typeof(Mechanics), fullName), out var recipeRaw)) {
@@ -666,7 +666,7 @@ internal partial class FactorioDataDeserializer {
         recipe.factorioType = SpecialNames.FakeRecipe;
         recipe.name = fullName;
         recipe.source = production;
-        recipe.locName = hint;
+        recipe.localizationKey = specialRecipeKey;
         recipe.enabled = true;
         recipe.hidden = true;
         recipe.technologyUnlock = [];

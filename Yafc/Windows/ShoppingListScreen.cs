@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using Yafc.Blueprints;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -44,7 +45,7 @@ public class ShoppingListScreen : PseudoScreen {
     private void ElementDrawer(ImGui gui, (IObjectWithQuality<FactorioObject> obj, float count) element, int index) {
         using (gui.EnterRow()) {
             gui.BuildFactorioObjectIcon(element.obj, new IconDisplayStyle(2, MilestoneDisplay.Contained, false));
-            gui.RemainingRow().BuildText("x" + DataUtils.FormatAmount(element.count, UnitOfMeasure.None) + ": " + element.obj.target.locName);
+            gui.RemainingRow().BuildText(LSs.ShoppingListCountOfItems.L(DataUtils.FormatAmount(element.count, UnitOfMeasure.None), element.obj.target.locName));
         }
         _ = gui.BuildFactorioObjectButtonBackground(gui.lastRect, element.obj);
     }
@@ -109,29 +110,29 @@ public class ShoppingListScreen : PseudoScreen {
             .ToList();
     }
 
-    private static readonly (string, string?)[] displayStateOptions = [
-        ("Total buildings", "Display the total number of buildings required, ignoring the built building count."),
-        ("Built buildings", "Display the number of buildings that are reported in built building count."),
-        ("Missing buildings", "Display the number of additional buildings that need to be built.")];
-    private static readonly (string, string?)[] assumeAdequateOptions = [
-        ("No buildings", "When the built building count is not specified, behave as if it was set to 0."),
-        ("Enough buildings", "When the built building count is not specified, behave as if it matches the required building count.")];
+    private static readonly (LocalizableString0, LocalizableString0?)[] displayStateOptionKeys = [
+        (LSs.ShoppingListTotalBuildings, LSs.ShoppingListTotalBuildingsHint),
+        (LSs.ShoppingListBuiltBuildings, LSs.ShoppingListBuiltBuildingsHint),
+        (LSs.ShoppingListMissingBuildings, LSs.ShoppingListMissingBuildingsHint)];
+    private static readonly (LocalizableString0, LocalizableString0?)[] assumeAdequateOptionKeys = [
+        (LSs.ShoppingListAssumeNoBuildings, LSs.ShoppingListAssumeNoBuildingsHint),
+        (LSs.ShoppingListAssumeEnoughBuildings, LSs.ShoppingListAssumeEnoughBuildingsHint)];
 
     public override void Build(ImGui gui) {
-        BuildHeader(gui, "Shopping list");
-        gui.BuildText(
-            "Total cost of all objects: ¥" + DataUtils.FormatAmount(shoppingCost, UnitOfMeasure.None) + ", buildings: " +
-            DataUtils.FormatAmount(totalBuildings, UnitOfMeasure.None) + ", modules: " + DataUtils.FormatAmount(totalModules, UnitOfMeasure.None), TextBlockDisplayStyle.Centered);
+        BuildHeader(gui, LSs.ShoppingList);
+        gui.BuildText(LSs.ShoppingListCostInformation.L(DataUtils.FormatAmount(shoppingCost, UnitOfMeasure.None),
+            DataUtils.FormatAmount(totalBuildings, UnitOfMeasure.None), DataUtils.FormatAmount(totalModules, UnitOfMeasure.None)),
+            TextBlockDisplayStyle.Centered);
         using (gui.EnterRow()) {
-            if (gui.BuildRadioGroup(displayStateOptions, (int)displayState, out int newSelected)) {
+            if (gui.BuildRadioGroup(displayStateOptionKeys, (int)displayState, out int newSelected)) {
                 displayState = (DisplayState)newSelected;
                 RebuildData();
             }
         }
         using (gui.EnterRow()) {
             SchemeColor textColor = displayState == DisplayState.Total ? SchemeColor.PrimaryTextFaint : SchemeColor.PrimaryText;
-            gui.BuildText("When not specified, assume:", TextBlockDisplayStyle.Default(textColor), topOffset: .15f);
-            if (gui.BuildRadioGroup(assumeAdequateOptions, assumeAdequate ? 1 : 0, out int newSelected, enabled: displayState != DisplayState.Total)) {
+            gui.BuildText(LSs.ShoppingListBuildingAssumptionHeader, TextBlockDisplayStyle.Default(textColor), topOffset: .15f);
+            if (gui.BuildRadioGroup(assumeAdequateOptionKeys, assumeAdequate ? 1 : 0, out int newSelected, enabled: displayState != DisplayState.Total)) {
                 assumeAdequate = newSelected == 1;
                 RebuildData();
             }
@@ -142,40 +143,40 @@ public class ShoppingListScreen : PseudoScreen {
         if (totalHeat > 0) {
             using (gui.EnterRow(0)) {
                 gui.AllocateRect(0, 1.5f);
-                gui.BuildText("These entities require " + DataUtils.FormatAmount(totalHeat, UnitOfMeasure.Megawatt) + " heat on cold planets.");
+                gui.BuildText(LSs.ShoppingListTheseRequireHeat.L(DataUtils.FormatAmount(totalHeat, UnitOfMeasure.Megawatt)));
             }
 
             using (gui.EnterRow(0)) {
-                gui.BuildText("Allow additional heat for ");
-                if (gui.BuildLink("inserters")) {
+                gui.BuildText(LSs.ShoppingListAllowAdditionalHeat);
+                if (gui.BuildLink(LSs.ShoppingListHeatForInserters)) {
                     gui.BuildObjectSelectDropDown(Database.allInserters, _ => { }, options);
                 }
-                gui.BuildText(", ");
-                if (gui.BuildLink("pipes")) {
+                gui.BuildText(LSs.ListSeparator);
+                if (gui.BuildLink(LSs.ShoppingListHeatForPipes)) {
                     gui.BuildObjectSelectDropDown(pipes, _ => { }, options);
                 }
-                gui.BuildText(", ");
-                if (gui.BuildLink("belts")) {
+                gui.BuildText(LSs.ListSeparator);
+                if (gui.BuildLink(LSs.ShoppingListHeatForBelts)) {
                     gui.BuildObjectSelectDropDown(belts, _ => { }, options);
                 }
-                gui.BuildText(", and ");
-                if (gui.BuildLink("other entities")) {
+                gui.BuildText(LSs.ShoppingListHeatAnd);
+                if (gui.BuildLink(LSs.ShoppingListHeatForOtherEntities)) {
                     gui.BuildObjectSelectDropDown(other, _ => { }, options);
                 }
-                gui.BuildText(".");
+                gui.BuildText(LSs.ShoppingListHeatPeriod);
             }
         }
 
         using (gui.EnterRow(allocator: RectAllocator.RightRow)) {
-            if (gui.BuildButton("Done")) {
+            if (gui.BuildButton(LSs.Done)) {
                 Close();
             }
 
-            if (gui.BuildButton("Decompose", active: !decomposed)) {
+            if (gui.BuildButton(LSs.ShoppingListDecompose, active: !decomposed)) {
                 Decompose();
             }
 
-            if (gui.BuildButton("Export to blueprint", SchemeColor.Grey)) {
+            if (gui.BuildButton(LSs.ShoppingListExportBlueprint, SchemeColor.Grey)) {
                 gui.ShowDropDown(ExportBlueprintDropdown);
             }
         }
@@ -201,16 +202,16 @@ public class ShoppingListScreen : PseudoScreen {
     }
 
     private void ExportBlueprintDropdown(ImGui gui) {
-        gui.BuildText("Blueprint string will be copied to clipboard", TextBlockDisplayStyle.WrappedText);
+        gui.BuildText(LSs.ShoppingListExportBlueprintHint, TextBlockDisplayStyle.WrappedText);
         if (Database.objectsByTypeName.TryGetValue("Entity.constant-combinator", out var combinator)
             && gui.BuildFactorioObjectButtonWithText(combinator) == Click.Left && gui.CloseDropdown()) {
 
-            _ = BlueprintUtilities.ExportConstantCombinators("Shopping list", ExportGoods<Goods>());
+            _ = BlueprintUtilities.ExportConstantCombinators(LSs.ShoppingList, ExportGoods<Goods>());
         }
 
         foreach (var container in Database.allContainers) {
             if (container.logisticMode == "requester" && gui.BuildFactorioObjectButtonWithText(container) == Click.Left && gui.CloseDropdown()) {
-                _ = BlueprintUtilities.ExportRequesterChests("Shopping list", ExportGoods<Item>(), container);
+                _ = BlueprintUtilities.ExportRequesterChests(LSs.ShoppingList, ExportGoods<Item>(), container);
             }
         }
     }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -25,15 +26,15 @@ public class AutoPlannerView : ProjectPageView<AutoPlanner> {
 
     private Action CreateAutoPlannerWizard(List<WizardPanel.PageBuilder> pages) {
         List<AutoPlannerGoal> goal = [];
-        string pageName = "Auto planner";
+        string pageName = LSs.AutoPlanner;
 
         void page1(ImGui gui, ref bool valid) {
-            gui.BuildText("This is an experimental feature and may lack functionality. Unfortunately, after some prototyping it wasn't very useful to work with. More research required.",
+            gui.BuildText(LSs.AutoPlannerWarning,
                 TextBlockDisplayStyle.ErrorText);
-            gui.BuildText("Enter page name:");
+            gui.BuildText(LSs.AutoPlannerPageName);
             _ = gui.BuildTextInput(pageName, out pageName, null);
             gui.AllocateSpacing(2f);
-            gui.BuildText("Select your goal:");
+            gui.BuildText(LSs.AutoPlannerGoal);
             using (var grid = gui.EnterInlineGrid(3f)) {
                 for (int i = 0; i < goal.Count; i++) {
                     var elem = goal[i];
@@ -50,7 +51,7 @@ public class AutoPlannerView : ProjectPageView<AutoPlanner> {
                 }
                 grid.Next();
                 if (gui.BuildButton(Icon.Plus, SchemeColor.Primary, SchemeColor.PrimaryAlt, size: 2.5f)) {
-                    SelectSingleObjectPanel.Select(Database.goods.explorable, "New production goal", x => {
+                    SelectSingleObjectPanel.Select(Database.goods.explorable, LSs.AutoPlannerSelectProductionGoal, x => {
                         goal.Add(new AutoPlannerGoal { amount = 1f, item = x });
                         gui.Rebuild();
                     });
@@ -58,7 +59,7 @@ public class AutoPlannerView : ProjectPageView<AutoPlanner> {
                 grid.Next();
             }
             gui.AllocateSpacing(2f);
-            gui.BuildText("Review active milestones, as they will restrict recipes that are considered:", TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(LSs.AutoPlannerReviewMilestones, TextBlockDisplayStyle.WrappedText);
             new MilestonesWidget().Build(gui);
             gui.AllocateSpacing(2f);
             valid = !string.IsNullOrEmpty(pageName) && goal.Count > 0;
@@ -66,7 +67,7 @@ public class AutoPlannerView : ProjectPageView<AutoPlanner> {
 
         pages.Add(page1);
         return () => {
-            var planner = MainScreen.Instance.AddProjectPage("Auto planner", goal[0].item, typeof(AutoPlanner), false, false);
+            var planner = MainScreen.Instance.AddProjectPage(LSs.AutoPlanner, goal[0].item, typeof(AutoPlanner), false, false);
             (planner.content as AutoPlanner).goals.AddRange(goal);
             MainScreen.Instance.SetActivePage(planner);
         };

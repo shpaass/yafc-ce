@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
 
@@ -20,7 +21,7 @@ public class ProductionSummaryView : ProjectPageView<ProductionSummary> {
         firstColumn = new SummaryColumn(this);
         lastColumn = new RestGoodsColumn(this);
         grid = new DataGrid<ProductionSummaryEntry>(padding, firstColumn, lastColumn) { headerHeight = 4.2f };
-        flatHierarchy = new FlatHierarchy<ProductionSummaryEntry, ProductionSummaryGroup>(grid, null, buildExpandedGroupRows: true);
+        flatHierarchy = new FlatHierarchy<ProductionSummaryEntry, ProductionSummaryGroup>(grid, null, LSs.LegacySummaryEmptyGroup, buildExpandedGroupRows: true);
     }
 
     private class PaddingColumn(ProductionSummaryView view) : DataColumn<ProductionSummaryEntry>(3f) {
@@ -79,7 +80,7 @@ public class ProductionSummaryView : ProjectPageView<ProductionSummary> {
                     BuildButtons(gui, 1.5f, entry.subgroup);
                 }
                 else {
-                    if (gui.BuildTextInput(entry.subgroup.name, out string newText, "Group name", delayed: true)) {
+                    if (gui.BuildTextInput(entry.subgroup.name, out string newText, LSs.LegacySummaryGroupNameHint, delayed: true)) {
                         entry.subgroup.RecordUndo().name = newText;
                     }
                 }
@@ -100,11 +101,11 @@ public class ProductionSummaryView : ProjectPageView<ProductionSummary> {
                 }
                 else if (buttonEvent == ButtonEvent.Click) {
                     gui.ShowDropDown(dropdownGui => {
-                        if (dropdownGui.BuildButton("Go to page") && dropdownGui.CloseDropdown()) {
+                        if (dropdownGui.BuildButton(LSs.LegacySummaryGoToPage) && dropdownGui.CloseDropdown()) {
                             MainScreen.Instance.SetActivePage(entry.page.page);
                         }
 
-                        if (dropdownGui.BuildRedButton("Remove") && dropdownGui.CloseDropdown()) {
+                        if (dropdownGui.BuildRedButton(LSs.Remove) && dropdownGui.CloseDropdown()) {
                             _ = entry.owner.RecordUndo().elements.Remove(entry);
                         }
                     });
@@ -113,7 +114,7 @@ public class ProductionSummaryView : ProjectPageView<ProductionSummary> {
 
             using (gui.EnterFixedPositioning(3f, 2f, default)) {
                 gui.allocator = RectAllocator.LeftRow;
-                gui.BuildText("x");
+                gui.BuildText(LSs.LegacySummaryMultiplierEditBoxPrefix);
                 DisplayAmount amount = entry.multiplier;
                 if (gui.BuildFloatInput(amount, TextBoxDisplayStyle.FactorioObjectInput with { ColorGroup = SchemeColorGroup.Grey, Alignment = RectAlignment.MiddleLeft })
                     && amount.Value >= 0) {
@@ -178,7 +179,7 @@ public class ProductionSummaryView : ProjectPageView<ProductionSummary> {
         }
     }
 
-    private class RestGoodsColumn(ProductionSummaryView view) : TextDataColumn<ProductionSummaryEntry>("Other", 30f, 5f, 40f) {
+    private class RestGoodsColumn(ProductionSummaryView view) : TextDataColumn<ProductionSummaryEntry>(LSs.LegacySummaryOtherColumn, 30f, 5f, 40f) {
         public override void BuildElement(ImGui gui, ProductionSummaryEntry data) {
             using var grid = gui.EnterInlineGrid(2.1f);
             foreach (var (goods, amount) in data.flow) {
@@ -281,10 +282,10 @@ public class ProductionSummaryView : ProjectPageView<ProductionSummary> {
         gui.AllocateSpacing(1f);
         using (gui.EnterGroup(new Padding(1))) {
             if (model.group.elements.Count == 0) {
-                gui.BuildText("Add your existing sheets here to keep track of what you have in your base and to see what shortages you may have");
+                gui.BuildText(LSs.LegacySummaryEmptyGroupDescription);
             }
             else {
-                gui.BuildText("List of goods produced/consumed by added blocks. Click on any of these to add it to (or remove it from) the table.");
+                gui.BuildText(LSs.LegacySummaryGroupDescription);
             }
 
             using var inlineGrid = gui.EnterInlineGrid(3f, 1f);

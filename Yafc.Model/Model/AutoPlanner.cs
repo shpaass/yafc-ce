@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Google.OrTools.LinearSolver;
 using Serilog;
+using Yafc.I18n;
 using Yafc.UI;
 
 #nullable disable warnings // Disabling nullable in legacy code.
@@ -15,7 +16,7 @@ public class AutoPlannerGoal {
     private Goods _item;
     public Goods item {
         get => _item;
-        set => _item = value ?? throw new ArgumentNullException(nameof(value), "Auto planner goal no longer exist");
+        set => _item = value ?? throw new ArgumentNullException(nameof(value), LSs.AutoPlannerMissingGoal);
     }
     public float amount { get; set; }
 }
@@ -118,7 +119,7 @@ public class AutoPlanner(ModelObject page) : ProjectPageContents(page) {
             logger.Information(bestFlowSolver.ExportModelAsLpFormat(false));
             this.tiers = null;
 
-            return "Model has no solution";
+            return LSs.AutoPlannerNoSolution;
         }
 
         Graph<Recipe> graph = new Graph<Recipe>();

@@ -1,12 +1,13 @@
 ﻿using System;
 using System.Threading.Tasks;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
 
 public class ProjectPage : ModelObject<Project> {
     public FactorioObject? icon { get; set; }
-    public string name { get; set; } = "New page";
+    public string name { get; set; } = LSs.DefaultNewPageName;
     public Guid guid { get; private set; }
     public Type contentType { get; }
     public ProjectPageContents content { get; }

@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text.Json;
 using Serilog;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc.Model;
@@ -391,7 +392,7 @@ internal static class SerializationMap<T> where T : class {
             return obj;
         }
         catch (Exception ex) {
-            context.Exception(ex, "Unable to deserialize " + typeof(T).Name, ErrorSeverity.MajorDataLoss);
+            context.Exception(ex, LSs.LoadErrorUnableToDeserializeUntranslated.L(typeof(T).Name), ErrorSeverity.MajorDataLoss);
 
             if (reader.TokenType == JsonTokenType.StartObject && reader.CurrentDepth == depth) {
                 _ = reader.Read();
@@ -433,7 +434,7 @@ internal static class SerializationMap<T> where T : class {
                     property.DeserializeFromJson(obj, ref reader, allObjects);
                 }
                 catch (InvalidOperationException ex) {
-                    allObjects.Exception(ex, "Encountered an unexpected value when reading the project file", ErrorSeverity.MajorDataLoss);
+                    allObjects.Exception(ex, LSs.LoadErrorEncounteredUnexpectedValue, ErrorSeverity.MajorDataLoss);
                 }
             }
             _ = reader.Read();

@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Numerics;
 using SDL2;
+using Yafc.I18n;
 using Yafc.UI;
 
 namespace Yafc;
@@ -135,7 +136,7 @@ public class FilesystemScreen : TaskWindow<string?>, IKeyboardFocus {
         EntryType.Directory => (Icon.Folder, Path.GetFileName(data.location)),
         EntryType.Drive => (Icon.FolderOpen, data.location),
         EntryType.ParentDirectory => (Icon.Upload, ".."),
-        EntryType.CreateDirectory => (Icon.NewFolder, "Create directory here"),
+        EntryType.CreateDirectory => (Icon.NewFolder, LSs.BrowserCreateDirectory),
         _ => (Icon.Settings, Path.GetFileName(data.location)),
     };
 

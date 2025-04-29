@@ -76,7 +76,7 @@ internal partial class FactorioDataDeserializer {
             }
 
             fluid.variants.Sort(DataUtils.FluidTemperatureComparer);
-            fluidVariants[fluid.type + "." + fluid.name] = fluid.variants;
+            fluidVariants[fluid.typeDotName] = fluid.variants;
 
             foreach (var variant in fluid.variants) {
                 AddTemperatureToFluidIcon(variant);
@@ -114,7 +114,7 @@ internal partial class FactorioDataDeserializer {
     public Project LoadData(string projectPath, LuaTable data, LuaTable prototypes, bool netProduction,
         IProgress<(string, string)> progress, ErrorCollector errorCollector, bool renderIcons, bool useLatestSave) {
 
-        progress.Report(("Loading", "Loading items"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingItems));
         raw = (LuaTable?)data["raw"] ?? throw new ArgumentException("Could not load data.raw from data argument", nameof(data));
         LuaTable itemPrototypes = (LuaTable?)prototypes?["item"] ?? throw new ArgumentException("Could not load prototypes.item from data argument", nameof(prototypes));
 
@@ -127,25 +127,25 @@ internal partial class FactorioDataDeserializer {
         }
 
         allModules.AddRange(allObjects.OfType<Module>());
-        progress.Report(("Loading", "Loading tiles"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingTiles));
         DeserializePrototypes(raw, "tile", DeserializeTile, progress, errorCollector);
-        progress.Report(("Loading", "Loading fluids"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingFluids));
         DeserializePrototypes(raw, "fluid", DeserializeFluid, progress, errorCollector);
-        progress.Report(("Loading", "Loading recipes"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingRecipes));
         DeserializePrototypes(raw, "recipe", DeserializeRecipe, progress, errorCollector);
-        progress.Report(("Loading", "Loading locations"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingLocations));
         DeserializePrototypes(raw, "planet", DeserializeLocation, progress, errorCollector);
         DeserializePrototypes(raw, "space-location", DeserializeLocation, progress, errorCollector);
         rootAccessible.Add(GetObject<Location>("nauvis"));
-        progress.Report(("Loading", "Loading technologies"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingTechnologies));
         DeserializePrototypes(raw, "technology", DeserializeTechnology, progress, errorCollector);
-        progress.Report(("Loading", "Loading qualities"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingQualities));
         DeserializePrototypes(raw, "quality", DeserializeQuality, progress, errorCollector);
         Quality.Normal = GetObject<Quality>("normal");
         rootAccessible.Add(Quality.Normal);
         DeserializePrototypes(raw, "asteroid-chunk", DeserializeAsteroidChunk, progress, errorCollector);
 
-        progress.Report(("Loading", "Loading entities"));
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingEntities));
         LuaTable entityPrototypes = (LuaTable?)prototypes["entity"] ?? throw new ArgumentException("Could not load prototypes.entity from data argument", nameof(prototypes));
         foreach (object prototypeName in entityPrototypes.ObjectElements.Keys) {
             DeserializePrototypes(raw, (string)prototypeName, DeserializeEntity, progress, errorCollector);
@@ -154,7 +154,7 @@ internal partial class FactorioDataDeserializer {
         ParseCaptureEffects();
 
         ParseModYafcHandles(data["script_enabled"] as LuaTable);
-        progress.Report(("Post-processing", "Computing maps"));
+        progress.Report((LSs.ProgressPostprocessing, LSs.ProgressComputingMaps));
         // Deterministically sort all objects
         allObjects.Sort((a, b) => a.sortingOrder == b.sortingOrder ? string.Compare(a.typeDotName, b.typeDotName, StringComparison.Ordinal) : a.sortingOrder - b.sortingOrder);
 
@@ -172,13 +172,13 @@ internal partial class FactorioDataDeserializer {
         CalculateItemWeights();
         ObjectWithQuality.LoadCache(allObjects);
         ExportBuiltData();
-        progress.Report(("Post-processing", "Calculating dependencies"));
+        progress.Report((LSs.ProgressPostprocessing, LSs.ProgressCalculatingDependencies));
         Dependencies.Calculate();
         TechnologyLoopsFinder.FindTechnologyLoops();
-        progress.Report(("Post-processing", "Creating project"));
+        progress.Report((LSs.ProgressPostprocessing, LSs.ProgressCreatingProject));
         Project project = Project.ReadFromFile(projectPath, errorCollector, useLatestSave);
         Analysis.ProcessAnalyses(progress, project, errorCollector);
-        progress.Report(("Rendering icons", ""));
+        progress.Report((LSs.ProgressRenderingIcons, ""));
         iconRenderedProgress = progress;
         iconRenderTask.Wait();
 
@@ -206,7 +206,7 @@ internal partial class FactorioDataDeserializer {
 
             foreach (var o in allObjects) {
                 if (++rendered % 100 == 0) {
-                    iconRenderedProgress?.Report(("Rendering icons", $"{rendered}/{allObjects.Count}"));
+                    iconRenderedProgress?.Report((LSs.ProgressRenderingIcons, LSs.ProgressRenderingXOfY.L(rendered, allObjects.Count)));
                 }
 
                 if (o.iconSpec != null && o.iconSpec.Length > 0) {
@@ -319,7 +319,7 @@ internal partial class FactorioDataDeserializer {
         IProgress<(string, string)> progress, ErrorCollector errorCollector) {
 
         object? table = data[type];
-        progress.Report(("Building objects", type));
+        progress.Report((LSs.ProgressBuildingObjects, type));
 
         if (table is not LuaTable luaTable) {
             return;
@@ -458,7 +458,7 @@ internal partial class FactorioDataDeserializer {
         }
 
         if (GetRef(table, "spoil_result", out Item? spoiled)) {
-            var recipe = CreateSpecialRecipe(item, SpecialNames.SpoilRecipe, "spoiling");
+            var recipe = CreateSpecialRecipe(item, SpecialNames.SpoilRecipe, LSs.SpecialRecipeSpoiling);
             recipe.ingredients = [new Ingredient(item, 1)];
             recipe.products = [new Product(spoiled, 1)];
             recipe.time = table.Get("spoil_ticks", 0) / 60f;
@@ -594,7 +594,7 @@ nextWeightCalculation:;
     /// <param name="launchProducts">The result of launching <see cref="Item"/>, if known. Otherwise <see langword="null"/>, to preserve
     /// the existing launch products of a preexisting recipe, or set no products for a new recipe.</param>
     private void EnsureLaunchRecipe(Item item, Product[]? launchProducts) {
-        Recipe recipe = CreateSpecialRecipe(item, SpecialNames.RocketLaunch, "launched");
+        Recipe recipe = CreateSpecialRecipe(item, SpecialNames.RocketLaunch, LSs.SpecialRecipeLaunched);
         recipe.ingredients =
         [
             // When this is called, we don't know the item weight or the rocket capacity.
@@ -630,7 +630,7 @@ nextWeightCalculation:;
             tile.Fluid = pumpingFluid;
 
             string recipeCategory = SpecialNames.PumpingRecipe + "tile";
-            Recipe recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, "pumping");
+            Recipe recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, LSs.SpecialRecipePumping);
 
             if (recipe.products == null) {
                 recipe.products = [new Product(pumpingFluid, 1200f)]; // set to Factorio default pump amounts - looks nice in tooltip
