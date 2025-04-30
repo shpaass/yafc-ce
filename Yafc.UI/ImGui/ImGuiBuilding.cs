@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Numerics;
 using SDL2;
 
@@ -139,6 +140,9 @@ public partial class ImGui {
             rect = AllocateRect(0f, topOffset + (fontSize.lineSize / pixelsPerUnit));
         }
         else {
+            if (Debugger.IsAttached && text.Contains("Key not found: ")) {
+                Debugger.Break(); // drawing improperly internationalized text
+            }
             Vector2 textSize = GetTextDimensions(out cache, text, displayStyle.Font, displayStyle.WrapText, maxWidth);
             rect = AllocateRect(textSize.X, topOffset + (textSize.Y), displayStyle.Alignment);
         }

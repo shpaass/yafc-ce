@@ -219,7 +219,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                 gui.BuildText(LSs.WelcomeLanguageHeader);
             }
 
-            using (gui.EnterRowWithHelpIcon("""When enabled it will try to find a more recent autosave. Disable if you want to load your manual save only.""", false)) {
+            using (gui.EnterRowWithHelpIcon(LSs.WelcomeLoadAutosaveHint, false)) {
                 if (gui.BuildCheckBox(LSs.WelcomeLoadAutosave, Preferences.Instance.useMostRecentSave,
                         out useMostRecentSave)) {
                     Preferences.Instance.useMostRecentSave = useMostRecentSave;
@@ -227,16 +227,11 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                 }
             }
 
-            using (gui.EnterRowWithHelpIcon("""
-                    If checked, YAFC will only suggest production or consumption recipes that have a net production or consumption of that item or fluid.
-                    For example, kovarex enrichment will not be suggested when adding recipes that produce U-238 or consume U-235.
-                    """, false)) {
+            using (gui.EnterRowWithHelpIcon(LSs.WelcomeUseNetProductionHint, false)) {
                 _ = gui.BuildCheckBox(LSs.WelcomeUseNetProduction, netProduction, out netProduction);
             }
 
-            string softwareRenderHint = LSs.WelcomeSoftwareRenderHint;
-
-            using (gui.EnterRowWithHelpIcon(softwareRenderHint, false)) {
+            using (gui.EnterRowWithHelpIcon(LSs.WelcomeSoftwareRenderHint, false)) {
                 bool forceSoftwareRenderer = Preferences.Instance.forceSoftwareRenderer;
                 _ = gui.BuildCheckBox(LSs.WelcomeSoftwareRender, forceSoftwareRenderer, out forceSoftwareRenderer);
 
@@ -365,7 +360,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
         if (!Program.hasOverriddenFont) {
             gui.AllocateSpacing(0.5f);
 
-            gui.BuildText((string)LSs.WelcomeAlertNeedADifferentFont, TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(LSs.WelcomeAlertNeedADifferentFont, TextBlockDisplayStyle.WrappedText);
             gui.AllocateSpacing(0.5f);
         }
         DoLanguageList(gui, languageMapping, false);

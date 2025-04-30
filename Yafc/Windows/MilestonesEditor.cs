@@ -48,8 +48,7 @@ public class MilestonesEditor : PseudoScreen {
         BuildHeader(gui, LSs.MilestoneEditor);
         milestoneList.Build(gui);
 
-        string milestoneHintText = LSs.MilestoneDescription;
-        gui.BuildText(milestoneHintText, TextBlockDisplayStyle.WrappedText with { Color = SchemeColor.BackgroundTextFaint });
+        gui.BuildText(LSs.MilestoneDescription, TextBlockDisplayStyle.WrappedText with { Color = SchemeColor.BackgroundTextFaint });
 
         using (gui.EnterRow()) {
             if (gui.BuildButton(LSs.MilestoneAutoSort, SchemeColor.Grey)) {

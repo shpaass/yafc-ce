@@ -32,10 +32,10 @@ public class ModuleFillerParametersScreen : PseudoScreen {
                 DrawBelowHeader = gui => {
                     using (gui.EnterRow()) {
                         // Allocate the width now, but draw the text later so it can be vertically centered.
-                        Rect rect = gui.AllocateTextRect(out _, LSs.AffectedByNBeacons.L(element.Value.beaconCount), TextBlockDisplayStyle.Default(SchemeColor.None));
+                        Rect rect = gui.AllocateTextRect(out _, LSs.AffectedByMBeacons.L(element.Value.beaconCount), TextBlockDisplayStyle.Default(SchemeColor.None));
                         gui.BuildFactorioObjectIcon(element.Value.beacon, ButtonDisplayStyle.ProductionTableUnscaled);
                         rect.Height = gui.lastRect.Height;
-                        gui.DrawText(rect, LSs.AffectedByNBeacons.L(element.Value.beaconCount));
+                        gui.DrawText(rect, LSs.AffectedByMBeacons.L(element.Value.beaconCount));
                         gui.BuildText(LSs.EachContainingNModules.L(element.Value.beacon.target.moduleSlots));
                         gui.BuildFactorioObjectIcon(element.Value.beaconModule, ButtonDisplayStyle.ProductionTableUnscaled);
                     }

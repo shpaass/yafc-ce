@@ -329,7 +329,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
     }
 
-    private static void ShowNeie() => SelectSingleObjectPanel.Select(Database.goods.explorable, LSs.OpenNeie, NeverEnoughItemsPanel.Show);
+    private static void ShowNeie() => SelectSingleObjectPanel.Select(Database.goods.explorable, LSs.MenuOpenNeie, NeverEnoughItemsPanel.Show);
 
     private void SetSearch(SearchQuery searchQuery) {
         pageSearch = searchQuery;
@@ -395,7 +395,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
             _ = ShowPseudoScreen(new MilestonesPanel());
         }
 
-        if (gui.BuildContextMenuButton(LSs.MenuPreferences) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.Preferences) && gui.CloseDropdown()) {
             PreferencesScreen.ShowPreviousState();
         }
 
@@ -412,10 +412,10 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
 
         if (gui.BuildContextMenuButton(LSs.DependencyExplorer) && gui.CloseDropdown()) {
-            SelectSingleObjectPanel.Select(Database.objects.explorable, LSs.OpenDependencyExplorer, DependencyExplorer.Show);
+            SelectSingleObjectPanel.Select(Database.objects.explorable, LSs.DependencyExplorer, DependencyExplorer.Show);
         }
 
-        if (gui.BuildContextMenuButton(LSs.ImportFromClipboard, disabled: !ImGuiUtils.HasClipboardText()) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.MenuImportFromClipboard, disabled: !ImGuiUtils.HasClipboardText()) && gui.CloseDropdown()) {
             ProjectPageSettingsPanel.LoadProjectPageFromClipboard();
         }
 
@@ -665,7 +665,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
 
         string? projectDirectory = string.IsNullOrEmpty(project.attachedFileName) ? null : Path.GetDirectoryName(project.attachedFileName);
-        string? path = await new FilesystemScreen(LSs.LoadProjectWindowTitle, LSs.LoadProjectWindowHeader, LSs.SelectProject, projectDirectory,
+        string? path = await new FilesystemScreen(LSs.LoadProjectWindowTitle, LSs.LoadProjectWindowHeader, LSs.Select, projectDirectory,
             FilesystemScreen.Mode.SelectOrCreateFile, LSs.DefaultFileName, this, null, "yafc");
 
         if (path == null) {

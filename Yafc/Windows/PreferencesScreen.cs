@@ -149,9 +149,7 @@ public class PreferencesScreen : PseudoScreen {
             }
         }
 
-        string iconScaleMessage = LSs.PrefsIconScaleHint;
-
-        using (gui.EnterRowWithHelpIcon(iconScaleMessage)) {
+        using (gui.EnterRowWithHelpIcon(LSs.PrefsIconScaleHint)) {
             gui.BuildText(LSs.PrefsIconScale, topOffset: 0.5f);
             DisplayAmount amount = new(preferences.iconScale, UnitOfMeasure.Percent);
             if (gui.BuildFloatInput(amount, TextBoxDisplayStyle.DefaultTextInput) && amount.Value > 0 && amount.Value <= 1) {
@@ -163,8 +161,7 @@ public class PreferencesScreen : PseudoScreen {
         // Don't show this preference if it isn't relevant.
         // (Takes ~3ms for pY, which would concern me in the regular UI, but should be fine here.)
         if (Database.objects.all.Any(o => Milestones.Instance.GetMilestoneResult(o).PopCount() > 22)) {
-            string overlapMessage = LSs.PrefsMilestonesPerLineHint;
-            using (gui.EnterRowWithHelpIcon(overlapMessage)) {
+            using (gui.EnterRowWithHelpIcon(LSs.PrefsMilestonesPerLineHint)) {
                 gui.BuildText(LSs.PrefsMilestonesPerLine, topOffset: 0.5f);
                 if (gui.BuildIntegerInput(preferences.maxMilestonesPerTooltipLine, out int newIntValue) && newIntValue >= 22) {
                     preferences.RecordUndo().maxMilestonesPerTooltipLine = newIntValue;

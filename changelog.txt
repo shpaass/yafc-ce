@@ -20,6 +20,7 @@ Date:
     Features:
         - When changing the language for Factorio objects, automatically switch to, or download, a font that can
           display that language.
+        - All of YAFC can be translated, not just the strings that are used in Factorio.
     Fixes:
         - Prevent productivity bonuses from exceeding +300%, unless otherwise allowed by mods.
         - When loading duplicate research productivity effects, obey both of them, instead of failing.

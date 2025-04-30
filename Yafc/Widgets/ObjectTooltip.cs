@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using Yafc.I18n;
 using Yafc.Model;
 using Yafc.UI;
@@ -185,12 +186,10 @@ doneDrawing:;
             }
 
             if (!target.IsAccessible()) {
-                string message = LSs.TooltipNotAccessible.L(target.type);
-                gui.BuildText(message, TextBlockDisplayStyle.WrappedText);
+                gui.BuildText(LSs.TooltipNotAccessible.L(target.type), TextBlockDisplayStyle.WrappedText);
             }
             else if (!target.IsAutomatable()) {
-                string message = LSs.TooltipNotAutomatable.L(target.type);
-                gui.BuildText(message, TextBlockDisplayStyle.WrappedText);
+                gui.BuildText(LSs.TooltipNotAutomatable.L(target.type), TextBlockDisplayStyle.WrappedText);
             }
             else {
                 gui.BuildText(CostAnalysis.GetDisplayCost(target), TextBlockDisplayStyle.WrappedText);
@@ -258,14 +257,14 @@ doneDrawing:;
                     if (crafter.allowedEffects != AllowedEffects.None) {
                         gui.BuildText(LSs.EntityModuleSlots.L(crafter.moduleSlots));
                         if (crafter.allowedEffects != AllowedEffects.All) {
-                            gui.BuildText(LSs.AllowedModuleEffectsUntranslatedList.L(crafter.allowedEffects), TextBlockDisplayStyle.WrappedText);
+                            gui.BuildText(LSs.AllowedModuleEffectsUntranslatedList.L(crafter.allowedEffects, BitOperations.PopCount((uint)crafter.allowedEffects)), TextBlockDisplayStyle.WrappedText);
                         }
                     }
                 }
             }
 
             if (crafter.inputs != null) {
-                BuildSubHeader(gui, LSs.LabAllowedInputs);
+                BuildSubHeader(gui, LSs.LabAllowedInputs.L(crafter.inputs));
                 using (gui.EnterGroup(contentPadding)) {
                     BuildIconRow(gui, crafter.inputs, 2);
                 }
@@ -290,7 +289,7 @@ doneDrawing:;
         if (entity.energy != null) {
             string energyUsage = EnergyDescriptions[entity.energy.type].L(DataUtils.FormatAmount(entity.Power(quality), UnitOfMeasure.Megawatt));
             if (entity.energy.drain > 0f) {
-                energyUsage = LSs.TooltipAddDrainEnergy.L(energyUsage, DataUtils.FormatAmount(entity.energy.drain, UnitOfMeasure.Megawatt));
+                energyUsage = LSs.TooltipActivePlusDrainPower.L(energyUsage, DataUtils.FormatAmount(entity.energy.drain, UnitOfMeasure.Megawatt));
             }
 
             BuildSubHeader(gui, energyUsage);
@@ -370,7 +369,7 @@ doneDrawing:;
         }
 
         if (goods.production.Length > 0) {
-            BuildSubHeader(gui, LSs.TooltipHeaderProductionRecipes);
+            BuildSubHeader(gui, LSs.TooltipHeaderProductionRecipes.L(goods.production.Length));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, goods.production, 2);
                 if (tooltipOptions.HintLocations.HasFlag(HintLocations.OnProducingRecipes)) {
@@ -381,14 +380,14 @@ doneDrawing:;
         }
 
         if (goods.miscSources.Length > 0) {
-            BuildSubHeader(gui, LSs.TooltipHeaderMiscellaneousSources);
+            BuildSubHeader(gui, LSs.TooltipHeaderMiscellaneousSources.L(goods.miscSources.Length));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, goods.miscSources, 2);
             }
         }
 
         if (goods.usages.Length > 0) {
-            BuildSubHeader(gui, LSs.TooltipHeaderConsumptionRecipes);
+            BuildSubHeader(gui, LSs.TooltipHeaderConsumptionRecipes.L(goods.usages.Length));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, goods.usages, 4);
                 if (tooltipOptions.HintLocations.HasFlag(HintLocations.OnConsumingRecipes)) {
@@ -402,7 +401,7 @@ doneDrawing:;
             BuildSubHeader(gui, LSs.Perishable);
             using (gui.EnterGroup(contentPadding)) {
                 float spoilTime = perishable.GetSpoilTime(quality) / Project.current.settings.spoilingRate;
-                gui.BuildText(LSs.ItemSpoils.L(DataUtils.FormatTime(spoilTime)));
+                gui.BuildText(LSs.TooltipItemSpoils.L(DataUtils.FormatTime(spoilTime)));
                 gui.BuildFactorioObjectButtonWithText(spoiled, iconDisplayStyle: IconDisplayStyle.Default with { AlwaysAccessible = true });
                 tooltipOptions.ExtraSpoilInformation?.Invoke(gui);
             }
@@ -513,7 +512,7 @@ doneDrawing:;
         }
 
         if (recipe is Recipe { products.Length: > 0 } && !(recipe.products.Length == 1 && recipe.products[0].IsSimple)) {
-            BuildSubHeader(gui, LSs.TooltipHeaderRecipeProducts);
+            BuildSubHeader(gui, LSs.TooltipHeaderRecipeProducts.L(recipe.products.Length));
             using (gui.EnterGroup(contentPadding)) {
                 string? extraText = recipe is Recipe { preserveProducts: true } ? LSs.ProductSuffixPreserved : null;
                 foreach (var product in recipe.products) {
@@ -522,7 +521,7 @@ doneDrawing:;
             }
         }
 
-        BuildSubHeader(gui, LSs.TooltipHeaderRecipeCrafters);
+        BuildSubHeader(gui, LSs.TooltipHeaderRecipeCrafters.L(recipe.crafters.Length));
         using (gui.EnterGroup(contentPadding)) {
             BuildIconRow(gui, recipe.crafters, 2);
         }
@@ -530,7 +529,7 @@ doneDrawing:;
         List<Module> allowedModules = [.. Database.allModules.Where(recipe.CanAcceptModule)];
 
         if (allowedModules.Count > 0) {
-            BuildSubHeader(gui, LSs.TooltipHeaderAllowedModules);
+            BuildSubHeader(gui, LSs.TooltipHeaderAllowedModules.L(allowedModules.Count));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, allowedModules, 1);
             }
@@ -554,7 +553,7 @@ doneDrawing:;
         }
 
         if (recipe is Recipe lockedRecipe && !lockedRecipe.enabled) {
-            BuildSubHeader(gui, LSs.TooltipHeaderUnlockedByTechnologies);
+            BuildSubHeader(gui, LSs.TooltipHeaderUnlockedByTechnologies.L(lockedRecipe.technologyUnlock.Length));
             using (gui.EnterGroup(contentPadding)) {
                 if (lockedRecipe.technologyUnlock.Length > 2) {
                     BuildIconRow(gui, lockedRecipe.technologyUnlock, 1);
@@ -597,7 +596,7 @@ doneDrawing:;
         }
 
         if (technology.prerequisites.Length > 0) {
-            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyPrerequisites);
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyPrerequisites.L(technology.prerequisites.Length));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.prerequisites, 1);
             }
@@ -644,14 +643,14 @@ doneDrawing:;
         }
 
         if (technology.unlockRecipes.Count > 0) {
-            BuildSubHeader(gui, LSs.TooltipHeaderUnlocksRecipes);
+            BuildSubHeader(gui, LSs.TooltipHeaderUnlocksRecipes.L(technology.unlockRecipes.Count));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.unlockRecipes, 2);
             }
         }
 
         if (technology.unlockLocations.Count > 0) {
-            BuildSubHeader(gui, LSs.TooltipHeaderUnlocksLocations);
+            BuildSubHeader(gui, LSs.TooltipHeaderUnlocksLocations.L(technology.unlockLocations.Count));
             using (gui.EnterGroup(contentPadding)) {
                 BuildIconRow(gui, technology.unlockLocations, 2);
             }

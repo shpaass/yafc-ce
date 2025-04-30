@@ -46,7 +46,7 @@ public class ExceptionScreen : WindowUtility {
                 Close();
             }
 
-            if (gui.BuildButton(LSs.IgnoreFutureErrors, SchemeColor.Grey)) {
+            if (gui.BuildButton(LSs.ExceptionIgnoreFutureErrors, SchemeColor.Grey)) {
                 ignoreAll = true;
                 Close();
             }

@@ -15,7 +15,7 @@ public class DependencyExplorer : PseudoScreen {
     private readonly List<FactorioObject> history = [];
     private FactorioObject current;
 
-    private static readonly Dictionary<DependencyNode.Flags, (string name, string missingText)> dependencyListTexts = new Dictionary<DependencyNode.Flags, (string, string)>()
+    private static readonly Dictionary<DependencyNode.Flags, (LocalizableString1? name, LocalizableString0 missingText)> dependencyListTexts = new()
     {
         {DependencyNode.Flags.Fuel, (LSs.DependencyFuel, LSs.DependencyFuelMissing)},
         {DependencyNode.Flags.Ingredient, (LSs.DependencyIngredient, LSs.DependencyIngredientMissing)},
@@ -26,7 +26,7 @@ public class DependencyExplorer : PseudoScreen {
         {DependencyNode.Flags.TechnologyPrerequisites, (LSs.DependencyTechnology, LSs.DependencyTechnologyNoPrerequisites)},
         {DependencyNode.Flags.ItemToPlace, (LSs.DependencyItem, LSs.DependencyItemMissing)},
         {DependencyNode.Flags.SourceEntity, (LSs.DependencySource, LSs.DependencyMapSourceMissing)},
-        {DependencyNode.Flags.Disabled, ("", LSs.DependencyTechnologyDisabled)},
+        {DependencyNode.Flags.Disabled, (null, LSs.DependencyTechnologyDisabled)},
         {DependencyNode.Flags.Location, (LSs.DependencyLocation, LSs.DependencyLocationMissing)},
     };
 
@@ -54,20 +54,27 @@ public class DependencyExplorer : PseudoScreen {
         gui.spacing = 0f;
 
         Dependencies.dependencyList[current].Draw(gui, (gui, elements, flags) => {
-            if (!dependencyListTexts.TryGetValue(flags, out var dependencyType)) {
-                dependencyType = (flags.ToString(), "Missing " + flags);
+            string name;
+            string missingText;
+            if (dependencyListTexts.TryGetValue(flags, out var dependencyType)) {
+                name = dependencyType.name?.L(elements.Count) ?? "";
+                missingText = dependencyType.missingText;
+            }
+            else {
+                name = flags.ToString();
+                missingText = "Missing " + flags;
             }
 
             if (elements.Count > 0) {
                 gui.AllocateSpacing(0.5f);
                 if (elements.Count == 1) {
-                    gui.BuildText(LSs.DependencyRequireSingle.L(dependencyType.name));
+                    gui.BuildText(LSs.DependencyRequireSingle.L(name));
                 }
                 else if (flags.HasFlags(DependencyNode.Flags.RequireEverything)) {
-                    gui.BuildText(LSs.DependencyRequireAll.L(dependencyType.name));
+                    gui.BuildText(LSs.DependencyRequireAll.L(name));
                 }
                 else {
-                    gui.BuildText(LSs.DependencyRequireAny.L(dependencyType.name));
+                    gui.BuildText(LSs.DependencyRequireAny.L(name));
                 }
 
                 gui.AllocateSpacing(0.5f);
@@ -76,15 +83,14 @@ public class DependencyExplorer : PseudoScreen {
                 }
             }
             else {
-                string text = dependencyType.missingText;
                 if (Database.rootAccessible.Contains(current)) {
-                    text = LSs.DependencyAccessibleAnyway.L(text);
+                    missingText = LSs.DependencyAccessibleAnyway.L(missingText);
                 }
                 else {
-                    text = LSs.DependencyAndNotAccessible.L(text);
+                    missingText = LSs.DependencyAndNotAccessible.L(missingText);
                 }
 
-                gui.BuildText(text, TextBlockDisplayStyle.WrappedText);
+                gui.BuildText(missingText, TextBlockDisplayStyle.WrappedText);
             }
         });
     }
@@ -164,10 +170,10 @@ public class DependencyExplorer : PseudoScreen {
         gui.AllocateSpacing(2f);
         using var split = gui.EnterHorizontalSplit(2);
         split.Next();
-        gui.BuildText(LSs.DependencyHeaderDependencies, Font.subheader);
+        gui.BuildText(LSs.DependencyHeaderDependencies.L(Dependencies.dependencyList[current].Count()), Font.subheader);
         dependencies.Build(gui);
         split.Next();
-        gui.BuildText(LSs.DependencyHeaderDependents, Font.subheader);
+        gui.BuildText(LSs.DependencyHeaderDependents.L(Dependencies.reverseDependencies[current].Count), Font.subheader);
         dependents.Build(gui);
     }
 

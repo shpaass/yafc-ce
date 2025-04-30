@@ -70,6 +70,12 @@ public abstract class DependencyNode {
     internal abstract IEnumerable<FactorioId> Flatten();
 
     /// <summary>
+    /// Gets the number of entries in this dependency tree.
+    /// </summary>
+    /// <returns></returns>
+    public int Count() => Flatten().Count();
+
+    /// <summary>
     /// Determines whether the object that owns this dependency tree is accessible, based on the accessibility <paramref name="isAccessible"/>
     /// returns for dependent objects, and the types of this node and its children.
     /// </summary>

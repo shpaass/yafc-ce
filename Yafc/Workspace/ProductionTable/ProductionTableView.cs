@@ -269,12 +269,12 @@ goodsHaveNoProduction:;
         private static void BuildRecipeButton(ImGui gui, ProductionTable table) {
             if (gui.BuildButton(LSs.ProductionTableAddRawRecipe).WithTooltip(gui, LSs.ProductionTableAddTechnologyHint) && gui.CloseDropdown()) {
                 if (InputSystem.Instance.control) {
-                    SelectMultiObjectPanel.Select(Database.technologies.all, LSs.SelectTechnology,
+                    SelectMultiObjectPanel.Select(Database.technologies.all, LSs.ProductionTableAddTechnology,
                         r => table.AddRecipe(r.With(Quality.Normal), DefaultVariantOrdering), checkMark: r => table.recipes.Any(rr => rr.recipe.target == r), yellowMark: r => table.GetAllRecipes().Any(rr => rr.recipe.target == r));
                 }
                 else {
                     var prodTable = ProductionLinkSummaryScreen.FindProductionTable(table, out List<ModelObject> parents);
-                    SelectMultiObjectPanel.SelectWithQuality(Database.recipes.explorable.AsEnumerable<RecipeOrTechnology>(), LSs.ProductionTableSelectRawRecipe,
+                    SelectMultiObjectPanel.SelectWithQuality(Database.recipes.explorable.AsEnumerable<RecipeOrTechnology>(), LSs.ProductionTableAddRawRecipe,
                         r => table.AddRecipe(r, DefaultVariantOrdering), Quality.Normal, checkMark: r => table.recipes.Any(rr => rr.recipe.target == r), yellowMark: r => prodTable?.GetAllRecipes().Any(rr => rr.recipe.target == r) ?? false);
                 }
             }
@@ -446,7 +446,7 @@ goodsHaveNoProduction:;
         private static void ShowAccumulatorDropdown(ImGui gui, RecipeRow recipe, Entity currentAccumulator, Quality accumulatorQuality)
             => gui.BuildObjectQualitySelectDropDown(Database.allAccumulators,
                 newAccumulator => recipe.RecordUndo().ChangeVariant(currentAccumulator, newAccumulator.target),
-                new(LSs.SelectAccumulator, ExtraText: x => DataUtils.FormatAmount(x.AccumulatorCapacity(accumulatorQuality), UnitOfMeasure.Megajoule)),
+                new(LSs.ProductionTableSelectAccumulator, ExtraText: x => DataUtils.FormatAmount(x.AccumulatorCapacity(accumulatorQuality), UnitOfMeasure.Megajoule)),
                 accumulatorQuality,
                 newQuality => recipe.RecordUndo().ChangeVariant(accumulatorQuality, newQuality));
 
@@ -477,7 +477,7 @@ goodsHaveNoProduction:;
                     if (!sel.energy.fuels.Contains(recipe.fuel?.target)) {
                         recipe.fuel = recipe.entity.target.energy.fuels.AutoSelect(DataUtils.FavoriteFuel).With(Quality.Normal);
                     }
-                }, new(LSs.SelectCraftingEntity, DataUtils.FavoriteCrafter, ExtraText: x => DataUtils.FormatAmount(x.CraftingSpeed(quality), UnitOfMeasure.Percent)));
+                }, new(LSs.ProductionTableSelectCraftingEntity, DataUtils.FavoriteCrafter, ExtraText: x => DataUtils.FormatAmount(x.CraftingSpeed(quality), UnitOfMeasure.Percent)));
 
                 gui.AllocateSpacing(0.5f);
 
@@ -492,9 +492,7 @@ goodsHaveNoProduction:;
                 }
 
                 if (recipe.hierarchyEnabled) {
-                    string fixedBuildingsTip = LSs.ProductionTableFixedBuildingsHint;
-
-                    using (gui.EnterRowWithHelpIcon(fixedBuildingsTip)) {
+                    using (gui.EnterRowWithHelpIcon(LSs.ProductionTableFixedBuildingsHint)) {
                         gui.allocator = RectAllocator.RemainingRow;
                         if (recipe.fixedBuildings > 0f && !recipe.fixedFuel && recipe.fixedIngredient == null && recipe.fixedProduct == null) {
                             ButtonEvent evt = gui.BuildButton(LSs.ProductionTableClearFixedBuildingCount);
@@ -576,7 +574,7 @@ goodsHaveNoProduction:;
 
         public override void BuildMenu(ImGui gui) {
             if (gui.BuildButton(LSs.ProductionTableMassSetAssembler) && gui.CloseDropdown()) {
-                SelectSingleObjectPanel.Select(Database.allCrafters, LSs.ProductionTableSelectMassAssembler, set => {
+                SelectSingleObjectPanel.Select(Database.allCrafters, LSs.ProductionTableMassSetAssembler, set => {
                     DataUtils.FavoriteCrafter.AddToFavorite(set, 10);
 
                     foreach (var recipe in view.GetRecipesRecursive()) {
@@ -599,7 +597,7 @@ goodsHaveNoProduction:;
             }
 
             if (gui.BuildButton(LSs.ProductionTableMassSetFuel) && gui.CloseDropdown()) {
-                SelectSingleObjectPanel.SelectWithQuality(Database.goods.all.Where(x => x.fuelValue > 0), LSs.ProductionTableSelectMassFuel, set => {
+                SelectSingleObjectPanel.SelectWithQuality(Database.goods.all.Where(x => x.fuelValue > 0), LSs.ProductionTableMassSetFuel, set => {
                     DataUtils.FavoriteFuel.AddToFavorite(set.target, 10);
 
                     foreach (var recipe in view.GetRecipesRecursive()) {
@@ -991,7 +989,7 @@ goodsHaveNoProduction:;
 
             if (goods == Database.science) {
                 if (gui.BuildButton(LSs.ProductionTableAddTechnology) && gui.CloseDropdown()) {
-                    SelectMultiObjectPanel.Select(Database.technologies.all, LSs.SelectTechnology,
+                    SelectMultiObjectPanel.Select(Database.technologies.all, LSs.ProductionTableAddTechnology,
                         r => context.AddRecipe(r.With(Quality.Normal), DefaultVariantOrdering), checkMark: r => context.recipes.Any(rr => rr.recipe.target == r));
                 }
             }
@@ -1008,7 +1006,7 @@ goodsHaveNoProduction:;
                         CreateNewProductionTable(goods, amount);
                     }
                     else if (evt == ButtonEvent.MouseOver) {
-                        gui.ShowTooltip(iconRect, LSs.ProductionTableCreateNewTable.L(goods.target.locName));
+                        gui.ShowTooltip(iconRect, LSs.ProductionTableCreateTableFor.L(goods.target.locName));
                     }
                 }
             }
@@ -1085,8 +1083,7 @@ goodsHaveNoProduction:;
                     gui.BuildText(LSs.ProductionTableCannotUnlink.L(goods.target.locName), TextBlockDisplayStyle.WrappedText);
                 }
                 else {
-                    string goodProdLinkedMessage = LSs.ProductionTableCurrentlyLinked.L(goods.target.locName);
-                    gui.BuildText(goodProdLinkedMessage, TextBlockDisplayStyle.WrappedText);
+                    gui.BuildText(LSs.ProductionTableCurrentlyLinked.L(goods.target.locName), TextBlockDisplayStyle.WrappedText);
                 }
 
                 if (type is ProductDropdownType.DesiredIngredient or ProductDropdownType.DesiredProduct) {
@@ -1104,19 +1101,17 @@ goodsHaveNoProduction:;
             }
             else if (goods != null) {
                 if (link != null) {
-                    string goodsNestLinkMessage = LSs.ProductionTableLinkedInParent.L(goods.target.locName);
-                    gui.BuildText(goodsNestLinkMessage, TextBlockDisplayStyle.WrappedText);
+                    gui.BuildText(LSs.ProductionTableLinkedInParent.L(goods.target.locName), TextBlockDisplayStyle.WrappedText);
                 }
                 else if (iLink != null) {
-                    string implicitLink = LSs.ProductionTableImplicitlyLinked.L(goods.target.locName, goods.quality.locName, Database.science.target.locName);
+                    string implicitLink = LSs.ProductionTableImplicitlyLinked.L(goods.target.locName, goods.quality.locName);
                     gui.BuildText(implicitLink, TextBlockDisplayStyle.WrappedText);
                     if (gui.BuildButton(LSs.ProductionTableCreateLink).WithTooltip(gui, LSs.ProductionTableShortcutRightClick) && gui.CloseDropdown()) {
                         CreateLink(context, goods);
                     }
                 }
                 else if (goods.target.isLinkable) {
-                    string notLinkedMessage = LSs.ProductionTableNotLinked.L(goods.target.locName);
-                    gui.BuildText(notLinkedMessage, TextBlockDisplayStyle.WrappedText);
+                    gui.BuildText(LSs.ProductionTableNotLinked.L(goods.target.locName), TextBlockDisplayStyle.WrappedText);
                     if (gui.BuildButton(LSs.ProductionTableCreateLink).WithTooltip(gui, LSs.ProductionTableShortcutRightClick) && gui.CloseDropdown()) {
                         CreateLink(context, goods);
                     }
@@ -1448,7 +1443,7 @@ goodsHaveNoProduction:;
                 click |= gui.BuildFactorioObjectButton(belt, ButtonDisplayStyle.Default) == Click.Left;
                 gui.AllocateSpacing(-1.5f);
                 click |= gui.BuildFactorioObjectButton(inserter, ButtonDisplayStyle.Default) == Click.Left;
-                text = LSs.ProductionTableApproximateNumber.L(DataUtils.FormatAmount(inserterToBelt, UnitOfMeasure.None));
+                text = LSs.ProductionTableApproximateInserters.L(DataUtils.FormatAmount(inserterToBelt, UnitOfMeasure.None));
 
                 if (buildingCount > 1) {
                     text = LSs.ProductionTableApproximateInsertersPerBuilding.L(DataUtils.FormatAmount(inserterToBelt, UnitOfMeasure.None),
