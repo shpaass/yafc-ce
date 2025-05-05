@@ -13,8 +13,8 @@
 
 "files": [
   {
-    "source": "Yafc/Data/locale/en/Yafc.cfg",
-    "dest": "Yafc/Data/locale/en/Yafc.ini",
-    "translation": "Yafc/Data/locale/%two_letters_code%/Yafc.cfg"
+    "source": "Yafc/Data/locale/en/yafc.cfg",
+    "dest": "Yafc/Data/locale/en/yafc.ini",
+    "translation": "Yafc/Data/locale/%two_letters_code%/yafc.cfg"
   }
 ]
