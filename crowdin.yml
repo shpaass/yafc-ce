@@ -15,6 +15,6 @@
   {
     "source": "Yafc/Data/locale/en/yafc.cfg",
     "dest": "yafc.ini",
-    "translation": "Yafc/Data/locale/%locale%/yafc.cfg"
+    "translation": "Yafc/Data/locale/%two_letters_code%/yafc.cfg"
   }
 ]
