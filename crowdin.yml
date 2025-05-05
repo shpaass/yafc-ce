@@ -13,7 +13,8 @@
 
 "files": [
   {
-    "source": "locales/en.yml",
-    "translation": "locales/%two_letters_code%.yml"
+    "source": "Yafc/Data/locale/en/Yafc.cfg",
+    "dest": "Yafc/Data/locale/en/Yafc.ini",
+    "translation": "Yafc/Data/locale/%two_letters_code%/Yafc.cfg"
   }
 ]
