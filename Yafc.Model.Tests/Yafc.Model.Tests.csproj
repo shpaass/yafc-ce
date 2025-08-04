@@ -20,15 +20,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ContentWithTargetPath Include="..\Yafc\lib\windows\lua*" Condition="('$(RuntimeIdentifier)' == 'win-x64') Or ('$(OS)' == 'Windows_NT')">
+    <ContentWithTargetPath Include="..\Yafc\lib\windows\lua*"
+      Condition="('$(RuntimeIdentifier)' == 'win-x64') Or ('$(OS)' == 'Windows_NT')">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>%(Filename)%(Extension)</TargetPath>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\Yafc\lib\osx\lua*" Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
+    <ContentWithTargetPath Include="..\Yafc\lib\osx\lua*"
+      Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>%(Filename)%(Extension)</TargetPath>
     </ContentWithTargetPath>
-    <ContentWithTargetPath Include="..\Yafc\lib\linux\lua*" Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
+    <ContentWithTargetPath Include="..\Yafc\lib\linux\lua*"
+      Condition="'$(RuntimeIdentifier)' == 'linux-x64'">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <TargetPath>%(Filename)%(Extension)</TargetPath>
     </ContentWithTargetPath>
@@ -42,7 +45,9 @@
   <ItemGroup>
     <EmbeddedResource Include="BareMinimumLuaData.lua" />
     <EmbeddedResource Include="Model\ProductionTableContentTests.lua" />
-    <EmbeddedResource Include="Model\RecipeParametersTests.FluidBoilingRecipes_HaveCorrectConsumption.lua" />
+    <EmbeddedResource Include="Model\PercentageIngredientConsumptionTests.lua" />
+    <EmbeddedResource
+      Include="Model\RecipeParametersTests.FluidBoilingRecipes_HaveCorrectConsumption.lua" />
     <EmbeddedResource Include="Model\SelectableVariantsTests.lua" />
   </ItemGroup>
 

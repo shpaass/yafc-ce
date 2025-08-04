@@ -1198,12 +1198,20 @@ goodsHaveNoProduction:;
                     if (gui.BuildButton("Set consumption %") && gui.CloseDropdown()) {
                         recipe.RecordUndo().ingredientConsumptionPercentages[goods] = 0.5f; // Default to 50%
                         Console.WriteLine($"DEBUG: Set percentage for {goods.target.name} in {recipe.recipe.target.name} to 50%");
+                        // Trigger solver recalculation when percentage constraint is set
+                        if (recipe.owner is ProductionTable table && table.owner is ProjectPage page) {
+                            page.SetToRecalculate();
+                        }
                     }
                 }
                 else {
                     // Show button to clear percentage constraint
                     if (gui.BuildButton("Clear consumption %") && gui.CloseDropdown()) {
                         _ = recipe.RecordUndo().ingredientConsumptionPercentages.Remove(goods);
+                        // Trigger solver recalculation when percentage constraint is cleared
+                        if (recipe.owner is ProductionTable table && table.owner is ProjectPage page) {
+                            page.SetToRecalculate();
+                        }
                     }
                 }
                 targetGui.Rebuild();
@@ -1366,6 +1374,10 @@ goodsHaveNoProduction:;
                             recipe.RecordUndo().ingredientConsumptionPercentages[goods] = newPercentage;
                             Console.WriteLine($"DEBUG: Updated percentage for {goods.target.name} in {recipe.recipe.target.name} to {newPercentage * 100f}% (stored as {newPercentage})");
                         }
+                        // Trigger solver recalculation when percentage constraint is modified
+                        if (recipe.owner is ProductionTable table && table.owner is ProjectPage page) {
+                            page.SetToRecalculate();
+                        }
                     }
                 }
             }
@@ -1392,6 +1404,10 @@ goodsHaveNoProduction:;
                     if (newPercentage <= 0f || newPercentage >= 1f) {
                         // Remove percentage setting if set to 0, negative, or 100%
                         _ = recipe.RecordUndo().ingredientConsumptionPercentages.Remove(goods);
+                        // Trigger solver recalculation when percentage constraint is removed
+                        if (recipe.owner is ProductionTable table && table.owner is ProjectPage page) {
+                            page.SetToRecalculate();
+                        }
                     }
                     else {
                         recipe.RecordUndo().ingredientConsumptionPercentages[goods] = newPercentage;
