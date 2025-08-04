@@ -201,13 +201,7 @@ doneDrawing:;
                         gui.BuildText("", TextBlockDisplayStyle.WrappedText); // Add some spacing
                         gui.BuildText("Cost Breakdown (Current Milestones):", TextBlockDisplayStyle.Default(SchemeColor.BackgroundText));
 
-                        // Split the breakdown into lines and display each separately
-                        string[] lines = breakdown.Split('\n');
-                        foreach (string line in lines) {
-                            if (!string.IsNullOrWhiteSpace(line)) {
-                                gui.BuildText(line, TextBlockDisplayStyle.Default(SchemeColor.BackgroundTextFaint));
-                            }
-                        }
+                        gui.BuildText(breakdown, TextBlockDisplayStyle.WrappedText with { Color = SchemeColor.BackgroundTextFaint });
                     }
                 }
                 else {
