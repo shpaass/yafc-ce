@@ -444,7 +444,7 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     /// </summary>
     public bool hierarchyEnabled { get; internal set; }
     public int tag { get; set; }
-    public Dictionary<IObjectWithQuality<Goods>, float> ingredientConsumptionPercentages { get; set; } = [];
+    public Dictionary<IObjectWithQuality<Goods>, float> ingredientConsumptionPercentages { get; } = [];
 
     public RowHighlighting highlighting =>
         tag switch {
@@ -501,7 +501,15 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
         for (int i = 0; i < recipe.target.ingredients.Length; i++) {
             Ingredient ingredient = recipe.target.ingredients[i];
             IObjectWithQuality<Goods> option = (ingredient.variants == null ? ingredient.goods : GetVariant(ingredient.variants)).With(recipe.quality);
-            yield return (option, ingredient.amount * factor, links.ingredients[i], i, ingredient.variants);
+
+            float amount = ingredient.amount;
+
+            // Apply percentage-based consumption if configured
+            if (ingredientConsumptionPercentages.TryGetValue(option, out float percentage)) {
+                amount *= percentage;
+            }
+
+            yield return (option, amount * factor, links.ingredients[i], i, ingredient.variants);
         }
     }
 
@@ -873,6 +881,7 @@ public class ProductionLink(ProductionTable group, IObjectWithQuality<Goods> goo
     /// <inheritdoc/>
     public HashSet<IRecipeRow> capturedRecipes { get; } = [];
     internal int solverIndex;
+    public float? splitPercentage { get; set; }
 
     // To avoid leaking these variables/methods (or just the setter, for recipesPerSecond) into public context,
     // these explicit interface implementations connect to internal members, instead of using implicit implementation via public members

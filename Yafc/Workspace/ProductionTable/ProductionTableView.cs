@@ -1189,6 +1189,27 @@ goodsHaveNoProduction:;
             }
             #endregion
 
+            #region Percentage-based ingredient consumption
+            if (goods != null && recipe != null && recipe.hierarchyEnabled && type == ProductDropdownType.Ingredient) {
+                bool hasPercentageConstraint = recipe.ingredientConsumptionPercentages.ContainsKey(goods);
+
+                if (!hasPercentageConstraint) {
+                    // Show button to set percentage constraint
+                    if (gui.BuildButton("Set consumption %") && gui.CloseDropdown()) {
+                        recipe.RecordUndo().ingredientConsumptionPercentages[goods] = 0.5f; // Default to 50%
+                        Console.WriteLine($"DEBUG: Set percentage for {goods.target.name} in {recipe.recipe.target.name} to 50%");
+                    }
+                }
+                else {
+                    // Show button to clear percentage constraint
+                    if (gui.BuildButton("Clear consumption %") && gui.CloseDropdown()) {
+                        _ = recipe.RecordUndo().ingredientConsumptionPercentages.Remove(goods);
+                    }
+                }
+                targetGui.Rebuild();
+            }
+            #endregion
+
             if (goods is { target: Item item }) {
                 BuildBeltInserterInfo(gui, item, amount, recipe?.buildingCount ?? 0);
             }
@@ -1317,7 +1338,7 @@ goodsHaveNoProduction:;
         if (isFixedAmount) {
             // Show editable amount for fixed amounts
             evt = gui.BuildFactorioObjectWithEditableAmount(goods, displayAmount, ButtonDisplayStyle.ProductionTableScaled(iconColor, drawTransparent), tooltipOptions: tooltipOptions,
-                setKeyboardFocus: recipe.ShouldFocusFixedCountThisTime());
+                setKeyboardFocus: recipe?.ShouldFocusFixedCountThisTime() ?? SetKeyboardFocus.No);
         }
         else if (hasPercentageConstraint) {
             // For percentage constraints, show the consumption amount with editable percentage underneath
