@@ -444,6 +444,7 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     /// </summary>
     public bool hierarchyEnabled { get; internal set; }
     public int tag { get; set; }
+    public Dictionary<IObjectWithQuality<Goods>, float> ingredientConsumptionPercentages { get; set; } = [];
 
     public RowHighlighting highlighting =>
         tag switch {
