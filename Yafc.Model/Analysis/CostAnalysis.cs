@@ -399,6 +399,176 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
         return finalCost;
     }
 
+    public static string GetCostBreakdown(FactorioObject goods, bool atCurrentMilestones = false) {
+        var analysis = Get(atCurrentMilestones);
+        float totalCost = analysis.cost[goods];
+
+        if (float.IsPositiveInfinity(totalCost)) {
+            return "Not automatable";
+        }
+
+        // Simple breakdown showing the components that make up the cost
+        var parts = new List<string>();
+
+        if (goods is Goods g && g.production.Length > 0) {
+            // Find the recipe that would actually be used (cheapest available)
+            Recipe? currentRecipe = null;
+            float currentRecipeCost = float.PositiveInfinity;
+
+            foreach (var recipe in g.production) {
+                if (analysis.ShouldInclude(recipe)) {
+                    float recipeCost = analysis.recipeCost[recipe];
+                    if (recipeCost < currentRecipeCost) {
+                        currentRecipeCost = recipeCost;
+                        currentRecipe = recipe;
+                    }
+                }
+            }
+
+            if (currentRecipe != null) {
+                parts.Add($"Recipe: {currentRecipe.locName}");
+
+                // Calculate ingredient costs
+                float ingredientCost = 0f;
+                foreach (var ingredient in currentRecipe.ingredients) {
+                    float ingredientUnitCost = analysis.cost[ingredient.goods];
+                    float ingredientTotalCost = ingredientUnitCost * (float)ingredient.amount;
+                    ingredientCost += ingredientTotalCost;
+                    parts.Add($"  {ingredient.goods.locName}: ¥{DataUtils.FormatAmount(ingredientTotalCost, UnitOfMeasure.None)}");
+                }
+
+                // Calculate detailed logistics cost breakdown
+                var logisticsBreakdown = GetLogisticsCostBreakdown(currentRecipe, Project.current);
+                float totalLogisticsCost = currentRecipeCost - ingredientCost;
+
+                parts.Add($"  Logistics: ¥{DataUtils.FormatAmount(totalLogisticsCost, UnitOfMeasure.None)}");
+
+                // Show base logistics costs before mining penalty
+                float baseLogisticsCost = logisticsBreakdown.timeCost + logisticsBreakdown.energyCost + logisticsBreakdown.complexityCost + logisticsBreakdown.pollutionCost;
+
+                if (logisticsBreakdown.miningPenalty > 1f) {
+                    parts.Add($"    Base cost: ¥{DataUtils.FormatAmount(baseLogisticsCost, UnitOfMeasure.None)}");
+                    parts.Add($"    Mining penalty: ×{DataUtils.FormatAmount(logisticsBreakdown.miningPenalty, UnitOfMeasure.None)}");
+                }
+                else {
+                    parts.Add($"    Time: ¥{DataUtils.FormatAmount(logisticsBreakdown.timeCost, UnitOfMeasure.None)}");
+                    parts.Add($"    Energy: ¥{DataUtils.FormatAmount(logisticsBreakdown.energyCost, UnitOfMeasure.None)}");
+                    parts.Add($"    Complexity: ¥{DataUtils.FormatAmount(logisticsBreakdown.complexityCost, UnitOfMeasure.None)}");
+
+                    if (logisticsBreakdown.pollutionCost > 0f) {
+                        parts.Add($"    Pollution: ¥{DataUtils.FormatAmount(logisticsBreakdown.pollutionCost, UnitOfMeasure.None)}");
+                    }
+                }
+
+                // Calculate final cost per unit
+                float totalOutput = 0f;
+                foreach (var product in currentRecipe.products) {
+                    if (product.goods == goods) {
+                        totalOutput += (float)product.amount;
+                    }
+                }
+
+                if (totalOutput > 0f) {
+                    float costPerUnit = currentRecipeCost / totalOutput;
+                    parts.Add($"Per unit: ¥{DataUtils.FormatAmount(costPerUnit, UnitOfMeasure.None)}");
+                }
+            }
+            else {
+                parts.Add($"Total: ¥{DataUtils.FormatAmount(totalCost, UnitOfMeasure.None)}");
+                parts.Add("(No accessible recipe)");
+            }
+        }
+        else {
+            parts.Add($"Total: ¥{DataUtils.FormatAmount(totalCost, UnitOfMeasure.None)}");
+            if (goods is Goods g2 && g2.miscSources.Length > 0) {
+                parts.Add("(From misc sources)");
+            }
+            else {
+                parts.Add("(No recipe available)");
+            }
+        }
+
+        return string.Join("\n", parts);
+    }
+
+    private static (float timeCost, float energyCost, float complexityCost, float pollutionCost, float miningPenalty) GetLogisticsCostBreakdown(Recipe recipe, Project project) {
+        // Replicate the logistics cost calculation from the main analysis
+        float minEmissions = 100f;
+        int minSize = 15;
+        float minPower = 1000f;
+
+        foreach (var crafter in recipe.crafters) {
+            foreach ((_, float e) in crafter.energy.emissions) {
+                minEmissions = MathF.Min(e, minEmissions);
+            }
+
+            if (crafter.energy.type == EntityEnergyType.Heat) {
+                break;
+            }
+
+            if (crafter.size < minSize) {
+                minSize = crafter.size;
+            }
+
+            float power = crafter.energy.type == EntityEnergyType.Void ? 0f : recipe.time * crafter.basePower / (crafter.baseCraftingSpeed * crafter.energy.effectivity);
+
+            if (power < minPower) {
+                minPower = power;
+            }
+        }
+
+        if (minPower < 0f) {
+            minPower = 0f;
+        }
+
+        int size = Math.Max(minSize, (recipe.ingredients.Length + recipe.products.Length) / 2);
+        float timeCost = CostPerSecond * recipe.time * size;
+        float energyCost = CostPerMj * minPower;
+        float complexityCost = timeCost * ((CostPerIngredientPerSize * recipe.ingredients.Length) + (CostPerProductPerSize * recipe.products.Length));
+
+        // Add item/fluid handling costs to complexity
+        foreach (var product in recipe.products) {
+            if (product.goods is Item) {
+                complexityCost += (float)product.amount * CostPerItem;
+            }
+            else if (product.goods is Fluid) {
+                complexityCost += (float)product.amount * CostPerFluid;
+            }
+        }
+
+        foreach (var ingredient in recipe.ingredients) {
+            if (ingredient.goods is Item) {
+                complexityCost += (float)ingredient.amount * CostPerItem;
+            }
+            else if (ingredient.goods is Fluid) {
+                complexityCost += (float)ingredient.amount * CostPerFluid;
+            }
+        }
+
+        float pollutionCost = 0f;
+        if (minEmissions >= 0f) {
+            pollutionCost = minEmissions * CostPerPollution * recipe.time * project.settings.PollutionCostModifier;
+        }
+
+        float miningPenalty = 1f;
+        if (recipe.sourceEntity != null && recipe.sourceEntity.mapGenerated) {
+            float totalMining = 0f;
+            foreach (var product in recipe.products) {
+                totalMining += (float)product.amount;
+            }
+
+            miningPenalty = MiningPenalty;
+            float totalDensity = recipe.sourceEntity.mapGenDensity / totalMining;
+
+            if (totalDensity < MiningMaxDensityForPenalty) {
+                float extraPenalty = MathF.Log(MiningMaxDensityForPenalty / totalDensity);
+                miningPenalty += Math.Min(extraPenalty, MiningMaxExtraPenaltyForRarity);
+            }
+        }
+
+        return (timeCost, energyCost, complexityCost, pollutionCost, miningPenalty);
+    }
+
     public static float GetBuildingHours(Recipe recipe, float flow) => recipe.time * flow * (1000f / 3600f);
 
     public string? GetItemAmount(Goods goods) {
