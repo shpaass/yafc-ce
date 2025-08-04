@@ -19,7 +19,9 @@
 Version:
 Date:
     Features:
-        
+        - Add Ctrl+C shortcut to copy building blueprint for hovered recipe in production table.
+        - Add "Copy blueprint" button to recipe dropdown menu in production table.
+        - Add tooltip showing Ctrl+C hint when hovering over recipes with buildings.
     Fixes:
         - Fix icon rendering.
         - Hide fluid temperature options when not part of a recipe or not accepted by that recipe.

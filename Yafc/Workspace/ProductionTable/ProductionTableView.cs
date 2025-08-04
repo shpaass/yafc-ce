@@ -12,6 +12,7 @@ namespace Yafc;
 
 public class ProductionTableView : ProjectPageView<ProductionTable> {
     private readonly FlatHierarchy<RecipeRow, ProductionTable> flatHierarchyBuilder;
+    private RecipeRow? hoveredRecipe;
 
     public ProductionTableView() {
         DataGrid<RecipeRow> grid = new DataGrid<RecipeRow>(new RecipePadColumn(this), new RecipeColumn(this), new EntityColumn(this),
@@ -120,7 +121,22 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
     private class RecipeColumn(ProductionTableView view) : ProductionTableDataColumn(view, LSs.ProductionTableHeaderRecipe, 13f, 13f, 30f, widthStorage: nameof(Preferences.recipeColumnWidth)) {
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
             gui.spacing = 0.5f;
-            switch (gui.BuildFactorioObjectButton(recipe.recipe, ButtonDisplayStyle.ProductionTableUnscaled)) {
+            var buttonEvent = gui.BuildFactorioObjectButton(recipe.recipe, ButtonDisplayStyle.ProductionTableUnscaled);
+
+            // Track hovered recipe for Ctrl+C functionality and show tooltip
+            if (gui.IsMouseOver(gui.lastRect)) {
+                view.hoveredRecipe = recipe;
+
+                // Show tooltip with Ctrl+C hint if the recipe has an entity (can generate blueprint)
+                if (recipe.entity != null) {
+                    gui.ShowTooltip(gui.lastRect, tooltip => {
+                        tooltip.BuildText(recipe.recipe.target.locName, Font.subheader);
+                        tooltip.BuildText("Press Ctrl+C to copy building blueprint", TextBlockDisplayStyle.WrappedText);
+                    });
+                }
+            }
+
+            switch (buttonEvent) {
                 case Click.Left:
                     gui.ShowDropDown(delegate (ImGui imgui) {
                         DrawRecipeTagSelect(imgui, recipe);
@@ -143,6 +159,11 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
 
                         if (recipe.subgroup != null && imgui.BuildButton(LSs.ShoppingList) && imgui.CloseDropdown()) {
                             view.BuildShoppingList(recipe);
+                        }
+
+                        // Add "Copy blueprint" button if recipe has an entity
+                        if (recipe.entity != null && imgui.BuildButton("Copy blueprint") && imgui.CloseDropdown()) {
+                            view.CopyRecipeBlueprint(recipe);
                         }
 
                         if (imgui.BuildCheckBox(LSs.ProductionTableShowTotalIo, recipe.showTotalIO, out bool newShowTotalIO)) {
@@ -1656,5 +1677,48 @@ goodsHaveNoProduction:;
                 }
             }
         }
+    }
+
+    public override bool ControlKey(SDL.SDL_Scancode code) {
+        // Handle Ctrl+C to copy blueprint for hovered recipe
+        if (code == SDL.SDL_Scancode.SDL_SCANCODE_C && hoveredRecipe?.entity != null) {
+            CopyRecipeBlueprint(hoveredRecipe);
+            return true;
+        }
+
+        return base.ControlKey(code);
+    }
+
+    private void CopyRecipeBlueprint(RecipeRow recipe) {
+        if (recipe.entity == null) return;
+
+        BlueprintEntity entity = new BlueprintEntity { index = 1, name = recipe.entity.target.name };
+
+        if (!recipe.recipe.Is<Mechanics>()) {
+            entity.recipe = recipe.recipe.target.name;
+            entity.recipe_quality = recipe.recipe.quality.name;
+        }
+
+        var modules = recipe.usedModules.modules;
+
+        if (modules != null) {
+            int idx = 0;
+            foreach (var (module, count, beacon) in modules) {
+                if (!beacon) {
+                    BlueprintItem item = new BlueprintItem { id = { name = module.target.name, quality = module.quality.name } };
+                    item.items.inInventory.AddRange(Enumerable.Range(idx, count).Select(i => new BlueprintInventoryItem { stack = i }));
+                    entity.items.Add(item);
+                    idx += count;
+                }
+            }
+        }
+
+        if (Preferences.Instance.exportEntitiesWithFuelFilter && recipe.fuel is not null && !recipe.fuel.target.isPower) {
+            entity.SetFuel(recipe.fuel.target.name, recipe.fuel.quality.name);
+        }
+
+        // Use the existing utility function to generate and copy the blueprint
+        // This automatically handles proper base64 encoding
+        _ = BlueprintUtilities.ExportRecipiesAsBlueprint(recipe.recipe.target.locName, [recipe], Preferences.Instance.exportEntitiesWithFuelFilter);
     }
 }
