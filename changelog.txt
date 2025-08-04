@@ -1,3 +1,6 @@
+// If you want to add an entry to the changelog, then please add it to the section without a release date and version.
+// If there is no such section, then copypaste the previous version, remove the info, and put the result below the commented section.
+// Below is the format and the purpose of each field and section:
 // The purpose of the changelog is to provide a concise overview of what was changed.
 // The purpose of the changelog format is to make it more organized.
 // Versioning follows the x.y.z pattern. Since 0.8.0, the increment has the following meaning:
@@ -18,7 +21,8 @@
 ----------------------------------------------------------------------------------------------------------------------
 Version:
 Date:
-    Features:
+    Features:        
+        - Show a detailed cost breakdown in an item's tooltip when holding the Ctrl key.
         
     Fixes:
         - Fix icon rendering.

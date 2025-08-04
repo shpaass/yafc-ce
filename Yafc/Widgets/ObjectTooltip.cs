@@ -193,6 +193,21 @@ doneDrawing:;
             }
             else {
                 gui.BuildText(CostAnalysis.GetDisplayCost(target), TextBlockDisplayStyle.WrappedText);
+
+                // Show cost breakdown if Control is held
+                if (InputSystem.Instance.control) {
+                    string breakdown = CostAnalysis.GetCostBreakdown(target, true); // Show current milestone costs
+                    if (!string.IsNullOrEmpty(breakdown)) {
+                        gui.BuildText("", TextBlockDisplayStyle.WrappedText); // Add some spacing
+                        gui.BuildText("Cost Breakdown (Current Milestones):", TextBlockDisplayStyle.Default(SchemeColor.BackgroundText));
+
+                        gui.BuildText(breakdown, TextBlockDisplayStyle.WrappedText with { Color = SchemeColor.BackgroundTextFaint });
+                    }
+                }
+                else {
+                    // Show hint about cost breakdown
+                    gui.BuildText("Hold Ctrl for cost breakdown", TextBlockDisplayStyle.HintText);
+                }
             }
 
             if (target.IsAccessibleWithCurrentMilestones() && !target.IsAutomatableWithCurrentMilestones()) {
