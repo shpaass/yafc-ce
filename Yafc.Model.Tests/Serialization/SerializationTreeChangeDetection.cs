@@ -68,6 +68,7 @@ public class SerializationTreeChangeDetection {
             [nameof(RecipeRow.showTotalIO)] = typeof(bool),
             [nameof(RecipeRow.enabled)] = typeof(bool),
             [nameof(RecipeRow.tag)] = typeof(int),
+            [nameof(RecipeRow.ingredientConsumptionPercentages)] = typeof(Dictionary<IObjectWithQuality<Goods>, float>),
             [nameof(RecipeRow.modules)] = typeof(ModuleTemplate),
             [nameof(RecipeRow.subgroup)] = typeof(ProductionTable),
             [nameof(RecipeRow.variants)] = typeof(HashSet<FactorioObject>),
@@ -76,6 +77,7 @@ public class SerializationTreeChangeDetection {
             [nameof(ProductionLink.goods)] = typeof(IObjectWithQuality<Goods>),
             [nameof(ProductionLink.amount)] = typeof(float),
             [nameof(ProductionLink.algorithm)] = typeof(LinkAlgorithm),
+            [nameof(ProductionLink.splitPercentage)] = typeof(float?),
         },
         [typeof(Project)] = new() {
             [nameof(Project.settings)] = typeof(ProjectSettings),

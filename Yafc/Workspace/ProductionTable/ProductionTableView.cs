@@ -1196,7 +1196,11 @@ goodsHaveNoProduction:;
                 if (!hasPercentageConstraint) {
                     // Show button to set percentage constraint
                     if (gui.BuildButton("Set consumption %") && gui.CloseDropdown()) {
-                        recipe.RecordUndo().ingredientConsumptionPercentages[goods] = 0.5f; // Default to 50%
+                        var tmpRecipe = recipe.RecordUndo();
+                        tmpRecipe.ingredientConsumptionPercentages[goods] = 0.5f; // Default to 50%
+                        // Clear fixed buildings when setting percentage constraint
+                        // These two mechanisms conflict with each other
+                        tmpRecipe.fixedBuildings = 0f;
                         Console.WriteLine($"DEBUG: Set percentage for {goods.target.name} in {recipe.recipe.target.name} to 50%");
                         // Trigger solver recalculation when percentage constraint is set
                         if (recipe.owner is ProductionTable table && table.owner is ProjectPage page) {
@@ -1371,7 +1375,11 @@ goodsHaveNoProduction:;
                             Console.WriteLine($"DEBUG: Removed percentage constraint for {goods.target.name} in {recipe.recipe.target.name} (value was {newPercentage * 100f}%)");
                         }
                         else {
-                            recipe.RecordUndo().ingredientConsumptionPercentages[goods] = newPercentage;
+                            var undoableRecipe = recipe.RecordUndo();
+                            undoableRecipe.ingredientConsumptionPercentages[goods] = newPercentage;
+                            // Clear fixed buildings when setting percentage constraint
+                            // These two mechanisms conflict with each other
+                            undoableRecipe.fixedBuildings = 0f;
                             Console.WriteLine($"DEBUG: Updated percentage for {goods.target.name} in {recipe.recipe.target.name} to {newPercentage * 100f}% (stored as {newPercentage})");
                         }
                         // Trigger solver recalculation when percentage constraint is modified
@@ -1410,7 +1418,11 @@ goodsHaveNoProduction:;
                         }
                     }
                     else {
-                        recipe.RecordUndo().ingredientConsumptionPercentages[goods] = newPercentage;
+                        var undoableRecipe = recipe.RecordUndo();
+                        undoableRecipe.ingredientConsumptionPercentages[goods] = newPercentage;
+                        // Clear fixed buildings when setting percentage constraint
+                        // These two mechanisms conflict with each other
+                        undoableRecipe.fixedBuildings = 0f;
                     }
                 }
                 else if (recipe != null) {

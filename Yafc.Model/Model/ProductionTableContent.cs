@@ -396,6 +396,11 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
                 fixedIngredient = null;
                 fixedProduct = null;
             }
+            else {
+                // Clear percentage constraints when setting fixed buildings to non-zero
+                // These two mechanisms conflict with each other
+                ingredientConsumptionPercentages.Clear();
+            }
         }
     }
     /// <summary>
