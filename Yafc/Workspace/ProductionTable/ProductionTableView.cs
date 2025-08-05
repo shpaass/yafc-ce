@@ -131,7 +131,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                 if (recipe.entity != null) {
                     gui.ShowTooltip(gui.lastRect, tooltip => {
                         tooltip.BuildText(recipe.recipe.target.locName, Font.subheader);
-                        tooltip.BuildText("Press Ctrl+C to copy building blueprint", TextBlockDisplayStyle.WrappedText);
+                        tooltip.BuildText(LSs.TooltipCopyBuildingBlueprint, TextBlockDisplayStyle.WrappedText);
                     });
                 }
             }
@@ -162,7 +162,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                         }
 
                         // Add "Copy blueprint" button if recipe has an entity
-                        if (recipe.entity != null && imgui.BuildButton("Copy blueprint") && imgui.CloseDropdown()) {
+                        if (recipe.entity != null && imgui.BuildButton(LSs.ButtonCopyBlueprint) && imgui.CloseDropdown()) {
                             view.CopyRecipeBlueprint(recipe);
                         }
 
