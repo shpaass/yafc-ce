@@ -42,6 +42,33 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
             gui.BuildText((link.amount > 0 ? LSs.LinkSummaryRequestedProduction : LSs.LinkSummaryRequestedConsumption).L(DataUtils.FormatAmount(MathF.Abs(link.amount),
                 link.flowUnitOfMeasure)), new TextBlockDisplayStyle(Font.subheader, Color: SchemeColor.GreenAlt));
         }
+
+        // Add percentage splitting UI
+        gui.spacing = 0.5f;
+        using (gui.EnterRow(0.4f)) {
+            gui.BuildText("Split Percentage:", Font.text);
+            gui.AllocateSpacing(0.8f);
+
+            DisplayAmount amount = new(link.splitPercentage ?? 0f, UnitOfMeasure.Percent);
+            if (gui.BuildFloatInput(amount, TextBoxDisplayStyle.DefaultTextInput)) {
+                if (amount.Value > 100f) {
+                    link.RecordUndo().splitPercentage = 1f; // Cap at 100%
+                }
+                else {
+                    link.RecordUndo().splitPercentage = amount.Value;
+                }
+            }
+
+            if (gui.BuildButton("Clear") && link.splitPercentage.HasValue) {
+                link.RecordUndo().splitPercentage = null;
+            }
+        }
+
+        if (link.splitPercentage.HasValue) {
+            gui.spacing = 0.25f;
+            gui.BuildText($"This link will receive {link.splitPercentage.Value:F1}% of the total {link.goods.target.locName} flow",
+                new TextBlockDisplayStyle(Font.text, Color: SchemeColor.Secondary));
+        }
         if (link.flags.HasFlags(ProductionLink.Flags.LinkNotMatched) && totalInput != totalOutput + link.amount) {
             float amount = totalInput - totalOutput - link.amount;
             gui.spacing = 0.5f;
@@ -120,7 +147,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         return table as ProductionTable;
     }
 
-    private bool isNotRelatedToCurrentLink(RecipeRow? row) => (!row.Ingredients.Any(e => e.Goods == link.goods)
+    private bool isNotRelatedToCurrentLink(RecipeRow? row) => row == null || (!row.Ingredients.Any(e => e.Goods == link.goods)
                         && !row.Products.Any(e => e.Goods == link.goods)
                         && !(row.fuel is not null && row.fuel == link.goods));
     private bool isPartOfCurrentLink(RecipeRow row) => link.capturedRecipes.Any(e => e == row);
