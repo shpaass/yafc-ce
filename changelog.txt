@@ -23,7 +23,7 @@ Version:
 Date:
     Features:
         - Add Ctrl+Shift+Click to add the most cost-effective, accessible recipe for an item.
-        
+        - Better accessibility analysis for Ultracube.
     Fixes:
         - Fix icon rendering.
         - Hide fluid temperature options when not part of a recipe or not accepted by that recipe.
