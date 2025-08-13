@@ -145,7 +145,7 @@ doneDrawing:;
 
     private static void BuildItem(ImGui gui, IFactorioObjectWrapper item, string? extraText = null) {
         using (gui.EnterRow()) {
-            gui.BuildFactorioObjectIcon(item.target);
+            gui.BuildFactorioObjectIcon(item);
             gui.BuildText(item.text + extraText, TextBlockDisplayStyle.WrappedText);
         }
     }
@@ -608,7 +608,8 @@ doneDrawing:;
             using (gui.EnterGroup(contentPadding)) {
                 using var grid = gui.EnterInlineGrid(3f);
                 grid.Next();
-                _ = gui.BuildFactorioObjectWithAmount(technology.ingredients[0].goods, technology.ingredients[0].amount, ButtonDisplayStyle.ProductionTableUnscaled);
+                _ = gui.BuildFactorioObjectWithAmount(technology.ingredients[0].goods.With(technology.triggerMinimumQuality),
+                    technology.ingredients[0].amount, ButtonDisplayStyle.ProductionTableUnscaled);
             }
         }
         else if (isResearchTriggerCapture) {
@@ -626,7 +627,7 @@ doneDrawing:;
         else if (isResearchTriggerBuild) {
             BuildSubHeader(gui, LSs.TooltipHeaderTechnologyBuildEntity.L(technology.triggerEntities.Count));
             using (gui.EnterGroup(contentPadding)) {
-                BuildIconRow(gui, technology.triggerEntities, 2);
+                BuildIconRow(gui, [.. technology.triggerEntities.Select(e => e.With(technology.triggerMinimumQuality))], 2);
             }
         }
         else if (isResearchTriggerPlatform) {

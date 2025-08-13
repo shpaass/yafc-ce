@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using Yafc.I18n;
 using Yafc.Model;
@@ -139,7 +140,7 @@ internal partial class FactorioDataDeserializer {
             recipeCategories.Add(SpecialNames.Labs, technology);
         }
         else if (table.Get("research_trigger", out LuaTable? researchTriggerTable)) {
-            LoadResearchTrigger(researchTriggerTable, ref technology, errorCollector);
+            LoadResearchTrigger(researchTriggerTable, technology, errorCollector);
             technology.ingredients ??= [];
             recipeCategories.Add(SpecialNames.TechnologyTrigger, technology);
         }
@@ -319,7 +320,7 @@ internal partial class FactorioDataDeserializer {
         }).Where(x => x is not null).ToArray() ?? [];
     }
 
-    private void LoadResearchTrigger(LuaTable researchTriggerTable, ref Technology technology, ErrorCollector errorCollector) {
+    private void LoadResearchTrigger(LuaTable researchTriggerTable, Technology technology, ErrorCollector errorCollector) {
         if (!researchTriggerTable.Get("type", out string? type)) {
             errorCollector.Error($"Research trigger of {technology.typeDotName} does not have a type field", ErrorSeverity.MinorDataLoss);
             return;
@@ -337,8 +338,8 @@ internal partial class FactorioDataDeserializer {
 
                 break;
             case "craft-item":
-                if (!researchTriggerTable.Get("item", out string? craftItemName)) {
-                    errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have an item field", ErrorSeverity.MinorDataLoss);
+                if (!loadQualityFromFilter(technology, researchTriggerTable, "item", out string? craftItemName)) {
+                    errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have a recognized item field", ErrorSeverity.MinorDataLoss);
                     break;
                 }
                 craftCount = researchTriggerTable.Get("count", 1);
@@ -368,13 +369,11 @@ internal partial class FactorioDataDeserializer {
                 break;
             case "build-entity":
                 technology.flags = RecipeFlags.HasResearchTriggerBuildEntity;
-                if (researchTriggerTable.Get("entity", out entity)
-                    || (researchTriggerTable.Get("entity", out LuaTable? entityFilter) && entityFilter.Get("name", out entity))) {
-
+                if (loadQualityFromFilter(technology, researchTriggerTable, "entity", out entity)) {
                     technology.getTriggerEntities = new(() => [((Entity)Database.objectsByTypeName["Entity." + entity])]);
                 }
                 else {
-                    errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have an entity field", ErrorSeverity.MinorDataLoss);
+                    errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have a recognized entity field", ErrorSeverity.MinorDataLoss);
                 }
 
                 break;
@@ -404,6 +403,38 @@ internal partial class FactorioDataDeserializer {
             default:
                 errorCollector.Error(LSs.ResearchHasAnUnsupportedTriggerType.L(technology.typeDotName, type), ErrorSeverity.MinorDataLoss);
                 break;
+        }
+
+        bool loadQualityFromFilter(Technology technology, LuaTable trigger, string key, [NotNullWhen(true)] out string? objectName) {
+            if (trigger.Get(key, out objectName)) {
+                // Basic string value
+                return true;
+            }
+
+            if (trigger.Get(key, out LuaTable? filter) && filter.Get("name", out objectName)) {
+                // Load the quality specifiers from the table-based filter
+                if (!registeredObjects.TryGetValue((typeof(Quality), filter.Get<string>("quality")), out var quality)) {
+                    return true;
+                }
+
+                switch (filter.Get<string>("comparator")) {
+                    // `≠ normal` is the same as `> normal`. `≠ anything-else` is the same as `= normal` for dependency analysis.
+                    case "!=" or "≠" when quality == Quality.Normal:
+                    case ">":
+                        // This filter requires at least the quality after the specified quality.
+                        // I expect `> legendary` is a load error in Factorio, so treating it as "any quality" here should be fine.
+                        technology.triggerMinimumQuality = ((Quality)quality).nextQuality;
+                        break;
+                    case ">=" or "≥" or "=":
+                        technology.triggerMinimumQuality = (Quality)quality;
+                        break;
+                    default:
+                        // Nothing special: Normal quality is acceptable, no quality, or no comparator
+                        break;
+                }
+                return true;
+            }
+            return false;
         }
     }
 

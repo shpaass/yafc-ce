@@ -974,6 +974,8 @@ public class EntityContainer : Entity {
 }
 
 public class Technology : RecipeOrTechnology { // Technology is very similar to recipe
+    private Quality? _triggerMinimumQuality;
+
     public float count { get; internal set; } // TODO support formula count
     public Technology[] prerequisites { get; internal set; } = [];
     public List<Recipe> unlockRecipes { get; } = [];
@@ -992,6 +994,16 @@ public class Technology : RecipeOrTechnology { // Technology is very similar to 
     /// or <see cref="RecipeFlags.HasResearchTriggerSendToOrbit"/>.
     /// </summary>
     public FactorioObject? triggerObject { get; internal set; }
+    /// <summary>
+    /// For entity and item triggers, the minimum quality. Factorio tracks more complicated filters (e.g. &lt; rare), but the only thing we care about
+    /// for accessibility is the minimum acceptable quality. This is not stored as an <see cref="IObjectWithQuality{T}"/> because those don't exist
+    /// when this field is loaded from the lua tables.
+    /// </summary>
+    [AllowNull]
+    public Quality triggerMinimumQuality {
+        get => _triggerMinimumQuality ?? Quality.Normal;
+        internal set => _triggerMinimumQuality = value;
+    }
 
     /// <summary>
     /// Sets the value used to construct <see cref="triggerEntities"/>.
@@ -1011,6 +1023,11 @@ public class Technology : RecipeOrTechnology { // Technology is very similar to 
         }
         if (flags.HasFlag(RecipeFlags.HasResearchTriggerBuildEntity)) {
             nodes.Add((triggerEntities, DependencyNode.Flags.Source));
+        }
+        if (flags.HasFlagAny(RecipeFlags.HasResearchTriggerBuildEntity | RecipeFlags.HasResearchTriggerCraft)) {
+            if (triggerMinimumQuality > Quality.Normal) {
+                nodes.Add(([triggerMinimumQuality], DependencyNode.Flags.Source));
+            }
         }
         if (flags.HasFlag(RecipeFlags.HasResearchTriggerCreateSpacePlatform)) {
             var items = Database.items.all.Where(i => i.factorioType == "space-platform-starter-pack");
