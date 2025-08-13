@@ -23,11 +23,13 @@ Version:
 Date:
     Features:
         - Add Ctrl+Shift+Click to add the most cost-effective, accessible recipe for an item.
-        
+        - Better accessibility analysis for Ultracube.
     Fixes:
         - Fix icon rendering.
         - Hide fluid temperature options when not part of a recipe or not accepted by that recipe.
         - Modify text colors for highlighted rows in dark mode to improve readability.
+    Internal changes:
+        - Enable mod-fixes for the data, data-updates, and data-final-fixes files.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.14.0
 Date: June 15th 2025

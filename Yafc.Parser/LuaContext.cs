@@ -469,12 +469,7 @@ internal partial class LuaContext : IDisposable {
             _ = lua_pushstring(L, argument);
             int argumentReg = luaL_ref(L, REGISTRY);
             int result = Exec(bytes, requiredFile.mod, requiredFile.path, argumentReg);
-
-            if (modFixes.TryGetValue(requiredFile, out byte[]? fix)) {
-                string modFixName = "mod-fix-" + requiredFile.mod + "." + requiredFile.path;
-                logger.Information("Running mod-fix {ModFix}", modFixName);
-                result = Exec(fix, "*", modFixName, result);
-            }
+            result = RunModFix(requiredFile.mod, requiredFile.path, result);
 
             required[requiredFile] = result;
             GetReg(result);
@@ -484,6 +479,16 @@ internal partial class LuaContext : IDisposable {
             lua_pushnil(L);
         }
         return 1;
+    }
+
+    private int RunModFix(string mod, string path, int result = 0) {
+        if (modFixes.TryGetValue((mod, path), out byte[]? fix)) {
+            string modFixName = $"mod-fix-{mod}.{path}";
+            logger.Information("Running mod-fix {ModFix}", modFixName);
+            result = Exec(fix, "*", modFixName, result);
+        }
+
+        return result;
     }
 
     protected readonly List<object> neverCollect = []; // references callbacks that could be called from native code to not be garbage collected
@@ -565,6 +570,7 @@ internal partial class LuaContext : IDisposable {
 
             logger.Information("Executing file {Filename}", mod + "/" + fileName);
             _ = Exec(bytes, mod, fileName);
+            RunModFix(mod, fileName);
         }
     }
 

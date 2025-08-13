@@ -7,8 +7,6 @@ Scripts are executed after `require("__modname__.path.to.modfile")`.
 `...` (varargs) will contain the return from the normal call to `require("")`.
 The script is expected to return a patched require result.
 
-It is not possible to create a script that explicitly executes after data.lua, data-updates.lua, or data-final-fixes.lua.
-
 ## YAFC-specific data
 ### Script-generated objects
 
