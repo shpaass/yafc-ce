@@ -358,34 +358,12 @@ public static partial class DataUtils {
         return amount;
     }
 
-    public static float GetProductionForRow(this RecipeRow row, IObjectWithQuality<Goods> product) {
-        float amount = 0f;
-
-        foreach (var p in row.Products) {
-            if (p.Goods == product) {
-                amount += p.Amount;
-            }
-        }
-        return amount;
-    }
-
     public static float GetConsumptionPerRecipe(this RecipeOrTechnology recipe, Goods product) {
         float amount = 0f;
 
         foreach (var ingredient in recipe.ingredients) {
             if (ingredient.ContainsVariant(product)) {
                 amount += ingredient.amount;
-            }
-        }
-        return amount;
-    }
-
-    public static float GetConsumptionForRow(this RecipeRow row, IObjectWithQuality<Goods> ingredient) {
-        float amount = 0f;
-
-        foreach (var i in row.recipe.target.ingredients) {
-            if (i.goods.With(row.recipe.quality) == ingredient || (ingredient.quality == Quality.Normal && i.ContainsVariant(ingredient.target))) {
-                amount += i.amount * (float)row.recipesPerSecond;
             }
         }
         return amount;

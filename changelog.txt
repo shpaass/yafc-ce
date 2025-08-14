@@ -1,4 +1,4 @@
-// The purpose of the changelog is to provide a concise overview of what was changed.
+﻿// The purpose of the changelog is to provide a concise overview of what was changed.
 // The purpose of the changelog format is to make it more organized.
 // If you want to add an entry to the changelog, then please add it to the section without a release date and version.
 // If there is no such section, then copypaste the previous version, remove the info, and put the result below the commented section.
@@ -28,6 +28,7 @@ Date:
         - Fix icon rendering.
         - Hide fluid temperature options when not part of a recipe or not accepted by that recipe.
         - Modify text colors for highlighted rows in dark mode to improve readability.
+        - Don't draw table intermediates as <1μ ingredients/products.
     Internal changes:
         - Enable mod-fixes for the data, data-updates, and data-final-fixes files.
 ----------------------------------------------------------------------------------------------------------------------
