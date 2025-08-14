@@ -415,7 +415,25 @@ match:
         }
 
         Array.Sort(flowArr, 0, flowArr.Length, this);
-        flow = flowArr;
+        flow = [.. flowArr.Where(shouldBeReported)];
+
+        bool shouldBeReported(ProductionTableFlow flow) {
+            // Check low-throughput (< 1/hr) goods to see if they have production or consumption outside this table.
+
+            if (MathF.Abs(flow.amount) > 1 / 3600f || !FindLink(flow.goods, out IProductionLink? l) || l is not ProductionLink link
+                || owner is not RecipeRow parent || link.flags != ProductionLink.Flags.HasProductionAndConsumption || link.amount != 0) {
+
+                return true;
+            }
+
+            HashSet<RecipeRow> recipes = [.. GetAllRecipes(), parent];
+            foreach (IRecipeRow iRec in link.capturedRecipes) {
+                if (iRec is not RecipeRow recipe || (!recipes.Contains(recipe) && recipe.DetermineFlow(flow.goods) != 0)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     /// <summary>
