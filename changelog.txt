@@ -31,6 +31,7 @@ Date:
         - Don't draw table intermediates as <1μ ingredients/products.
     Internal changes:
         - Enable mod-fixes for the data, data-updates, and data-final-fixes files.
+        - Recompile the lua lib for linux (PR 515). The script now uses CFLAGS and LDFLAGS.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.14.0
 Date: June 15th 2025

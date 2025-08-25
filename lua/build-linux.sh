@@ -28,7 +28,7 @@ patch -p0 -i "liblua.so.patch" || exit 1
 patch -d "lua-5.2.1/src" -p1 -i "../../lua-5.2.1.patch" || exit 1
 
 echo "Compiling Lua 5.2.1"
-make -C "lua-5.2.1" linux MYCFLAGS="-fPIC"
+make -C "lua-5.2.1" linux MYCFLAGS="-fPIC ${CFLAGS}" MYLDFLAGS="${LDFLAGS}"
 
 echo "Copying liblua.so to Yafc"
 cp "lua-5.2.1/src/liblua.so.5.2.1"  ../Yafc/lib/linux/liblua52.so

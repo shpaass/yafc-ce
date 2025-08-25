@@ -1,6 +1,7 @@
 # Compiling liblua52.so
 
-Simply run `./build-linux.sh` to (re)build liblua52.so and copy it over to Yafc.
+Simply run `./build-linux.sh` to (re)build liblua52.so and copy it over to Yafc. The script will compile 
+lua with your CFLAGS and LDFLAGS, so feel free to use them if you need debug symbols or security tweaks, for instance.
 
 It will take the following steps
 1. Download the source, if not available (from https://www.lua.org/ftp/)
