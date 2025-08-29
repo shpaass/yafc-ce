@@ -247,6 +247,11 @@ public static partial class FactorioDataSource {
             if (factorioVersion is null) {
                 throw new NotSupportedException(LSs.CouldNotReadFactorioInfoJson);
             }
+            if (factorioVersion < new Version(1, 1) || factorioVersion >= new Version(2, 1)) {
+                // To support versions other than 1.1 and 2.0, one of the first steps is adding an appropriate Defines<major>.<minor>.lua
+                // For example, 0.17 would need Defines0.17.lua.
+                throw new NotSupportedException(LSs.UnsupportedFactorioVersion.L(factorioVersion));
+            }
 
             foreach (var mod in allFoundMods) {
                 CurrentLoadingMod = mod.name;
@@ -350,6 +355,7 @@ public static partial class FactorioDataSource {
             }
 
             byte[] preProcess = File.ReadAllBytes("Data/Sandbox.lua");
+            byte[] defines = File.ReadAllBytes($"Data/Defines{factorioVersion.ToString(2)}.lua");
             byte[] postProcess = File.ReadAllBytes("Data/Postprocess.lua");
             DataUtils.dataPath = factorioPath;
             DataUtils.modsPath = modPath;
@@ -371,7 +377,7 @@ public static partial class FactorioDataSource {
             // TODO default mod settings
             dataContext.SetGlobal("settings", settings);
 
-            _ = dataContext.Exec(preProcess, "*", "pre");
+            _ = dataContext.Exec(preProcess, "*", "pre", dataContext.Exec(defines, "*", "defines"));
             dataContext.DoModFiles(modLoadOrder, "data.lua", progress);
             dataContext.DoModFiles(modLoadOrder, "data-updates.lua", progress);
             dataContext.DoModFiles(modLoadOrder, "data-final-fixes.lua", progress);

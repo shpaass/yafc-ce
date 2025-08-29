@@ -57,7 +57,7 @@ internal partial class FactorioDataDeserializer {
     }
 
     private void UpdateRecipeCatalysts() {
-        if (factorioVersion < new Version(2, 0, 0)) {
+        if (factorioVersion < v2_0) {
             foreach (var recipe in allObjects.OfType<Recipe>()) {
                 foreach (var product in recipe.products) {
                     if (product.productivityAmount == product.amount) {
