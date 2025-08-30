@@ -1,9 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 [assembly: InternalsVisibleTo("Yafc.Model.Tests")]
 
 namespace Yafc.I18n;
 
-public static class FactorioLocalization {
+public static partial class FactorioLocalization {
     private static readonly Dictionary<string, string> keys = [];
 
     public static void Parse(Stream stream) {
@@ -48,14 +49,15 @@ public static class FactorioLocalization {
         while (true) {
             int tagStart = source.IndexOf('[');
 
+            // Assume 2.0 mods don't have localization strings containing 1.1-style pluralization tags.
             if (tagStart < 0) {
-                return source;
+                return FindOldPlurals().Replace(source, "__plural_for_parameter__$1__{");
             }
 
             int tagEnd = source.IndexOf(']', tagStart);
 
             if (tagEnd < 0) {
-                return source;
+                return FindOldPlurals().Replace(source, "__plural_for_parameter__$1__{");
             }
 
             source = source.Remove(tagStart, tagEnd - tagStart + 1);
@@ -82,4 +84,7 @@ public static class FactorioLocalization {
             keys[key] = value;
         }
     }
+
+    [GeneratedRegex("__plural_for_parameter_([0-9]+)_{")]
+    private static partial Regex FindOldPlurals();
 }
