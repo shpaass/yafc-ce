@@ -356,7 +356,6 @@ public static partial class FactorioDataSource {
 
             byte[] preProcess = File.ReadAllBytes("Data/Sandbox.lua");
             byte[] defines = File.ReadAllBytes($"Data/Defines{factorioVersion.ToString(2)}.lua");
-            byte[] postProcess = File.ReadAllBytes("Data/Postprocess.lua");
             DataUtils.dataPath = factorioPath;
             DataUtils.modsPath = modPath;
             DataUtils.netProduction = netProduction;
@@ -382,6 +381,12 @@ public static partial class FactorioDataSource {
             dataContext.DoModFiles(modLoadOrder, "data-updates.lua", progress);
             dataContext.DoModFiles(modLoadOrder, "data-final-fixes.lua", progress);
             CurrentLoadingMod = null;
+            byte[] postProcess;
+            if (factorioVersion < FactorioDataDeserializer.v2_0) {
+                postProcess = File.ReadAllBytes($"Data/Postprocess1.1.lua");
+                _ = dataContext.Exec(postProcess, "*", "post");
+            }
+            postProcess = File.ReadAllBytes($"Data/Postprocess.lua");
             _ = dataContext.Exec(postProcess, "*", "post");
 
             FactorioDataDeserializer deserializer = new FactorioDataDeserializer(factorioVersion ?? defaultFactorioVersion);

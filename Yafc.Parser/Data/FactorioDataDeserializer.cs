@@ -695,6 +695,8 @@ nextWeightCalculation:;
 
             string recipeCategory = SpecialNames.PumpingRecipe + "tile";
             Recipe recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, LSs.SpecialRecipePumping);
+            // We changed the names of pumping recipes when adding support for 2.0.
+            formerAliases[$"Mechanics.pump.{pumpingFluid.name}.{pumpingFluid.name}"] = recipe;
 
             if (recipe.products == null) {
                 recipe.products = [new Product(pumpingFluid, 1200f)]; // set to Factorio default pump amounts - looks nice in tooltip
