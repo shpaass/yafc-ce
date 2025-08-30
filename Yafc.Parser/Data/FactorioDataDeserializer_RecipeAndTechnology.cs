@@ -6,9 +6,30 @@ using Yafc.Model;
 namespace Yafc.Parser;
 
 internal partial class FactorioDataDeserializer {
+    private const bool expensiveRecipes = false;
+
+    private T DeserializeWithDifficulty<T>(LuaTable table, string prototypeType, Action<T, LuaTable, bool, ErrorCollector> loader, ErrorCollector errorCollector) where T : FactorioObject, new() {
+        var obj = DeserializeCommon<T>(table, prototypeType);
+        object? current = null, fallback = null;
+        if (factorioVersion < v2_0) {
+            current = expensiveRecipes ? table["expensive"] : table["normal"];
+            fallback = expensiveRecipes ? table["normal"] : table["expensive"];
+        }
+        if (current is LuaTable c) {
+            loader(obj, c, false, errorCollector);
+        }
+        else if (fallback is LuaTable f) {
+            loader(obj, f, current is bool b && !b, errorCollector);
+        }
+        else {
+            loader(obj, table, false, errorCollector);
+        }
+
+        return obj;
+    }
+
     private void DeserializeRecipe(LuaTable table, ErrorCollector errorCollector) {
-        var recipe = DeserializeCommon<Recipe>(table, "recipe");
-        LoadRecipeData(recipe, table, errorCollector);
+        var recipe = DeserializeWithDifficulty<Recipe>(table, "recipe", LoadRecipeData, errorCollector);
         _ = table.Get("category", out string recipeCategory, "crafting");
         // "recycling-or-hand-crafting" is Scrap recycling. It's special so it isn't considered a potential source recipe when ctrl+clicking.
         // It'll still be used as a ctrl+click consumption recipe for scrap.
@@ -40,8 +61,7 @@ internal partial class FactorioDataDeserializer {
     }
 
     private void DeserializeTechnology(LuaTable table, ErrorCollector errorCollector) {
-        var technology = DeserializeCommon<Technology>(table, "technology");
-        LoadTechnologyData(technology, table, errorCollector);
+        var technology = DeserializeWithDifficulty<Technology>(table, "technology", LoadTechnologyData, errorCollector);
         technology.products = [new(science, 1)];
     }
 
@@ -115,7 +135,7 @@ internal partial class FactorioDataDeserializer {
         }
     }
 
-    private void LoadTechnologyData(Technology technology, LuaTable table, ErrorCollector errorCollector) {
+    private void LoadTechnologyData(Technology technology, LuaTable table, bool forceDisable, ErrorCollector errorCollector) {
         if (table.Get("unit", out LuaTable? unit)) {
             technology.ingredients = LoadResearchIngredientList(unit);
             recipeCategories.Add(SpecialNames.Labs, technology);
@@ -129,7 +149,7 @@ internal partial class FactorioDataDeserializer {
             errorCollector.Error($"Could not get requirement(s) to unlock {technology.name}.", ErrorSeverity.AnalysisWarning);
         }
 
-        technology.enabled = table.Get("enabled", true);
+        technology.enabled = !forceDisable && table.Get("enabled", true);
         technology.time = unit.Get("time", 1f);
         technology.count = unit.Get("count", 1000f);
 
@@ -208,7 +228,9 @@ internal partial class FactorioDataDeserializer {
             min += extraCountFraction;
             max += extraCountFraction;
 
-            catalyst = table.Get("ignored_by_productivity", 0);
+            // ignored_by_productivity (default is the value of ignored_by_stats) in 2.0; catalyst_amount in 1.1.
+            // Assume mods don't declare these inconsistently.
+            catalyst = table.Get("ignored_by_productivity", table.Get("ignored_by_stats", table.Get("catalyst_amount", 0)));
         }
         else if (goods is Fluid) {
             if (table.Get("amount", out float amount)) {
@@ -221,7 +243,9 @@ internal partial class FactorioDataDeserializer {
                 throw new NotSupportedException($"Could not load amount for one of the products for {typeDotName}, possibly named '{table.Get("name", "")}'.");
             }
 
-            catalyst = table.Get("ignored_by_productivity", 0f);
+            // ignored_by_productivity (default is the value of ignored_by_stats) in 2.0; catalyst_amount in 1.1.
+            // Assume mods don't declare these inconsistently.
+            catalyst = table.Get("ignored_by_productivity", table.Get("ignored_by_stats", table.Get("catalyst_amount", 0f)));
         }
         else {
             throw new NotSupportedException($"Could not load one of the products for {typeDotName}, possibly named '{table.Get("name", "")}'.");
@@ -244,7 +268,9 @@ internal partial class FactorioDataDeserializer {
         }
 
         if (allowSimpleSyntax && table.Get("result", out string? name)) {
-            return [(new Product(GetObject<Item>(name), 1) { percentSpoiled = percentSpoiled })];
+            // Sometimes it's count, other times it's result_count. Assume mods don't declare them when unused.
+            // (Only 1.1 uses result_count.)
+            return [(new Product(GetObject<Item>(name), table.Get("count", table.Get("result_count", 1))) { percentSpoiled = percentSpoiled })];
         }
 
         return [];
@@ -364,9 +390,9 @@ internal partial class FactorioDataDeserializer {
         }
     }
 
-    private void LoadRecipeData(Recipe recipe, LuaTable table, ErrorCollector errorCollector) {
+    private void LoadRecipeData(Recipe recipe, LuaTable table, bool forceDisable, ErrorCollector errorCollector) {
         recipe.ingredients = LoadIngredientList(table, recipe.typeDotName, errorCollector);
-        recipe.products = LoadProductList(table, recipe.typeDotName, allowSimpleSyntax: false);
+        recipe.products = LoadProductList(table, recipe.typeDotName, allowSimpleSyntax: factorioVersion < v2_0);
 
         recipe.time = table.Get("energy_required", 0.5f);
         recipe.preserveProducts = table.Get("preserve_products_in_machine_output", false);
@@ -379,7 +405,7 @@ internal partial class FactorioDataDeserializer {
         }
 
         recipe.hidden = table.Get("hidden", false);
-        recipe.enabled = table.Get("enabled", true);
+        recipe.enabled = !forceDisable && table.Get("enabled", true);
         recipe.maximumProductivity = table.Get("maximum_productivity", 3f);
     }
 }

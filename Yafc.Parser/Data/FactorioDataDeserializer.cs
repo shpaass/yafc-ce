@@ -747,6 +747,18 @@ nextWeightCalculation:;
                 return GetObject<Item>(researchItem);
             }
         }
+        else if (factorioVersion < v2_0) {
+            // In 1.1, type is optional, and an item ingredient/product can be represented as { [1] = "name", [2] = amount }
+            if (table.Get("name", out string? name)) {
+                return GetObject<Item>(name);
+            }
+
+            if (table.Get(1, out name)) {
+                // Copy the amount from [2] to ["amount"] to translate for later code.
+                table["amount"] = table.Get<int>(2);
+                return GetObject<Item>(name);
+            }
+        }
         return null;
     }
 
