@@ -14,6 +14,9 @@ public abstract class WindowUtility(Padding padding) : Window(padding) {
         }
 
         this.parent = parent;
+        if (parent != null) {
+            parent.ChildWindow = this;
+        }
         contentSize.X = width;
         int display = parent == null ? 0 : SDL.SDL_GetWindowDisplayIndex(parent.window);
         pixelsPerUnit = CalculateUnitsToPixels(display);
@@ -59,18 +62,13 @@ public abstract class WindowUtility(Padding padding) : Window(padding) {
     }
 
     protected internal override void Close() {
+        if (parent != null && !parent.closed) {
+            parent.ChildWindow = null;
+        }
         base.Close();
         parent = null;
     }
 
-    // TODO this is work-around for inability to create utility or modal window in SDL2
-    // Fake utility windows are closed on focus lost
-    public override void FocusLost() {
-        if (parent != null) {
-            Close();
-        }
-        base.FocusLost();
-    }
 }
 
 internal class UtilityWindowDrawingSurface : SoftwareDrawingSurface {

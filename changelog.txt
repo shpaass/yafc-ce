@@ -29,6 +29,7 @@ Date:
         - Hide fluid temperature options when not part of a recipe or not accepted by that recipe.
         - Modify text colors for highlighted rows in dark mode to improve readability.
         - Don't draw table intermediates as <1μ ingredients/products.
+        - The file-picker on the Welcome Screen no longer closes by itself right after being opened.
     Internal changes:
         - Enable mod-fixes for the data, data-updates, and data-final-fixes files.
         - Recompile the lua lib for linux (PR 515). The script now uses CFLAGS and LDFLAGS.
