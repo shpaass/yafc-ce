@@ -148,7 +148,8 @@ internal partial class FactorioDataDeserializer {
             entity.allowedModuleCategories = [.. categories.ArrayElements<string>()];
         }
 
-        entity.moduleSlots = table.Get("module_slots", 0);
+        // table.module_specification.module_slots in 1.1; table.module_slots in 2.0. Assume module_specification is not present for 2.0 mods.
+        entity.moduleSlots = table.Get<LuaTable>("module_specification")?.Get<int>("module_slots") ?? table.Get("module_slots", 0);
     }
 
     private Recipe CreateLaunchRecipe(EntityCrafter entity, Recipe recipe, int partsRequired, int outputCount) {
