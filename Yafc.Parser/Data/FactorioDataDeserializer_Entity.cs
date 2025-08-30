@@ -383,7 +383,7 @@ internal partial class FactorioDataDeserializer {
 
                 if (factorioType == "rocket-silo") {
                     bool launchToSpacePlatforms = table.Get("launch_to_space_platforms", false);
-                    int rocketInventorySize = table.Get("to_be_inserted_to_rocket_inventory_size", 0);
+                    int rocketInventorySize = table.Get("to_be_inserted_to_rocket_inventory_size", factorioVersion < v2_0 ? 1 : 0);
 
                     if (rocketInventorySize > 0) {
                         _ = table.Get("rocket_parts_required", out int partsRequired, 100);

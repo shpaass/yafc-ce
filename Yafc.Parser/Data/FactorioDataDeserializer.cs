@@ -499,15 +499,21 @@ internal partial class FactorioDataDeserializer {
             }
         }
 
-        if (table.Get("send_to_orbit_mode", "not-sendable") != "not-sendable" || item.factorioType == "space-platform-starter-pack") {
-            Product[] launchProducts;
-            if (table.Get("rocket_launch_products", out LuaTable? products)) {
+        Product[]? launchProducts = null;
+        if (table.Get("send_to_orbit_mode", "not-sendable") != "not-sendable" || item.factorioType == "space-platform-starter-pack"
+            || factorioVersion < v2_0) {
+
+            if (table.Get("rocket_launch_product", out LuaTable? product)) {
+                launchProducts = [LoadProduct("rocket_launch_product", item.stackSize)(product)];
+            }
+            else if (table.Get("rocket_launch_products", out LuaTable? products)) {
                 launchProducts = [.. products.ArrayElements<LuaTable>().Select(LoadProduct(item.typeDotName, item.stackSize))];
             }
-            else {
+            else if (factorioVersion >= v2_0) {
                 launchProducts = [];
             }
-
+        }
+        if (launchProducts != null) {
             EnsureLaunchRecipe(item, launchProducts);
         }
 
@@ -560,6 +566,10 @@ internal partial class FactorioDataDeserializer {
     // This was constructed from educated guesses and https://forums.factorio.com/viewtopic.php?f=23&t=120781.
     // It was compared with https://rocketcal.cc/weights.json. Where the results differed, these results were verified in Factorio.
     private void CalculateItemWeights() {
+        if (factorioVersion < v2_0) {
+            return;
+        }
+
         Dictionary<Item, List<Item>> dependencies = [];
         foreach (Recipe recipe in allObjects.OfType<Recipe>()) {
             foreach (Item ingredient in recipe.ingredients.Select(i => i.goods).OfType<Item>()) {
@@ -657,11 +667,12 @@ nextWeightCalculation:;
     /// the existing launch products of a preexisting recipe, or set no products for a new recipe.</param>
     private void EnsureLaunchRecipe(Item item, Product[]? launchProducts) {
         Recipe recipe = CreateSpecialRecipe(item, SpecialNames.RocketLaunch, LSs.SpecialRecipeLaunched);
+        // When this is called in 2.0, we don't know the item weight or the rocket capacity.
+        // CalculateItemWeights will scale this ingredient and the products appropriately (but not the launch slot), only in 2.0.
+        int ingredientCount = factorioVersion < v2_0 ? item.stackSize : 1;
         recipe.ingredients =
         [
-            // When this is called, we don't know the item weight or the rocket capacity.
-            // CalculateItemWeights will scale this ingredient and the products appropriately (but not the launch slot)
-            new Ingredient(item, 1),
+            new Ingredient(item, ingredientCount),
             new Ingredient(rocketLaunch, 1),
         ];
         recipe.products = launchProducts ?? recipe.products ?? [];

@@ -85,8 +85,14 @@ internal partial class FactorioDataDeserializer {
         voidEnergy.showInExplorers = false;
         rootAccessible.Add(voidEnergy);
 
-        rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, LSs.SpecialObjectLaunchSlot,
-            LSs.SpecialObjectLaunchSlotDescription, "__base__/graphics/entity/rocket-silo/rocket-static-pod.png", "signal-R");
+        if (factorioVersion >= v2_0) {
+            rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, LSs.SpecialObjectLaunchSlot,
+                LSs.SpecialObjectLaunchSlotDescription, "__base__/graphics/entity/rocket-silo/rocket-static-pod.png", "signal-R");
+        }
+        else {
+            rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, LSs.SpecialObjectLaunchSlot,
+                LSs.SpecialObjectLaunchSlotDescription, "__base__/graphics/entity/rocket-silo/02-rocket.png", "signal-R");
+        }
 
         science = GetObject<Item>("science");
         science.showInExplorers = false;
