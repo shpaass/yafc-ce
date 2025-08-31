@@ -95,9 +95,9 @@ public class Preferences {
     /// </summary>
     public bool useMostRecentSave { get; set; } = true;
 
-    public void AddProject(string dataPath, string modsPath, string projectPath, bool netProduction) {
+    public void AddProject(string dataPath, string modsPath, string projectPath, bool expensive, bool netProduction) {
         recentProjects = [.. recentProjects.Where(x => string.Compare(projectPath, x.path, StringComparison.InvariantCultureIgnoreCase) != 0)
-            .Prepend(new ProjectDefinition(dataPath, modsPath, projectPath, netProduction))];
+            .Prepend(new ProjectDefinition(dataPath, modsPath, projectPath, expensive, netProduction))];
         Save();
     }
 }
@@ -117,10 +117,11 @@ public class ProjectDefinition {
         netProduction = false;
     }
 
-    public ProjectDefinition(string dataPath, string modsPath, string path, bool netProduction) {
+    public ProjectDefinition(string dataPath, string modsPath, string path, bool expensive, bool netProduction) {
         this.dataPath = dataPath;
         this.modsPath = modsPath;
         this.path = path;
+        this.expensive = expensive;
         this.netProduction = netProduction;
     }
 
@@ -136,6 +137,10 @@ public class ProjectDefinition {
     /// The path to the Factorio mods folder, which is usually located in Appdata/Roaming.
     /// </summary>
     public string modsPath { get; set; }
+    /// <summary>
+    /// If true, a 1.1-based project will use Factorio-expensive recipes.
+    /// </summary>
+    public bool expensive { get; set; }
     /// <summary>
     /// If <see langword="true"/>, the recipe-selection windows will only display the recipes that provide net-production or consumption of the <see cref="Goods"/> in question.<br/>
     /// If <see langword="false"/>, the recipe-selection windows will show all recipes that produce or consume any quantity of that <see cref="Goods"/>.<br/>

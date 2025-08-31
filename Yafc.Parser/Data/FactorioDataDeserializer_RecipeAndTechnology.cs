@@ -6,14 +6,12 @@ using Yafc.Model;
 namespace Yafc.Parser;
 
 internal partial class FactorioDataDeserializer {
-    private const bool expensiveRecipes = false;
-
     private T DeserializeWithDifficulty<T>(LuaTable table, string prototypeType, Action<T, LuaTable, bool, ErrorCollector> loader, ErrorCollector errorCollector) where T : FactorioObject, new() {
         var obj = DeserializeCommon<T>(table, prototypeType);
         object? current = null, fallback = null;
         if (factorioVersion < v2_0) {
-            current = expensiveRecipes ? table["expensive"] : table["normal"];
-            fallback = expensiveRecipes ? table["normal"] : table["expensive"];
+            current = DataUtils.expensiveRecipes ? table["expensive"] : table["normal"];
+            fallback = DataUtils.expensiveRecipes ? table["normal"] : table["expensive"];
         }
         if (current is LuaTable c) {
             loader(obj, c, false, errorCollector);

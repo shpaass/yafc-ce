@@ -50,6 +50,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
             FactorioDataSource.ClearDisabledMods();
         }
     }
+    private bool expensive;
     private bool netProduction;
     private string createText;
     private bool canCreate;
@@ -238,6 +239,9 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                 LSs.WelcomeModLocationHint, EditType.Mods);
 
             using (gui.EnterRow()) {
+                using (gui.EnterRowWithHelpIcon(LSs.WelcomeExpensiveRecipesHint, false)) {
+                    _ = gui.BuildCheckBox(LSs.WelcomeExpensiveRecipes, expensive, out expensive);
+                }
                 gui.allocator = RectAllocator.RightRow;
                 string lang = Preferences.Instance.language;
                 if (languageMapping.TryGetValue(Preferences.Instance.language, out LanguageInfo? mapped)) {
@@ -250,6 +254,8 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
 
                 gui.BuildText(LSs.WelcomeLanguageHeader);
             }
+
+            gui.spacing = .5f;
 
             using (gui.EnterRowWithHelpIcon(LSs.WelcomeLoadAutosaveHint, false)) {
                 if (gui.BuildCheckBox(LSs.WelcomeLoadAutosave, Preferences.Instance.useMostRecentSave,
@@ -273,6 +279,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
                 }
             }
 
+            gui.spacing = 1.5f;
             using (gui.EnterRow()) {
                 if (Preferences.Instance.recentProjects.Length > 1) {
                     if (gui.BuildButton(LSs.RecentProjects, SchemeColor.Grey)) {
@@ -521,6 +528,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
             dataPath = project.dataPath;
             modsPath = project.modsPath;
             path = project.path;
+            expensive = project.expensive;
             netProduction = project.netProduction;
         }
         else {
@@ -547,7 +555,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
             // Why not take or copy the whole object? The parts are used only in WelcomeScreen.cs, so I see no reason
             // to disassemble ProjectDefinition and drag it piece by piece.
             var (dataPath, modsPath, projectPath) = (this.dataPath, this.modsPath, path);
-            Preferences.Instance.AddProject(dataPath, modsPath, projectPath, netProduction);
+            Preferences.Instance.AddProject(dataPath, modsPath, projectPath, expensive, netProduction);
             Preferences.Instance.Save();
             tip = tips.Length > 0 ? tips[DataUtils.random.Next(tips.Length)] : "";
 
@@ -557,7 +565,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
             await Ui.ExitMainThread();
 
             ErrorCollector collector = new ErrorCollector();
-            var project = FactorioDataSource.Parse(dataPath, modsPath, projectPath, netProduction, this, collector, Preferences.Instance.language, Preferences.Instance.useMostRecentSave);
+            var project = FactorioDataSource.Parse(dataPath, modsPath, projectPath, expensive, netProduction, this, collector, Preferences.Instance.language, Preferences.Instance.useMostRecentSave);
 
             await Ui.EnterMainThread();
             logger.Information("Opening main screen");
