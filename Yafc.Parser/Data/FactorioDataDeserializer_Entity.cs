@@ -80,12 +80,17 @@ internal partial class FactorioDataDeserializer {
 
         EntityEnergy energy = new EntityEnergy();
         entity.energy = energy;
-        LuaTable? table = energySource.Get<LuaTable>("emissions_per_minute");
         List<(string, float)> emissions = [];
-        foreach (var (key, value) in table?.ObjectElements ?? []) {
-            if (key is string k && value is double v) {
-                emissions.Add((k, (float)v));
+        // emissions_per_minute is a table in 2.0, and a number in 1.1.
+        if (energySource.Get("emissions_per_minute", out LuaTable? table) && factorioVersion >= v2_0) {
+            foreach (var (key, value) in table?.ObjectElements ?? []) {
+                if (key is string k && value is double v) {
+                    emissions.Add((k, (float)v));
+                }
             }
+        }
+        else if (energySource.Get("emissions_per_minute", out float emission) && factorioVersion < v2_0) {
+            emissions.Add(("pollution", emission));
         }
         energy.emissions = emissions.AsReadOnly();
         energy.effectivity = energySource.Get("effectivity", 1f);
