@@ -19,8 +19,8 @@
 //         Changes to the code that do not affect the behavior of the program.
 
 ----------------------------------------------------------------------------------------------------------------------
-Version:
-Date:
+Version: 2.15.0
+Date: September 1st 2025
     Features:
         - Add Ctrl+Shift+Click to add the most cost-effective, accessible recipe for an item.
         - Better accessibility analysis for Ultracube.
