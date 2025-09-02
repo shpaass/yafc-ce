@@ -109,6 +109,11 @@ internal partial class FactorioDataDeserializer {
                         fuelUsers.Add(entity, cat);
                     }
                 }
+                else {
+                    // fuel_category is not used in 2.0. Assume it's not present for 2.0 mods. Use this to load either the 1.1 value (or default),
+                    // or the { "chemical" } default value for 2.0's fuel_categories.
+                    fuelUsers.Add(entity, energySource.Get("fuel_category", "chemical"));
+                }
 
                 break;
             case "heat":
