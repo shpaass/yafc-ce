@@ -422,7 +422,8 @@ internal partial class FactorioDataDeserializer {
             case "inserter":
                 var inserter = GetObject<EntityInserter>(table);
                 inserter.inserterSwingTime = 1f / (table.Get("rotation_speed", 1f) * 60);
-                inserter.isBulkInserter = table.Get("bulk", false);
+                // Assume mods don't declare bulk(2.0)/stack(1.1) inconsistently.
+                inserter.isBulkInserter = table.Get("bulk", false) || table.Get("stack", false);
                 break;
             case "lab":
                 var lab = GetObject<EntityCrafter>(table);
