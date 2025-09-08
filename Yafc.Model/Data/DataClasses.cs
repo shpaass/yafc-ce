@@ -37,7 +37,7 @@ public abstract class FactorioObject : IFactorioObjectWrapper, IComparable<Facto
     public string typeDotName => type + '.' + name;
     public string locName { get; internal set; } = null!; // null-forgiving: Copied from name if still null at the end of CalculateMaps
     public string? locDescr { get; internal set; }
-    public FactorioIconPart[]? iconSpec { get; internal set; }
+    internal FactorioIconPart[]? iconSpec { get; set; }
     public Icon icon { get; internal set; }
     public FactorioId id { get; internal set; }
     internal abstract FactorioObjectSortOrder sortingOrder { get; }
@@ -76,7 +76,7 @@ public abstract class FactorioObject : IFactorioObjectWrapper, IComparable<Facto
 
 public class FactorioIconPart(string path) {
     public string path = path;
-    public float size = 32;
+    public int size = 32;
     public float x, y, r = 1, g = 1, b = 1, a = 1;
     public float scale = 1;
 

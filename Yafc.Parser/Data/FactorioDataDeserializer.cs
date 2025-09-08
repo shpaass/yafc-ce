@@ -90,7 +90,7 @@ internal partial class FactorioDataDeserializer {
         fluid.iconSpec =
         [
             .. fluid.iconSpec ?? [],
-            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { y = -16, x = (n * 7) - 12, scale = 0.28f }),
+            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { size = 64, y = -32, x = (n * 14) - 24, scale = 0.28f }),
         ];
     }
 
@@ -244,8 +244,9 @@ internal partial class FactorioDataDeserializer {
     }
 
     private unsafe Icon CreateIconFromSpec(Dictionary<(string mod, string path), IntPtr> cache, params FactorioIconPart[] spec) {
-        const int iconSize = IconCollection.IconSize;
-        nint targetSurface = SDL.SDL_CreateRGBSurfaceWithFormat(0, iconSize, iconSize, 0, SDL.SDL_PIXELFORMAT_RGBA8888);
+        const int cachedIconSize = IconCollection.IconSize;
+        int renderSize = MathUtils.Round(spec[0].size * spec[0].scale);
+        nint targetSurface = SDL.SDL_CreateRGBSurfaceWithFormat(0, renderSize, renderSize, 0, SDL.SDL_PIXELFORMAT_RGBA8888);
         _ = SDL.SDL_SetSurfaceBlendMode(targetSurface, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
 
         foreach (var icon in spec) {
@@ -272,10 +273,6 @@ internal partial class FactorioDataDeserializer {
                                 image = SDL.SDL_ConvertSurfaceFormat(old, SDL.SDL_PIXELFORMAT_RGBA8888, 0);
                                 SDL.SDL_FreeSurface(old);
                             }
-
-                            if (surface.h > iconSize * 2) {
-                                image = SoftwareScaler.DownscaleIcon(image, iconSize);
-                            }
                         }
                         cache[modPath] = image;
                     }
@@ -287,10 +284,10 @@ internal partial class FactorioDataDeserializer {
             }
 
             ref var sdlSurface = ref RenderingUtils.AsSdlSurface(image);
-            int targetSize = icon.scale == 1f ? iconSize : MathUtils.Ceil(icon.size * icon.scale) * (iconSize / 32); // TODO research formula
+            int targetSize = MathUtils.Round(icon.size * icon.scale);
             _ = SDL.SDL_SetSurfaceColorMod(image, MathUtils.FloatToByte(icon.r), MathUtils.FloatToByte(icon.g), MathUtils.FloatToByte(icon.b));
             //SDL.SDL_SetSurfaceAlphaMod(image, MathUtils.FloatToByte(icon.a));
-            int basePosition = (iconSize - targetSize) / 2;
+            int basePosition = (renderSize - targetSize) / 2;
             SDL.SDL_Rect targetRect = new SDL.SDL_Rect {
                 x = basePosition,
                 y = basePosition,
@@ -300,14 +297,14 @@ internal partial class FactorioDataDeserializer {
 
             if (icon.x != 0) {
                 // These two formulas have variously multiplied icon.x (or icon.y) by a scaling factor of iconSize / icon.size,
-                // iconSize * icon.scale, or iconSize. (const int iconSize = 32)
+                // iconSize * icon.scale, or iconSize (iconSize is now const int cachedIconSize = 32).
                 // Presumably the scaling factor had a purpose, but I can't find it. Py and Vanilla objects (e.g. Recipe.Moss-1 and
                 // Entity.lane-splitter) draw correctly after removing the scaling factor.
-                targetRect.x = MathUtils.Clamp(targetRect.x + MathUtils.Round(icon.x), 0, iconSize - targetRect.w);
+                targetRect.x = MathUtils.Clamp(targetRect.x + MathUtils.Round(icon.x), 0, renderSize - targetRect.w);
             }
 
             if (icon.y != 0) {
-                targetRect.y = MathUtils.Clamp(targetRect.y + MathUtils.Round(icon.y), 0, iconSize - targetRect.h);
+                targetRect.y = MathUtils.Clamp(targetRect.y + MathUtils.Round(icon.y), 0, renderSize - targetRect.h);
             }
 
             SDL.SDL_Rect srcRect = new SDL.SDL_Rect {
@@ -317,6 +314,9 @@ internal partial class FactorioDataDeserializer {
             _ = SDL.SDL_BlitScaled(image, ref srcRect, targetSurface, ref targetRect);
         }
 
+        if (RenderingUtils.AsSdlSurface(targetSurface).h > cachedIconSize * 2) {
+            targetSurface = SoftwareScaler.DownscaleIcon(targetSurface, cachedIconSize);
+        }
         return IconCollection.AddIcon(targetSurface);
     }
 
@@ -742,7 +742,7 @@ nextWeightCalculation:;
         }
 
         if (table.Get("icon", out string? s)) {
-            target.iconSpec = [new FactorioIconPart(s) { size = table.Get("icon_size", 64f) }];
+            target.iconSpec = [new FactorioIconPart(s) { size = table.Get("icon_size", 64) }];
         }
         else if (table.Get("icons", out LuaTable? iconList)) {
             target.iconSpec = [.. iconList.ArrayElements<LuaTable>().Select(x => {
@@ -750,10 +750,16 @@ nextWeightCalculation:;
                     throw new NotSupportedException($"One of the icon layers for {name} does not have a path.");
                 }
 
-                FactorioIconPart part = new(path) {
-                    size = x.Get("icon_size", 64f),
-                    scale = x.Get("scale", 1f)
+                int expectedSize = target switch {
+                    // These are the only expected sizes for icons we render.
+                    // New classes of icons (e.g. achievements) will need new cases to make IconParts with default scale render correctly.
+                    // https://lua-api.factorio.com/latest/types/IconData.html
+                    Technology => 256,
+                    _ => 64
                 };
+
+                FactorioIconPart part = new(path) { size = x.Get("icon_size", 64) };
+                part.scale = x.Get("scale", expectedSize / 2f / part.size);
 
                 if (x.Get("shift", out LuaTable? shift)) {
                     part.x = shift.Get<float>(1);
