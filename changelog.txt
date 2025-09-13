@@ -19,6 +19,11 @@
 //         Changes to the code that do not affect the behavior of the program.
 
 ----------------------------------------------------------------------------------------------------------------------
+Version:
+Date:
+    Fixes:
+        - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.
+----------------------------------------------------------------------------------------------------------------------
 Version: 2.15.0
 Date: September 1st 2025
     Features:
