@@ -141,13 +141,15 @@ internal partial class LuaContext : IDisposable {
     private readonly Dictionary<(string mod, string name), byte[]> modFixes = [];
 
     private static readonly ILogger logger = Logging.GetLogger<LuaContext>();
-
+    private string currentfile;
     public LuaContext() {
         L = luaL_newstate();
         _ = luaL_openlibs(L);
         RegisterApi(Log, "raw_log");
         RegisterApi(Require, "require");
         RegisterApi(DebugTraceback, "debug", "traceback");
+        RegisterApi(DebugGetinfo, "debug", "getinfo");
+        currentfile = "__no__/file";
         _ = lua_pushstring(L, Project.currentYafcVersion.ToString());
         lua_setglobal(L, "yafc_version");
         var mods = NewTable();
@@ -229,6 +231,13 @@ internal partial class LuaContext : IDisposable {
         string rawTraceback = GetString(-1);
         string traceback = ReplaceChunkIdsInTraceback(rawTraceback);
         _ = lua_pushstring(L, traceback);
+        return 1;
+    }
+
+    private int DebugGetinfo(IntPtr lua) {
+        LuaTable outdata = NewTable();
+        outdata["short_src"] = currentfile;
+        PushManagedObject(outdata);
         return 1;
     }
 
@@ -463,6 +472,7 @@ internal partial class LuaContext : IDisposable {
         }
 
         logger.Information("Require {RequiredFile}", requiredFile.mod + "/" + requiredFile.path);
+        currentfile = "__" + requiredFile.mod + "__/" + requiredFile.path;
         byte[] bytes = FactorioDataSource.ReadModFile(requiredFile.mod, requiredFile.path);
 
         if (bytes != null) {
@@ -569,6 +579,7 @@ internal partial class LuaContext : IDisposable {
             }
 
             logger.Information("Executing file {Filename}", mod + "/" + fileName);
+            currentfile = "__" + mod + "__/" + fileName;
             _ = Exec(bytes, mod, fileName);
             RunModFix(mod, fileName);
         }
