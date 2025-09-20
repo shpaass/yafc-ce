@@ -840,12 +840,17 @@ nextWeightCalculation:;
                     // These are the only expected sizes for icons we render.
                     // New classes of icons (e.g. achievements) will need new cases to make IconParts with default scale render correctly.
                     // https://lua-api.factorio.com/latest/types/IconData.html
-                    Technology => 256,
+                    Technology => 256, // I think this should be 512 in 1.1, but that doesn't fix vanilla icons, and makes SE icons worse.
                     _ => 64
                 };
 
                 FactorioIconPart part = new(path) { size = x.Get("icon_size", 64) };
                 part.scale = x.Get("scale", expectedSize / 2f / part.size);
+                if (factorioVersion < v2_0) {
+                    // Mystery adjustment that makes 1.1 technology icons render correctly, and doesn't appear to mess up the recipe icons.
+                    // (Checked many of vanilla/SE's tech icons and the se-simulation-* recipes.)
+                    part.scale *= part.size / 64f;
+                }
 
                 if (x.Get("shift", out LuaTable? shift)) {
                     part.x = shift.Get<float>(1);
