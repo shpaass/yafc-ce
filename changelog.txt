@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------------------------------------------------
 Version:
 Date:
+    Features:
+        - Restore support for Factorio 1.1.
     Fixes:
         - Fix rendering of multi-icon technologies (e.g. shooting speed techs)
         - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.

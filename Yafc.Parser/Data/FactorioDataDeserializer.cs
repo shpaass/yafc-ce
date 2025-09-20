@@ -403,7 +403,8 @@ internal partial class FactorioDataDeserializer {
             float energyBase = float.Parse(energy[..^2]);
 
             switch (energyMul) {
-                case 'k': return energyBase * 1e-3f;
+                // 2.0 only allows k; 1.1 allows either. Assume 2.0 mods don't rely on whatever Factorio does with 'K'.
+                case 'k' or 'K': return energyBase * 1e-3f;
                 case 'M': return energyBase;
                 case 'G': return energyBase * 1e3f;
                 case 'T': return energyBase * 1e6f;
