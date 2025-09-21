@@ -185,7 +185,7 @@ public static class BlueprintUtilities {
                             count = count,
                             id = { name = module.target.name, quality = module.quality.name }
                         };
-                        item.items.inInventory.AddRange(Enumerable.Range(idx, count).Select(i => new BlueprintInventoryItem { stack = i }));
+                        item.items.inInventory.AddRange(Enumerable.Range(idx, count).Select(i => new BlueprintInventoryItem { inventory = recipe.entity.target.BlueprintModuleInventory, stack = i }));
                         entity.items.Add(item);
                         idx += count;
                     }

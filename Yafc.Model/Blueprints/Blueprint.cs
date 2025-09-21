@@ -239,6 +239,6 @@ public class BlueprintItemInventory {
 
 [Serializable]
 public class BlueprintInventoryItem {
-    public int inventory { get; } = 4; // unknown magic number (probably 'modules', needs more investigating)
+    public int inventory { get; set; }
     public int stack { get; set; }
 }
