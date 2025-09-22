@@ -64,8 +64,9 @@ internal static class LuaDependentTestHelper {
         Project project;
         Helper helper = new();
         using (LuaContext context = new LuaContext()) {
+            byte[] defines = File.ReadAllBytes("Data/Defines2.0.lua");
             byte[] bytes = File.ReadAllBytes("Data/Sandbox.lua");
-            context.Exec(bytes, "*", "");
+            context.Exec(bytes, "*", "", context.Exec(defines, "*", ""));
 
             using (Stream stream = GetStream(targetStreamName, out string alternate)) {
                 if (stream == null) {

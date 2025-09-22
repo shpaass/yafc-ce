@@ -237,6 +237,7 @@ internal partial class LuaContext : IDisposable {
     private int DebugGetinfo(IntPtr lua) {
         LuaTable outdata = NewTable();
         outdata["short_src"] = currentfile;
+        outdata["source"] = currentfile;
         PushManagedObject(outdata);
         return 1;
     }

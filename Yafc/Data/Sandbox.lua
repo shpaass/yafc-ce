@@ -10,7 +10,7 @@ end
 
 local parentTypes = {};
 
-defines = require("Defines");
+defines = ...; -- Yafc simulated require(Defines<version>) and stuck the result in `...`
 for defineType,typeTable in pairs(defines.prototypes) do
 	for subType,_ in pairs(typeTable) do
 		if (defineType ~= subType) then

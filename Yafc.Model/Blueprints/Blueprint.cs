@@ -218,6 +218,10 @@ public class BlueprintControlFilter {
 
 [Serializable]
 public class BlueprintItem {
+    // For 1.1 blueprints:
+    public string? item { get; set; }
+    public int count { get; set; }
+    // For 2.0 blueprints:
     public BlueprintId id { get; } = new();
     public BlueprintItemInventory items { get; } = new();
 }
@@ -235,6 +239,6 @@ public class BlueprintItemInventory {
 
 [Serializable]
 public class BlueprintInventoryItem {
-    public int inventory { get; } = 4; // unknown magic number (probably 'modules', needs more investigating)
+    public int inventory { get; set; }
     public int stack { get; set; }
 }

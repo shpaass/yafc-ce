@@ -678,6 +678,11 @@ public abstract class EntityWithModules : Entity {
         return true;
     }
 
+    /// <summary>
+    /// Gets the index of this entity's module inventory, as if from defines.inventory.{something}_modules
+    /// </summary>
+    public abstract int BlueprintModuleInventory { get; }
+
     public bool CanAcceptModule<T>(IObjectWithQuality<T> module) where T : Module => CanAcceptModule(module.target.moduleSpecification);
     public bool CanAcceptModule(ModuleSpecification module) => CanAcceptModule(module, allowedEffects, allowedModuleCategories);
 }
@@ -699,6 +704,12 @@ public class EntityCrafter : EntityWithModules {
     }
     public virtual float CraftingSpeed(Quality quality) => factorioType is "agricultural-tower" or "electric-energy-interface" ? baseCraftingSpeed : quality.ApplyStandardBonus(baseCraftingSpeed);
     public EffectReceiver effectReceiver { get; internal set; } = null!;
+
+    public override int BlueprintModuleInventory => factorioType switch {
+        "mining-drill" => 2, /* defines.inventory.mining_drill_modules */
+        "lab" => 3, /* defines.inventory.lab_modules */
+        _ => 4 /* defines.inventory.crafter_modules */
+    };
 }
 
 public class EntityAttractor : EntityCrafter {
@@ -948,6 +959,8 @@ public class EntityBeacon : EntityWithModules {
 
         return profile[Math.Min(numberOfBeacons, profile.Length) - 1];
     }
+
+    public override int BlueprintModuleInventory => 1 /*defines.inventory.beacon_modules*/;
 }
 
 public class EntityContainer : Entity {

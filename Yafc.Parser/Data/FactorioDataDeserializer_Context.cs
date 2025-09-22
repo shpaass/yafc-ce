@@ -39,7 +39,8 @@ internal partial class FactorioDataDeserializer {
     private int rocketCapacity;
     private int defaultItemWeight;
 
-    private static readonly Version v0_18 = new Version(0, 18);
+    internal static readonly Version v0_18 = new Version(0, 18);
+    internal static readonly Version v2_0 = new Version(2, 0);
 
     public FactorioDataDeserializer(Version factorioVersion) {
         this.factorioVersion = factorioVersion;
@@ -84,11 +85,22 @@ internal partial class FactorioDataDeserializer {
         voidEnergy.showInExplorers = false;
         rootAccessible.Add(voidEnergy);
 
-        rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, LSs.SpecialObjectLaunchSlot,
-            LSs.SpecialObjectLaunchSlotDescription, "__base__/graphics/entity/rocket-silo/rocket-static-pod.png", "signal-R");
+        if (factorioVersion >= v2_0) {
+            rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, LSs.SpecialObjectLaunchSlot,
+                LSs.SpecialObjectLaunchSlotDescription, "__base__/graphics/entity/rocket-silo/rocket-static-pod.png", "signal-R");
 
-        science = GetObject<Item>("science");
-        science.showInExplorers = false;
+            science = GetObject<Item>("science");
+            science.showInExplorers = false;
+        }
+        else {
+            rocketLaunch = createSpecialObject(false, SpecialNames.RocketLaunch, LSs.SpecialObjectLaunchSlot,
+                LSs.SpecialObjectLaunchSlotDescription, "__base__/graphics/entity/rocket-silo/02-rocket.png", "signal-R");
+
+            science = createSpecialItem("science", LSs.LegacyScience, LSs.LegacyScienceDesc, "__base__/graphics/icons/compilatron.png");
+            rootAccessible.Remove(science);
+            science.isLinkable = true;
+        }
+
         Analysis.ExcludeFromAnalysis<CostAnalysis>(science);
         formerAliases["Special.research-unit"] = science;
 

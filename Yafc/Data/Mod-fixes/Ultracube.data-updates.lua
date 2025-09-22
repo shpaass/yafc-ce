@@ -34,4 +34,13 @@ if data.raw.technology["electronics"] then
     data.raw.technology["electronics"].effects = nil
 end
 
+-- For 1.1, update Technology.cube-construct-forbidden-ziggurat to a trigger tech instead.
+if data.raw.technology["cube-construct-forbidden-ziggurat"].unit then
+    data.raw.technology["cube-construct-forbidden-ziggurat"].unit = nil
+    data.raw.technology["cube-construct-forbidden-ziggurat"].research_trigger = {
+        entity = { name = "cube-forbidden-ziggurat" },
+        type = "build-entity"
+    }
+end
+
 return ...;
