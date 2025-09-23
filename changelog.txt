@@ -24,6 +24,7 @@ Date:
     Fixes:
         - Fix rendering of multi-icon technologies (e.g. shooting speed techs)
         - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.
+        - Fix initial New Page was not displayed in tab bar after creating new project.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.15.0
 Date: September 1st 2025
