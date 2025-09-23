@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using SDL2;
@@ -137,7 +138,9 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         if (evt) {
             if (gui.actionParameter == SDL.SDL_BUTTON_MIDDLE) {
                 ProjectPageSettingsPanel.Show(element);
-                dropDown?.Close();
+                commonDropDown?.Close();
+                pagesDropDown?.Close();
+                HideTooltip();
             }
             else {
                 SetActivePage(element);
@@ -152,6 +155,8 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         if (_activePage != null && project.FindPage(_activePage.guid) != _activePage) {
             SetActivePage(null);
         }
+        // Keep the missing-pages dropdown list in sync with project changes (add/remove/rename)
+        UpdatePageList();
     }
 
     private void ChangePage(ref ProjectPage? activePage, ProjectPage? newPage, ref ProjectPageView? activePageView, ProjectPageView? newPageView) {
@@ -254,27 +259,57 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
                 ProductionTableView.CreateProductionSheet();
             }
 
+            var padding = new Padding(0f, 0f, 0f, 0.5f);
+
             gui.allocator = RectAllocator.RightRow;
-            if (gui.BuildButton(Icon.DropDown, SchemeColor.None, SchemeColor.Grey).WithTooltip(gui, LSs.ListAndSearchAll.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_F))) || showSearchAll) {
+
+            var isPinned = PagesSimpleDropPinned || this.project.settings.isPagesListPinned;
+
+            if (isPinned) {
+                gui.window?.HideTooltip();
+            }
+
+            if (gui.BuildButton(isPinned ? Icon.Close : Icon.DropDown, SchemeColor.None, SchemeColor.Grey, button: 0).WithTooltipConditional(!isPinned, gui, LSs.ListAndSearchAll.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_F))) || showSearchAll) {
                 showSearchAll = false;
-                updatePageList();
-                ShowDropDown(gui, gui.lastRect, missingPagesDropdown, new Padding(0f, 0f, 0f, 0.5f), 30f);
+                UpdatePageList();
+
+                // determine pinned by right-click (mouse button == 3)
+                bool pin = InputSystem.Instance.mouseDownButton == 3;
+
+                if (InputSystem.Instance.mouseDownButton == 1 || InputSystem.Instance.mouseDownButton == 3) {
+                    if (!ClosePagesListDropDown(gui, gui.lastRect)) {
+                        showPagesListDropDown(pin);
+                        this.project.settings.isPagesListPinned = pin;
+                        
+                    }
+                    else {
+                        this.project.settings.isPagesListPinned = false;
+                    }
+                }
+            }
+
+            if (this.project.settings.isPagesListPinned && pagesDropDown == null && pseudoScreens.Count == 0) {
+                showPagesListDropDown(true);
             }
 
             tabBar.Build(gui);
+
+            void showPagesListDropDown(bool pinned) => ShowPagesListDropDown(gui, gui.lastRect, missingPagesDropdown, padding, 30f, pinned);
         }
         gui.DrawRectangle(gui.lastRect, SchemeColor.PureBackground);
 
-        void updatePageList() {
-            List<ProjectPage> sortedAndFilteredPageList = [.. pageListSearch.Search(project.pages)];
-            sortedAndFilteredPageList.Sort((a, b) => a.visible == b.visible ? string.Compare(a.name, b.name, StringComparison.InvariantCultureIgnoreCase) : a.visible ? -1 : 1);
-            allPages.data = sortedAndFilteredPageList;
-        }
-
         void missingPagesDropdown(ImGui gui) {
-            pageListSearch.Build(gui, updatePageList);
+            pageListSearch.Build(gui, UpdatePageList);
             allPages.Build(gui);
         }
+    }
+
+    // Centralized update for the pages list shown in the dropdown so callers (e.g. after renaming)
+    // can refresh the list.
+    public void UpdatePageList() {
+        List<ProjectPage> sortedAndFilteredPageList = [.. pageListSearch.Search(project.pages)];
+        sortedAndFilteredPageList.Sort((a, b) => a.visible == b.visible ? string.Compare(a.name, b.name, StringComparison.InvariantCultureIgnoreCase) : a.visible ? -1 : 1);
+        allPages.data = sortedAndFilteredPageList;
     }
 
     private void BuildPage(ImGui gui) {
@@ -305,13 +340,15 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
     }
 
-    public ProjectPage AddProjectPage(string name, FactorioObject? icon, Type contentType, bool setActive, bool initNew) {
+    public ProjectPage AddProjectPage(String name, FactorioObject? icon, Type contentType, bool setActive, bool initNew) {
         ProjectPage page = new ProjectPage(project, contentType) { name = name, icon = icon };
         if (initNew) {
             page.content.InitNew();
         }
 
         project.RecordUndo().pages.Add(page);
+        // Ensure any visible page lists are updated immediately
+        UpdatePageList();
         if (setActive) {
             SetActivePage(page);
         }
@@ -543,6 +580,12 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         if (topScreen == null) {
             Ui.DispatchInMainThread(x => fadeDrawer.CreateDownscaledImage(), null);
         }
+
+        if (pagesDropDown != null) {
+            pagesDropDown.Close();
+            pagesDropDown = null;
+        }
+
         project.undo.Suspend();
         screen.Rebuild();
         pseudoScreens.Insert(0, screen);

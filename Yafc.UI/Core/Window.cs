@@ -23,10 +23,14 @@ public abstract class Window : IDisposable {
 
     private Tooltip? tooltip;
     private SimpleTooltip? simpleTooltip;
-    protected DropDownPanel? dropDown;
+    protected DropDownPanel? commonDropDown;
     private SimpleDropDown? simpleDropDown;
+    protected DropDownPanel? pagesDropDown;
+    private SimpleDropDown? pagesSimpleDropDown;
     private ImGui.DragOverlay? draggingOverlay;
     private bool disposedValue;
+
+    public bool PagesSimpleDropPinned => pagesSimpleDropDown?.pinnedMode ?? false;
 
     public DrawingSurface? surface { get; protected set; }
 
@@ -215,7 +219,7 @@ public abstract class Window : IDisposable {
     }
 
     public void ShowDropDown(DropDownPanel dropDown) {
-        this.dropDown = dropDown;
+        this.commonDropDown = dropDown;
         Rebuild();
     }
 
@@ -226,16 +230,57 @@ public abstract class Window : IDisposable {
         ShowDropDown(simpleDropDown);
     }
 
+    public void ShowPagesListDropDown(ImGui targetGui, Rect target, GuiBuilder builder, Padding padding, float width = 20f, bool pinned = false) {
+
+        if (simpleDropDown?.active == true) {
+            simpleDropDown.Close();   
+        }
+        
+        pagesSimpleDropDown ??= new SimpleDropDown();
+
+        pagesSimpleDropDown.SetPadding(padding);
+        pagesSimpleDropDown.SetFocus(targetGui, target, builder, width, pinned);
+
+        this.pagesDropDown = pagesSimpleDropDown;
+        this.
+        Rebuild();
+    }
+
+    public bool ClosePagesListDropDown(ImGui targetGui, Rect target) {
+        pagesSimpleDropDown ??= new SimpleDropDown();
+        // If a pinned dropdown is already open for this source/rect and caller asked to open pinned, close it.
+        if (pagesSimpleDropDown.active && pagesSimpleDropDown.pinnedMode && pagesSimpleDropDown.MatchesSource(targetGui, target)) {
+            pagesSimpleDropDown.pinnedMode = false;
+            pagesSimpleDropDown.Close();
+            // Ensure top-level reference is cleared so Build won't try to render it next frame
+            if (pagesDropDown == pagesSimpleDropDown) {
+                pagesDropDown = null;
+            }
+            Rebuild();
+
+            return true;
+        }
+
+        return false;
+    }
+
     private void Build(ImGui gui) {
         if (closed) {
             return;
         }
 
         BuildContents(gui);
-        if (dropDown != null) {
-            dropDown.Build(gui);
-            if (!dropDown.active) {
-                dropDown = null;
+        if (commonDropDown != null) {
+            commonDropDown.Build(gui);
+            if (!commonDropDown.active) {
+                commonDropDown = null;
+            }
+        }
+
+        if (pagesDropDown != null) {
+            pagesDropDown.Build(gui);
+            if (!pagesDropDown.active) {
+                pagesDropDown = null;
             }
         }
 
