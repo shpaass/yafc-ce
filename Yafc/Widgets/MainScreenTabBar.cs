@@ -109,27 +109,33 @@ public class MainScreenTabBar {
     private void PageRightClickDropdown(ImGui gui, ProjectPage page) {
         bool isSecondary = screen.secondaryPage == page;
         bool isActive = screen.activePage == page;
-        if (gui.BuildContextMenuButton(LSs.EditPageProperties)) {
+        if (gui.BuildContextMenuButton(LSs.EditPageProperties, icon:Icon.Edit)) {
             _ = gui.CloseDropdown();
             ProjectPageSettingsPanel.Show(page);
         }
         if (!isSecondary && !isActive) {
-            if (gui.BuildContextMenuButton(LSs.OpenSecondaryPage, LSs.ShortcutCtrlClick)) {
+            if (gui.BuildContextMenuButton(LSs.OpenSecondaryPage, LSs.ShortcutCtrlClick, Icon.Secondary)) {
                 _ = gui.CloseDropdown();
                 screen.SetSecondaryPage(page);
             }
         }
         else if (isSecondary) {
-            if (gui.BuildContextMenuButton(LSs.CloseSecondaryPage, LSs.ShortcutCtrlClick)) {
+            if (gui.BuildContextMenuButton(LSs.CloseSecondaryPage, LSs.ShortcutCtrlClick, Icon.Close)) {
                 _ = gui.CloseDropdown();
                 screen.SetSecondaryPage(null);
             }
         }
-        if (gui.BuildContextMenuButton(LSs.DuplicatePage)) {
+        if (gui.BuildContextMenuButton(LSs.DuplicatePage, icon:Icon.Copy)) {
             _ = gui.CloseDropdown();
             if (ProjectPageSettingsPanel.ClonePage(page) is { } copy) {
                 screen.project.RecordUndo().pages.Add(copy);
                 MainScreen.Instance.SetActivePage(copy);
+            }
+        }
+        if (gui.BuildContextMenuButton(LSs.RemovePage, icon:Icon.Delete, disabled: !page.canDelete)) {
+            _ = gui.CloseDropdown();
+            if (page.canDelete) {
+                screen.project.RemovePage(page);
             }
         }
     }
