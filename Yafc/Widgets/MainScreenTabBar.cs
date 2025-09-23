@@ -48,12 +48,19 @@ public class MainScreenTabBar {
                 }
 
                 gui.BuildText(page.name);
-                if (gui.BuildButton(Icon.Close, size: 0.8f)) {
+                if (gui.BuildButton(Icon.Close, size: 0.8f).WithTooltipConditional(page.canDelete, gui, LSs.TooltipClosePage)) {
                     if (isActive || isSecondary) {
                         changePageTo = prevPage;
                         changePage = isActive ? 1 : 2;
                     }
-                    screen.ClosePage(pageGuid);
+
+                    if (InputSystem.Instance.control && page.canDelete) {
+                        project.RemovePage(page);
+                    }
+                    else {
+                        screen.ClosePage(pageGuid);
+                    }
+
                     i--;
                 }
             }

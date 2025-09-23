@@ -225,6 +225,13 @@ public static class ImGuiUtils {
 
         return evt;
     }
+    public static bool WithTooltipConditional(this ButtonEvent evt, bool condition, ImGui gui, string tooltip, Rect? rect = null) {
+        if (evt == ButtonEvent.MouseOver && condition) {
+            gui.ShowTooltip(rect ?? gui.lastRect, tooltip);
+        }
+
+        return evt;
+    }
 
     public static bool BuildCheckBox(this ImGui gui, string text, bool value, out bool newValue, SchemeColor color = SchemeColor.None,
         RectAllocator allocator = RectAllocator.LeftRow, string? tooltip = null) {
