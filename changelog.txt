@@ -24,6 +24,7 @@ Date:
     Fixes:
         - Fix rendering of multi-icon technologies (e.g. shooting speed techs)
         - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.
+        - Hide TextInput placeholder before written text is displayed.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.15.0
 Date: September 1st 2025
