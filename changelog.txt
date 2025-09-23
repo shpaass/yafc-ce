@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------------------------------------------------
 Version:
 Date:
+    Features:
+        - Add Right-click option to show the Page Search dropdown pinned to keep it open.
     Fixes:
         - Fix rendering of multi-icon technologies (e.g. shooting speed techs)
         - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.
