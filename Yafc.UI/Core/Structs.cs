@@ -151,8 +151,9 @@ public enum Icon {
     OpenNew,
     StarEmpty,
     StarFull,
-
+    Secondary,
     FirstCustom,
+    
 }
 
 public enum RectAlignment {
