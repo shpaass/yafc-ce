@@ -45,6 +45,16 @@ public class Project : ModelObject {
         internal set => throw new NotSupportedException();
     }
 
+    public void AssureFirstPage() {
+        if (pages.Count == 0) {
+            ProjectPage firstPage = new ProjectPage(this, typeof(ProductionTable));
+            pages.Add(firstPage);
+            pagesByGuid[firstPage.guid] = firstPage;
+
+            displayPages.Add(firstPage.guid);
+        }
+    }
+
     private void UpdatePageMapping() {
         hiddenPages = 0;
         pagesByGuid.Clear();
