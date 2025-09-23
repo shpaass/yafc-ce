@@ -50,10 +50,14 @@ public abstract class AttachedPanel {
     protected abstract Vector2 CalculatePosition(ImGui gui, Rect targetRect, Vector2 contentSize);
     protected abstract bool ShouldBuild(ImGui source, Rect sourceRect, ImGui parent, Rect parentRect);
     protected abstract void BuildContents(ImGui gui);
+
+    // Expose a way to check whether this panel was focused from a given source/rect
+    public bool MatchesSource(ImGui source, Rect rect) => this.source == source && this.sourceRect.Equals(rect);
 }
 
 public abstract class DropDownPanel(Padding padding, float width) : AttachedPanel(padding, width), IMouseFocus {
     private bool focused;
+    private bool pinned;
 
     protected override bool ShouldBuild(ImGui source, Rect sourceRect, ImGui parent, Rect parentRect) => focused;
 
@@ -75,8 +79,19 @@ public abstract class DropDownPanel(Padding padding, float width) : AttachedPane
     }
 
     public void FocusChanged(bool focused) {
+        // If we're pinned, ignore losing focus so dropdown remains open.
+        if (!focused && pinned) {
+            return;
+        }
+
         this.focused = focused;
         contents.parent?.Rebuild();
+    }
+
+    // Allow external code to control pinned state
+    public bool pinnedMode {
+        get => pinned;
+        set => pinned = value;
     }
 }
 
@@ -94,9 +109,11 @@ public class SimpleDropDown : DropDownPanel {
 
     public void SetPadding(Padding padding) => contents.initialPadding = padding;
 
-    public void SetFocus(ImGui source, Rect rect, GuiBuilder builder, float width = 20f) {
+    // Added pinned parameter
+    public void SetFocus(ImGui source, Rect rect, GuiBuilder builder, float width = 20f, bool pinned = false) {
         this.width = width;
         this.builder = builder;
+        this.pinnedMode = pinned;
         base.SetFocus(source, rect);
     }
 

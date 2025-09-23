@@ -90,6 +90,8 @@ public class ProjectPageSettingsPanel : PseudoScreen {
         else if (editingPage.name != name || editingPage.icon != icon) {
             editingPage.RecordUndo(true).name = name!; // null-forgiving: The button is disabled if name is null or empty.
             editingPage.icon = icon;
+            // Ensure the main screen's page list is refreshed to show the new name in dropdowns
+            MainScreen.Instance.UpdatePageList();
         }
         Close();
     }

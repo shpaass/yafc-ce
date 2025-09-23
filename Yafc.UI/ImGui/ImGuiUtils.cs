@@ -198,13 +198,13 @@ public static class ImGuiUtils {
     }
 
     public static ButtonEvent BuildButton(this ImGui gui, Icon icon, SchemeColor normal = SchemeColor.None,
-        SchemeColor over = SchemeColor.Grey, SchemeColor down = SchemeColor.None, float size = 1.5f) {
+        SchemeColor over = SchemeColor.Grey, SchemeColor down = SchemeColor.None, float size = 1.5f, uint button = SDL.SDL_BUTTON_LEFT) {
 
         using (gui.EnterGroup(new Padding(0.3f))) {
             gui.BuildIcon(icon, size);
         }
 
-        return gui.BuildButton(gui.lastRect, normal, over, down);
+        return gui.BuildButton(gui.lastRect, normal, over, down, button);
     }
 
     public static ButtonEvent BuildButton(this ImGui gui, Icon icon, string text, SchemeColor normal = SchemeColor.None,
@@ -220,6 +220,13 @@ public static class ImGuiUtils {
 
     public static bool WithTooltip(this ButtonEvent evt, ImGui gui, string tooltip, Rect? rect = null) {
         if (evt == ButtonEvent.MouseOver) {
+            gui.ShowTooltip(rect ?? gui.lastRect, tooltip);
+        }
+
+        return evt;
+    }
+    public static bool WithTooltipConditional(this ButtonEvent evt, bool condition, ImGui gui, string tooltip, Rect? rect = null) {
+        if (evt == ButtonEvent.MouseOver && condition) {
             gui.ShowTooltip(rect ?? gui.lastRect, tooltip);
         }
 
