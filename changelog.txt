@@ -26,6 +26,9 @@ Date:
         - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.
         - Fix load errors for Pacifist (#535), PlanetsLib, and some planet mods.
         - Fix loading mods where modules spoil into other modules.
+    Internal changes:
+        - When loading data.raw, invalid conversions (e.g. from true to float, or 0.1 to bool) will correctly fail and
+          correctly report that failure when applicable.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.15.0
 Date: September 1st 2025

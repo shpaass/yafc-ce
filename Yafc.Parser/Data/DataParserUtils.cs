@@ -9,36 +9,68 @@ internal static class DataParserUtils {
     private static class ConvertersFromLua<T> {
         public static Converter? convert;
 
-        [return: NotNullIfNotNull(nameof(@default))]
-        public delegate T Converter(object value, T @default);
+        public delegate bool Converter(object value, T @default, [NotNullIfNotNull(nameof(@default))] out T result);
     }
 
     static DataParserUtils() {
-        ConvertersFromLua<int>.convert = (o, def) => o is long l ? (int)l : o is double d ? (int)d : o is string s && int.TryParse(s, out int res) ? res : def;
-        ConvertersFromLua<int?>.convert = (o, def) => o is long l ? (int)l : o is double d ? (int)d : o is string s && int.TryParse(s, out int res) ? res : def;
-        ConvertersFromLua<float>.convert = (o, def) => o is long l ? l : o is double d ? (float)d : o is string s && float.TryParse(s, out float res) ? res : def;
-        ConvertersFromLua<float?>.convert = (o, def) => o is long l ? l : o is double d ? (float)d : o is string s && float.TryParse(s, out float res) ? res : def;
-        ConvertersFromLua<bool>.convert = (o, def) => ConvertersFromLua<bool?>.convert!(o, def).Value;
-        ConvertersFromLua<bool?>.convert = (o, def) => {
-
-            if (o is bool b) {
-                return b;
-            }
-
-            if (o == null) {
-                return def;
-            }
-
-            if (o.Equals("true")) {
+        ConvertersFromLua<int?>.convert = (object value, int? def, out int? result) => {
+            if (value is long l) {
+                result = (int)l;
                 return true;
             }
-
-            if (o.Equals("false")) {
-                return false;
+            if (value is double d) {
+                result = (int)d;
+                return true;
             }
-
-            return def;
+            if (value is string s && int.TryParse(s, out int r)) {
+                result = r;
+                return true;
+            }
+            result = def;
+            return false;
         };
+        ConvertersFromLua<float?>.convert = (object value, float? def, out float? result) => {
+            if (value is long l) {
+                result = l;
+                return true;
+            }
+            if (value is double d) {
+                result = (float)d;
+                return true;
+            }
+            if (value is string s && float.TryParse(s, out float r)) {
+                result = r;
+                return true;
+            }
+            result = def;
+            return false;
+        };
+        ConvertersFromLua<bool?>.convert = (object value, bool? def, out bool? result) => {
+            if (value is bool b) {
+                result = b;
+                return true;
+            }
+            if (value.Equals("true")) {
+                result = true;
+                return true;
+            }
+            if (value.Equals("false")) {
+                result = false;
+                return true;
+            }
+            result = def;
+            return false;
+        };
+
+        ConvertersFromLua<int>.convert = convertFromNullable;
+        ConvertersFromLua<float>.convert = convertFromNullable;
+        ConvertersFromLua<bool>.convert = convertFromNullable;
+
+        static bool convertFromNullable<T>(object value, T def, out T result) where T : struct {
+            bool ret = ConvertersFromLua<T?>.convert!(value, def, out T? nullable);
+            result = nullable.Value; // value and def are not null, so nullable is not null either.
+            return ret;
+        }
     }
 
     private static bool Parse<T>(object? value, out T result, T def) {
@@ -57,8 +89,7 @@ internal static class DataParserUtils {
             return false;
         }
 
-        result = converter(value, def);
-        return true;
+        return converter(value, def, out result);
     }
 
     private static bool Parse<T>(object? value, [MaybeNullWhen(false)] out T result) => Parse(value, out result, default!); // null-forgiving: The three-argument Parse takes a non-null default to guarantee a non-null result. We don't make that guarantee.
