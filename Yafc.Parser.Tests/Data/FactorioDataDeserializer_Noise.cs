@@ -29,6 +29,8 @@ public class FactorioDataDeserializer_Noise {
         { "a %% b", ["a", Token.PercentPercent, "b"] },
         { "0x1234 | 123.456", [4660f, Token.Or, 123.456f] },
         { "$", [null] },
+        { "1.#INF", ["inf"] },
+        { "-1.#INF", [Token.Minus, "inf"] },
     };
 
     public static TheoryData<string, string?> TranspilationData => new() {
@@ -41,6 +43,8 @@ public class FactorioDataDeserializer_Noise {
         { "a %% b", "@a%/**/@b;" },
         { "0x1234 | 123.456", "4660|123.456;" },
         { "$", null },
+        { "1.#INF", "@inf;" },
+        { "-1.#INF", "-@inf;" },
     };
 
     public static TheoryData<string, float> EstimationData => new() {
@@ -53,5 +57,6 @@ public class FactorioDataDeserializer_Noise {
         { "0x1234 | 123.456", 0x1234 | 123 },
         { "clamp(5, -3, 3)", 3 },
         { "clamp{min=-3, value=5, max=2}", 2 },
+        { "-1.#INF", float.NegativeInfinity },
     };
 }

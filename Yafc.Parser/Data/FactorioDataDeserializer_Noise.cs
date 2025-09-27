@@ -500,6 +500,11 @@ internal partial class FactorioDataDeserializer {
 
                 remainingExpression = remainingExpression[Whitespace().Match(remainingExpression).Length..];
 
+                if (remainingExpression.StartsWith("1.#INF")) {
+                    remainingExpression = remainingExpression[6..];
+                    yield return "inf";
+                }
+
                 if (Identifier().Match(remainingExpression) is { Success: true } identifier) {
                     remainingExpression = remainingExpression[identifier.Length..];
                     yield return identifier.ToString();
