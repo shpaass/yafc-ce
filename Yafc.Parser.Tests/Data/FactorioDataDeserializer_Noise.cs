@@ -32,13 +32,13 @@ public class FactorioDataDeserializer_Noise {
     };
 
     public static TheoryData<string, string?> TranspilationData => new() {
-        { "a ~ b", "a^b;" },
-        { "~ b", "~b;" },
-        { "call{x = x, y = y}", "call(x:x,y:y);" },
-        { "x^y^z", "x..y..z;" },
-        { "call1(call2{x = x, y = y}, 3*q)", "call1(call2(x:x,y:y),3*q);" },
-        { "if(a, b, c)", "@if(a,b,c);" },
-        { "a %% b", "a%/**/b;" },
+        { "a ~ b", "@a^@b;" },
+        { "~ b", "~@b;" },
+        { "call{x = x, y = y}", "@call(@x:@x,@y:@y);" },
+        { "x^y^z", "@x..@y..@z;" },
+        { "call1(call2{x = x, y = y}, 3*q)", "@call1(@call2(@x:@x,@y:@y),3*@q);" },
+        { "if(a, b, c)", "@if(@a,@b,@c);" },
+        { "a %% b", "@a%/**/@b;" },
         { "0x1234 | 123.456", "4660|123.456;" },
         { "$", null },
     };

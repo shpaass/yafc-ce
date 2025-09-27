@@ -154,6 +154,7 @@ internal partial class FactorioDataDeserializer {
                 // An identifier not followed by an argument list. This is a parameter, an expression, or a built-in variable/constant.
                 // (https://lua-api.factorio.com/latest/auxiliary/noise-expressions.html#built-in-variables)
                 case IdentifierNameSyntax { Identifier.Text: string name }: {
+                        name = name[1..];
                         int idx = Array.IndexOf(localParameterNames, name);
                         if (idx >= 0 && estimateLocalParameter != null) {
                             return estimateLocalParameter(name, idx);
@@ -173,7 +174,7 @@ internal partial class FactorioDataDeserializer {
 
                 // A function call. This is a call to a local, global, or built-in function (including the `var` pseudo-function).
                 case InvocationExpressionSyntax { Expression: ExpressionSyntax name_, ArgumentList.Arguments: var args }: {
-                        string name = name_.ToString();
+                        string name = name_.ToString()[1..];
                         if (localFunctions.Get(name, out LuaTable? targetLocal)) {
                             return EstimateLocalFunction(targetLocal, estimateOutboundParameter);
                         }
@@ -209,7 +210,7 @@ internal partial class FactorioDataDeserializer {
                                 return MathF.Cos(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "floor" when args.Count == 1:
                                 return MathF.Floor(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
-                            case "@if" when args.Count == 3:
+                            case "if" when args.Count == 3:
                                 return estimateOutboundParameter("condition", 0) != 0
                                     ? estimateOutboundParameter("true_branch", 1)
                                     : estimateOutboundParameter("false_branch", 2);
@@ -253,7 +254,7 @@ internal partial class FactorioDataDeserializer {
 
                         float estimateOutboundParameter(string name, int idx) {
                             foreach (ArgumentSyntax arg in args) {
-                                if (arg.NameColon?.Name.ToString() == name) {
+                                if (arg.NameColon?.Name.ToString()[1..] == name) {
                                     return EstimateSyntax(arg.Expression, localParameterNames, estimateLocalParameter);
                                 }
                             }
@@ -398,16 +399,13 @@ internal partial class FactorioDataDeserializer {
                         canHaveBinaryOperator = false; // no string concatenation
                         break;
 
-                    case "if":
-                        cSharp.Append("@if");
-                        canHaveBinaryOperator = true;
-                        break;
                     case string identifier:
+                        // Add an @ to all identifiers so they can't turn into C# keywords.
                         if (identifier.Contains(':')) {
-                            cSharp.Append("var(\"" + identifier + "\")");
+                            cSharp.Append("@var(\"" + identifier + "\")");
                         }
                         else {
-                            cSharp.Append(token);
+                            cSharp.Append("@" + token);
                         }
                         canHaveBinaryOperator = true;
                         break;
