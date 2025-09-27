@@ -17,7 +17,7 @@ public class FactorioDataDeserializer_Noise {
     [Theory]
     [MemberData(nameof(EstimationData))]
     public void TestEstimation(string input, float output)
-        => Assert.Equal(output, new FactorioDataDeserializer.Noise(null!, null!).EstimateLocalExpression(input, [], null));
+        => Assert.Equal(output, new FactorioDataDeserializer.Noise(null!, null!, null).EstimateRootExpression(input));
 
     public static TheoryData<string, List<object?>> TokenizationData => new() {
         { "a ~ b", ["a", Token.Tilde, "b"] },
@@ -50,5 +50,6 @@ public class FactorioDataDeserializer_Noise {
         { "~1", ~1 },
         { "0x1234 | 123.456", 0x1234 | 123 },
         { "clamp(5, -3, 3)", 3 },
+        { "clamp{min=-3, value=5, max=2}", 2 },
     };
 }

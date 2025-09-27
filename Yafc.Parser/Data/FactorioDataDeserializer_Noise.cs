@@ -26,11 +26,18 @@ internal partial class FactorioDataDeserializer {
         private readonly LuaTable? localFunctions;
         // data.raw, for looking up global functions and expressions 
         private readonly LuaTable raw;
+        // The parameter names for the current global function, or empty
+        private readonly string[] globalParameterNames;
+        // A method that will lazily estimate the specified function parameter. The name and index must both be specified. The called function
+        // doesn't know which call format was used, and the call site doesn't know how to translate between names and indexes.
+        private readonly Func<string, int, float>? estimateGlobalParameter;
 
-        internal Noise(LuaTable generation, LuaTable raw) {
+        internal Noise(LuaTable generation, LuaTable raw, Func<string, int, float>? estimateGlobalParameter) {
             localExpressions = generation.Get<LuaTable>("local_expressions");
             localFunctions = generation.Get<LuaTable>("local_functions");
             this.raw = raw;
+            globalParameterNames = [.. generation.Get<LuaTable>("parameters").ArrayElements<string>()];
+            this.estimateGlobalParameter = estimateGlobalParameter;
         }
 
         // The default values for some optional function parameters.
@@ -68,34 +75,41 @@ internal partial class FactorioDataDeserializer {
                 return f;
             }
             if (generation.Get(key, out string? expression)) {
-                return new Noise(generation, raw).EstimateLocalExpression(expression, [], null);
+                return new Noise(generation, raw, null).EstimateRootExpression(expression);
             }
             return 1;
         }
 
-        private static float EstimateGlobalFunction(LuaTable function, Func<string, int, float> estimateParameter, LuaTable raw)
-            => new Noise(function, raw).EstimateLocalFunction(function, estimateParameter);
+        private static float EstimateGlobalFunction(LuaTable function, Func<string, int, float> estimateParameter, LuaTable raw) {
+            if (function.Get("expression", out string? expression)) {
+                return new Noise(function, raw, estimateParameter).EstimateRootExpression(expression);
+            }
+            return 1;
+        }
 
-        internal float EstimateLocalExpression(string expression, string[] parameters, Func<string, int, float>? estimateParameter) {
+        // Root and local expressions are parsed identically, but separate methods make it easier to keep track of what's happening.
+        internal float EstimateRootExpression(string expression) => EstimateLocalExpression(expression);
+
+        private float EstimateLocalExpression(string expression) {
             if (Parse(expression) is not SyntaxNode node) {
                 return 1;
             }
-            return EstimateSyntax(node, parameters, estimateParameter);
+            return EstimateSyntax(node, [], null);
         }
 
-        private float EstimateLocalFunction(LuaTable function, Func<string, int, float> estimateParameter) {
+        private float EstimateLocalFunction(LuaTable function, Func<string, int, float> estimateLocalParameter) {
             if (!function.Get("expression", out string? expression) || Parse(expression) is not SyntaxNode node) {
                 return 1;
             }
-            return EstimateSyntax(node, function.Get<LuaTable>("parameters").ArrayElements<string>()?.ToArray() ?? [], estimateParameter);
+            return EstimateSyntax(node, function.Get<LuaTable>("parameters").ArrayElements<string>()?.ToArray() ?? [], estimateLocalParameter);
         }
 
-        private float EstimateSyntax(SyntaxNode node, string[] parameters, Func<string, int, float>? estimateInboundParameter) {
+        private float EstimateSyntax(SyntaxNode node, string[] localParameterNames, Func<string, int, float>? estimateLocalParameter) {
             switch (node) {
                 // left {op} right, for supported operators (except exponentiation, which became a RangeExpression)
                 case BinaryExpressionSyntax binary: {
-                        float left = EstimateSyntax(binary.Left, parameters, estimateInboundParameter);
-                        float right = EstimateSyntax(binary.Right, parameters, estimateInboundParameter);
+                        float left = EstimateSyntax(binary.Left, localParameterNames, estimateLocalParameter);
+                        float right = EstimateSyntax(binary.Right, localParameterNames, estimateLocalParameter);
                         switch ((SyntaxKind)binary.RawKind) {
                             case SyntaxKind.AddExpression:
                                 return left + right;
@@ -140,16 +154,20 @@ internal partial class FactorioDataDeserializer {
                 // An identifier not followed by an argument list. This is a parameter, an expression, or a built-in variable/constant.
                 // (https://lua-api.factorio.com/latest/auxiliary/noise-expressions.html#built-in-variables)
                 case IdentifierNameSyntax { Identifier.Text: string name }: {
-                        int idx = Array.IndexOf(parameters, name);
-                        if (idx >= 0 && estimateInboundParameter != null) {
-                            return estimateInboundParameter(name, idx);
+                        int idx = Array.IndexOf(localParameterNames, name);
+                        if (idx >= 0 && estimateLocalParameter != null) {
+                            return estimateLocalParameter(name, idx);
+                        }
+                        idx = Array.IndexOf(globalParameterNames, name);
+                        if (idx >= 0 && estimateGlobalParameter != null) {
+                            return estimateGlobalParameter(name, idx);
                         }
                         return name switch {
                             "e" => MathF.E,
                             "pi" => MathF.PI,
                             "inf" => float.PositiveInfinity,
                             "x" or "y" => EstimationDistanceFromCenter,
-                            _ => EstimateIdentifier(name, parameters, estimateInboundParameter),
+                            _ => EstimateIdentifier(name),
                         };
                     }
 
@@ -178,38 +196,35 @@ internal partial class FactorioDataDeserializer {
                         // Remaining built-in functions (https://lua-api.factorio.com/latest/auxiliary/noise-expressions.html#built-in-functions)
                         switch (name) {
                             case "abs" when args.Count == 1:
-                                return MathF.Abs(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter));
+                                return MathF.Abs(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "atan2" when args.Count == 2:
-                                return MathF.Atan2(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter), EstimateSyntax(args[1].Expression, parameters, estimateInboundParameter));
+                                return MathF.Atan2(estimateOutboundParameter("y", 0), estimateOutboundParameter("x", 1));
                             case "ceil" when args.Count == 1:
-                                return MathF.Ceiling(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter));
+                                return MathF.Ceiling(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "clamp" when args.Count == 3:
-                                return Math.Clamp(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter),
-                                    EstimateSyntax(args[1].Expression, parameters, estimateInboundParameter),
-                                    EstimateSyntax(args[2].Expression, parameters, estimateInboundParameter));
+                                return Math.Clamp(estimateOutboundParameter("value", 0),
+                                    estimateOutboundParameter("min", 1),
+                                    estimateOutboundParameter("max", 2));
                             case "cos" when args.Count == 1:
-                                return MathF.Cos(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter));
+                                return MathF.Cos(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "floor" when args.Count == 1:
-                                return MathF.Floor(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter));
+                                return MathF.Floor(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "@if" when args.Count == 3:
-                                return EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter) != 0
-                                    ? EstimateSyntax(args[1].Expression, parameters, estimateInboundParameter)
-                                    : EstimateSyntax(args[2].Expression, parameters, estimateInboundParameter);
+                                return estimateOutboundParameter("condition", 0) != 0
+                                    ? estimateOutboundParameter("true_branch", 1)
+                                    : estimateOutboundParameter("false_branch", 2);
                             case "log2" when args.Count == 1:
-                                return MathF.Log2(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter));
+                                return MathF.Log2(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "max":
-                                return args.Select(a => EstimateSyntax(a.Expression, parameters, estimateInboundParameter)).Max();
+                                return args.Select(a => EstimateSyntax(a.Expression, localParameterNames, estimateLocalParameter)).Max();
                             case "min":
-                                return args.Select(a => EstimateSyntax(a.Expression, parameters, estimateInboundParameter)).Min();
+                                return args.Select(a => EstimateSyntax(a.Expression, localParameterNames, estimateLocalParameter)).Min();
                             case "pow" or "pow_precise" when args.Count == 2:
-                                return MathF.Pow(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter), EstimateSyntax(args[1].Expression, parameters, estimateInboundParameter));
+                                return MathF.Pow(estimateOutboundParameter("value", 0), estimateOutboundParameter("exponent", 1));
                             case "random_penalty" when args.Count >= 3:
                                 // Matches 1.1 estimation
-                                float amplitude = 1;
-                                if (args.Count > 4) {
-                                    amplitude = EstimateSyntax(args[4].Expression, parameters, estimateInboundParameter);
-                                }
-                                float value = EstimateSyntax(args[2].Expression, parameters, estimateInboundParameter);
+                                float amplitude = estimateOutboundParameter("amplitude", 4);
+                                float value = estimateOutboundParameter("source", 2);
                                 if (amplitude > value) {
                                     return value / amplitude;
                                 }
@@ -217,11 +232,11 @@ internal partial class FactorioDataDeserializer {
                                 return (value + value - amplitude) / 2;
                             case "ridge" when args.Count == 3:
                                 // Matches 1.1 estimation
-                                return (EstimateSyntax(args[1].Expression, parameters, estimateInboundParameter) + EstimateSyntax(args[2].Expression, parameters, estimateInboundParameter)) / 2;
+                                return (estimateOutboundParameter("min", 1) + estimateOutboundParameter("max", 2)) / 2;
                             case "sin" when args.Count == 1:
-                                return MathF.Sin(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter));
+                                return MathF.Sin(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "sqrt" when args.Count == 1:
-                                return MathF.Sqrt(EstimateSyntax(args[0].Expression, parameters, estimateInboundParameter));
+                                return MathF.Sqrt(EstimateSyntax(args[0].Expression, localParameterNames, estimateLocalParameter));
                             case "terrace":
                                 // Matches 1.1 estimation
                                 return estimateOutboundParameter("value", 0);
@@ -230,7 +245,7 @@ internal partial class FactorioDataDeserializer {
                                 if (token.StartsWith("control:")) {
                                     return 1; // Assume all map settings are set to their default value.
                                 }
-                                return EstimateIdentifier(token, parameters, estimateInboundParameter);
+                                return EstimateIdentifier(token);
                             default:
                                 logger.Information("In a Lua noise expression, '{Function}' is unknown or has the wrong number of arguments. (Found {Count} arguments.)", name, args.Count);
                                 return 1;
@@ -239,11 +254,11 @@ internal partial class FactorioDataDeserializer {
                         float estimateOutboundParameter(string name, int idx) {
                             foreach (ArgumentSyntax arg in args) {
                                 if (arg.NameColon?.Name.ToString() == name) {
-                                    return EstimateSyntax(arg.Expression, parameters, estimateInboundParameter);
+                                    return EstimateSyntax(arg.Expression, localParameterNames, estimateLocalParameter);
                                 }
                             }
                             if (idx < args.Count) {
-                                return EstimateSyntax(args[idx].Expression, parameters, estimateInboundParameter);
+                                return EstimateSyntax(args[idx].Expression, localParameterNames, estimateLocalParameter);
                             }
                             if (defaultValues.TryGetValue(name, out float def)) {
                                 return def;
@@ -265,11 +280,11 @@ internal partial class FactorioDataDeserializer {
                     }
 
                 case ParenthesizedExpressionSyntax expr:
-                    return EstimateSyntax(expr.Expression, parameters, estimateInboundParameter);
+                    return EstimateSyntax(expr.Expression, localParameterNames, estimateLocalParameter);
 
                 // {op} arg, for a supported unary operator
                 case PrefixUnaryExpressionSyntax expr:
-                    float arg = EstimateSyntax(expr.Operand, parameters, estimateInboundParameter);
+                    float arg = EstimateSyntax(expr.Operand, localParameterNames, estimateLocalParameter);
                     switch ((SyntaxKind)expr.RawKind) {
                         case SyntaxKind.UnaryPlusExpression:
                             return arg;
@@ -292,9 +307,9 @@ internal partial class FactorioDataDeserializer {
                         }
                         expressions.Enqueue(range.RightOperand!);
                         expressions.Enqueue(range.LeftOperand!);
-                        float result = EstimateSyntax(expressions.Dequeue(), parameters, estimateInboundParameter);
+                        float result = EstimateSyntax(expressions.Dequeue(), localParameterNames, estimateLocalParameter);
                         while (expressions.TryDequeue(out var left)) {
-                            result = MathF.Pow(EstimateSyntax(left, parameters, estimateInboundParameter), result);
+                            result = MathF.Pow(EstimateSyntax(left, localParameterNames, estimateLocalParameter), result);
                         }
                         return result;
                     }
@@ -309,9 +324,9 @@ internal partial class FactorioDataDeserializer {
         /// These are always variables, constants, or expressions. Function names can only appear in method-call contexts, and the parameter names
         /// have already been checked.
         /// </summary>
-        private float EstimateIdentifier(string name, string[] parameters, Func<string, int, float>? estimateParameter) {
+        private float EstimateIdentifier(string name) {
             if (localExpressions.Get(name, out string? targetLocal)) {
-                return EstimateLocalExpression(targetLocal, parameters, estimateParameter);
+                return EstimateLocalExpression(targetLocal);
             }
             if (localExpressions.Get(name, out float f)) {
                 return f;
