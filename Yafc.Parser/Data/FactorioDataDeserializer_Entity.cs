@@ -612,6 +612,12 @@ internal partial class FactorioDataDeserializer {
                 float estimatedAmount = coverage * (richBase + richMultiplier + (richMultiplierDistance * EstimationDistanceFromCenter));
                 entity.mapGenDensity = estimatedAmount;
             }
+            else {
+                float probability = Noise.Estimate(generation, "probability_expression", raw);
+                float richness = Noise.Estimate(generation, "richness_expression", raw);
+                entity.mapGenDensity = richness * probability;
+            }
+
             if (generation.Get("control", out string? control)) {
                 entity.mapGenerated = true;
                 entity.autoplaceControl = generation.Get<string>("control");
