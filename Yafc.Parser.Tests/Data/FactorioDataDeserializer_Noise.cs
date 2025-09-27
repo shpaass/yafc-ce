@@ -6,12 +6,12 @@ public class FactorioDataDeserializer_Noise {
     // Note that these tests are cumulative. If there are test failures, fix tokenization first, transpilation second, and estimation last.
     [Theory]
     [MemberData(nameof(TokenizationData))]
-    public void TestTokenization(string input, List<object> output)
+    public void TestTokenization(string input, List<object?> output)
         => Assert.Equivalent(output, Tokenize(input));
 
     [Theory]
     [MemberData(nameof(TranspilationData))]
-    public void TestTranspilation(string input, string output)
+    public void TestTranspilation(string input, string? output)
         => Assert.Equal(output, Transpile(Tokenize(input)));
 
     [Theory]
@@ -28,9 +28,10 @@ public class FactorioDataDeserializer_Noise {
         { "if(a, b, c)", ["if", Token.OpenParen, "a", Token.Comma, "b", Token.Comma, "c", Token.CloseParen] },
         { "a %% b", ["a", Token.PercentPercent, "b"] },
         { "0x1234 | 123.456", [4660f, Token.Or, 123.456f] },
+        { "$", [null] },
     };
 
-    public static TheoryData<string, string> TranspilationData => new() {
+    public static TheoryData<string, string?> TranspilationData => new() {
         { "a ~ b", "a^b;" },
         { "~ b", "~b;" },
         { "call{x = x, y = y}", "call(x:x,y:y);" },
@@ -39,6 +40,7 @@ public class FactorioDataDeserializer_Noise {
         { "if(a, b, c)", "@if(a,b,c);" },
         { "a %% b", "a%/**/b;" },
         { "0x1234 | 123.456", "4660|123.456;" },
+        { "$", null },
     };
 
     public static TheoryData<string, float> EstimationData => new() {

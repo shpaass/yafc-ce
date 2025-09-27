@@ -346,7 +346,11 @@ internal partial class FactorioDataDeserializer {
         /// </summary>
         private static ExpressionSyntax? Parse(string expression) {
             try {
-                string cSharp = Transpile(Tokenize(expression));
+                string? cSharp = Transpile(Tokenize(expression));
+                if (cSharp == null) {
+                    logger.Information("Failed to transpile noise expression '{Expression}' into C#.", expression);
+                    return null;
+                }
                 // Assign to a discard to force the code into an expression context. In a statement context, some expressions will parse incorrectly.
                 // (e.g. "foo*bar" in a statement context is "Declare a variable named `bar` of type `pointer to foo`.")
                 CompilationUnitSyntax result = (CompilationUnitSyntax)CSharpSyntaxTree.ParseText("_=" + cSharp).GetRoot();
@@ -376,12 +380,14 @@ internal partial class FactorioDataDeserializer {
         /// <summary>
         /// Transpile the token stream into a valid C# expression, which will then be parsed into a tree and walked.
         /// </summary>
-        internal static string Transpile(IEnumerable<object> tokens) {
+        internal static string? Transpile(IEnumerable<object?> tokens) {
             StringBuilder cSharp = new();
 
             bool canHaveBinaryOperator = false;
-            foreach (object token in tokens) {
+            foreach (object? token in tokens) {
                 switch (token) {
+                    case null:
+                        return null;
                     case string s when s.StartsWith('"') || s.StartsWith('\''): // Strings
                         s = s.Replace("\\", @"\\").Replace("\n", @"\n").Replace("\r", @"\r").Replace("\t", @"\t");
 
@@ -474,9 +480,11 @@ internal partial class FactorioDataDeserializer {
         /// <summary>
         /// Tokenize the input noise expression, so the non-C# tokens (e.g. %%, variables containing :, ~ as xor) can be converted to valid C#.
         /// </summary>
-        internal static IEnumerable<object> Tokenize(string expression) {
+        internal static IEnumerable<object?> Tokenize(string expression) {
             string remainingExpression = expression;
             while (remainingExpression.Length > 0) {
+                int startLength = remainingExpression.Length;
+
                 switch (remainingExpression[0]) {
                     // Two-character tokens (all are operators):
                     case '%' when remainingExpression[1] == '%':
@@ -513,6 +521,12 @@ internal partial class FactorioDataDeserializer {
                 if (String().Match(remainingExpression) is { Success: true } str) {
                     remainingExpression = remainingExpression[str.Length..];
                     yield return str.ToString();
+                }
+
+                if (remainingExpression.Length == startLength) {
+                    // Don't know how to tokenize this. Bail out, which will eventually cause this to be estimated as 1.
+                    yield return null;
+                    yield break;
                 }
             }
         }
