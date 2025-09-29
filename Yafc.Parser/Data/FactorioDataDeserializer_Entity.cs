@@ -613,8 +613,8 @@ internal partial class FactorioDataDeserializer {
                 entity.mapGenDensity = estimatedAmount;
             }
             else {
-                float probability = Noise.Estimate(generation, "probability_expression", raw);
-                float richness = Noise.Estimate(generation, "richness_expression", raw);
+                float probability = EstimateNoiseExpression(generation, "probability_expression");
+                float richness = EstimateNoiseExpression(generation, "richness_expression");
                 entity.mapGenDensity = richness * probability;
             }
 

@@ -14,31 +14,38 @@ using Yafc.UI;
 namespace Yafc.Parser;
 
 internal partial class FactorioDataDeserializer {
+    private readonly Dictionary<string, float> noiseExpressionCache = [];
+
+    public float EstimateNoiseExpression(LuaTable generation, string key) {
+        if (generation.Get(key, out bool b)) {
+            return b ? 1 : 0;
+        }
+        if (generation.Get(key, out float f)) {
+            return f;
+        }
+        if (generation.Get(key, out string? expression)) {
+            return new NoiseExpression(this, generation, null).EstimateRootExpression(expression);
+        }
+        return 1;
+    }
+
     /// <summary>
     /// Class for parsing and estimating 2.0 noise expressions.
     /// </summary>
-    internal sealed partial class Noise {
-        private static readonly ILogger logger = Logging.GetLogger<Noise>();
+    /// <param name="deserializer">The active <see cref="FactorioDataDeserializer"/>, for access to the expression cache and data.raw</param>
+    /// <param name="generation">The <see cref="LuaTable"/> containing the local_expressions and local_functions tables.</param>
+    /// <param name="estimateGlobalParameter">A method that will lazily estimate the specified function parameter. The name and index must both be
+    /// specified. The called function doesn't know which call format was used, and the call site doesn't know how to translate between names and
+    /// indexes.</param>
+    internal partial class NoiseExpression(FactorioDataDeserializer deserializer, LuaTable generation, Func<string, int, float>? estimateGlobalParameter) {
+        private static readonly ILogger logger = Logging.GetLogger<NoiseExpression>();
 
         // The local_expressions table corresponding to the current root or global expression
-        private readonly LuaTable? localExpressions;
+        private readonly LuaTable? localExpressions = generation.Get<LuaTable>("local_expressions");
         // The local_functions table corresponding to the current global function, if applicable
-        private readonly LuaTable? localFunctions;
-        // data.raw, for looking up global functions and expressions 
-        private readonly LuaTable raw;
+        private readonly LuaTable? localFunctions = generation.Get<LuaTable>("local_functions");
         // The parameter names for the current global function, or empty
-        private readonly string[] globalParameterNames;
-        // A method that will lazily estimate the specified function parameter. The name and index must both be specified. The called function
-        // doesn't know which call format was used, and the call site doesn't know how to translate between names and indexes.
-        private readonly Func<string, int, float>? estimateGlobalParameter;
-
-        internal Noise(LuaTable generation, LuaTable raw, Func<string, int, float>? estimateGlobalParameter) {
-            localExpressions = generation.Get<LuaTable>("local_expressions");
-            localFunctions = generation.Get<LuaTable>("local_functions");
-            this.raw = raw;
-            globalParameterNames = [.. generation.Get<LuaTable>("parameters").ArrayElements<string>()];
-            this.estimateGlobalParameter = estimateGlobalParameter;
-        }
+        private readonly string[] globalParameterNames = [.. generation.Get<LuaTable>("parameters").ArrayElements<string>()];
 
         // The default values for some optional function parameters.
         private static readonly Dictionary<string, float> defaultValues = new() {
@@ -67,28 +74,15 @@ internal partial class FactorioDataDeserializer {
             ["variable_persistence_multioctave_noise"] = 7,
         };
 
-        public static float Estimate(LuaTable generation, string key, LuaTable raw) {
-            if (generation.Get(key, out bool b)) {
-                return b ? 1 : 0;
-            }
-            if (generation.Get(key, out float f)) {
-                return f;
-            }
-            if (generation.Get(key, out string? expression)) {
-                return new Noise(generation, raw, null).EstimateRootExpression(expression);
-            }
-            return 1;
-        }
-
-        private static float EstimateGlobalFunction(LuaTable function, Func<string, int, float> estimateParameter, LuaTable raw) {
+        private float EstimateGlobalFunction(LuaTable function, Func<string, int, float> estimateParameter) {
             if (function.Get("expression", out string? expression)) {
-                return new Noise(function, raw, estimateParameter).EstimateRootExpression(expression);
+                return new NoiseExpression(deserializer, function, estimateParameter).EstimateRootExpression(expression);
             }
             return 1;
         }
 
         // Root and local expressions are parsed identically, but separate methods make it easier to keep track of what's happening.
-        internal float EstimateRootExpression(string expression) => EstimateLocalExpression(expression);
+        public float EstimateRootExpression(string expression) => EstimateLocalExpression(expression);
 
         private float EstimateLocalExpression(string expression) {
             if (Parse(expression) is not SyntaxNode node) {
@@ -178,8 +172,8 @@ internal partial class FactorioDataDeserializer {
                         if (localFunctions.Get(name, out LuaTable? targetLocal)) {
                             return EstimateLocalFunction(targetLocal, estimateOutboundParameter);
                         }
-                        if (raw.Get<LuaTable>("noise-function").Get(name, out LuaTable? targetGlobal)) {
-                            return EstimateGlobalFunction(targetGlobal, estimateOutboundParameter, raw);
+                        if (deserializer.raw.Get<LuaTable>("noise-function").Get(name, out LuaTable? targetGlobal)) {
+                            return EstimateGlobalFunction(targetGlobal, estimateOutboundParameter);
                         }
 
                         if (name.EndsWith("_noise") || name == "multisample") {
@@ -332,8 +326,11 @@ internal partial class FactorioDataDeserializer {
             if (localExpressions.Get(name, out float f)) {
                 return f;
             }
-            if (raw.Get<LuaTable>("noise-expression").Get(name, out LuaTable? targetGlobal)) {
-                return Estimate(targetGlobal, "expression", raw);
+            if (deserializer.noiseExpressionCache.TryGetValue(name, out float value)) {
+                return value;
+            }
+            if (deserializer.raw.Get<LuaTable>("noise-expression").Get(name, out LuaTable? targetGlobal)) {
+                return deserializer.noiseExpressionCache[name] = deserializer.EstimateNoiseExpression(targetGlobal, "expression");
             }
             if (name == "map_seed_normalized") {
                 return 0.5f;

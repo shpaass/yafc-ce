@@ -1,4 +1,4 @@
-﻿using static Yafc.Parser.FactorioDataDeserializer.Noise;
+﻿using static Yafc.Parser.FactorioDataDeserializer.NoiseExpression;
 
 namespace Yafc.Parser.Data.Tests;
 
@@ -17,7 +17,7 @@ public class FactorioDataDeserializer_Noise {
     [Theory]
     [MemberData(nameof(EstimationData))]
     public void TestEstimation(string input, float output)
-        => Assert.Equal(output, new FactorioDataDeserializer.Noise(null!, null!, null).EstimateRootExpression(input));
+        => Assert.Equal(output, new FactorioDataDeserializer.NoiseExpression(new(new(2, 0)), null!, null).EstimateRootExpression(input));
 
     public static TheoryData<string, List<object?>> TokenizationData => new() {
         { "a ~ b", ["a", Token.Tilde, "b"] },
