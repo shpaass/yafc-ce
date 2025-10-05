@@ -449,10 +449,11 @@ internal partial class LuaContext : IDisposable {
             GetReg(result);
             return 1;
         }
-        else if (FactorioDataSource.ModPathExists(requiredFile.mod, fileExt)) { }
+        // TODO: Does Factorio's require check intermediate directories, in addition to current and mod-root?
         else if (FactorioDataSource.ModPathExists(requiredFile.mod, GetDirectoryName(source) + fileExt)) {
             requiredFile.path = GetDirectoryName(source) + fileExt;
         }
+        else if (FactorioDataSource.ModPathExists(requiredFile.mod, fileExt)) { }
         else if (FactorioDataSource.ModPathExists("core", "lualib/" + fileExt)) {
             requiredFile.mod = "core";
             requiredFile.path = "lualib/" + fileExt;
