@@ -154,6 +154,7 @@ internal partial class LuaContext : IDisposable {
         RegisterApi(Require, "require");
         RegisterApi(DebugTraceback, "debug", "traceback");
         RegisterApi(CompareVersions, "helpers", "compare_versions");
+        RegisterApi(EvaluateExpression, "helpers", "evaluate_expression");
         currentfile = "__no__/file";
         _ = lua_pushstring(L, Project.currentYafcVersion.ToString());
         lua_setglobal(L, "yafc_version");
@@ -248,6 +249,18 @@ internal partial class LuaContext : IDisposable {
         else {
             // Got something that wasn't a version for one or both arguments?
             lua_pushnumber(lua, string.Compare(string1, string2));
+        }
+        return 1;
+    }
+
+    private int EvaluateExpression(IntPtr lua) {
+        string? expression = GetString(1);
+        if (expression != null) {
+            LuaTable? variables = PopManagedValue(0) as LuaTable;
+            lua_pushnumber(lua, MathExpression.Evaluate(expression, variables));
+        }
+        else {
+            lua_pushnumber(lua, 0);
         }
         return 1;
     }
