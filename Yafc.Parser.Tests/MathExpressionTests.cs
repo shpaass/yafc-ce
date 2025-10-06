@@ -6,12 +6,12 @@ public class MathExpressionTests {
     // Note that these tests are cumulative. If there are test failures, fix tokenization first, transpilation second, and evaluation last.
     [Theory]
     [MemberData(nameof(TokenizationData))]
-    public void TestTokenization(string input, List<object> output)
+    public void TestTokenization(string input, List<object?> output)
         => Assert.Equivalent(output, Tokenize(input));
 
     [Theory]
     [MemberData(nameof(TranspilationData))]
-    public void TestTranspilation(string input, string output)
+    public void TestTranspilation(string input, string? output)
         => Assert.Equal(output, Transpile(Tokenize(input)));
 
     [Theory]
@@ -25,14 +25,16 @@ public class MathExpressionTests {
         { "x^y^z", ["x", Token.Caret, "y", Token.Caret, "z"] },
         { "0x1234 + 123.456", [4660f, Token.Plus, 123.456f] },
         { "log2(5)", ["log2", Token.OpenParen, 5f, Token.CloseParen] },
+        { "$", [null] },
     };
 
-    public static TheoryData<string, string> TranspilationData => new() {
+    public static TheoryData<string, string?> TranspilationData => new() {
         { "a * b", "@a*@b;" },
         { "call(x, y)", "@call(@x,@y);" },
         { "x^y^z", "@x..@y..@z;" },
         { "0x1234 + 123.456", "4660+123.456;" },
         { "log2(5)", "@log2(5);" },
+        { "$", null },
     };
 
     public static TheoryData<string, float> EvaluationData => new() {

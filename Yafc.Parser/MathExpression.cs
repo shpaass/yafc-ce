@@ -115,7 +115,11 @@ internal sealed partial class MathExpression {
     /// </summary>
     private static ExpressionSyntax? Parse(string expression) {
         try {
-            string cSharp = Transpile(Tokenize(expression));
+            string? cSharp = Transpile(Tokenize(expression));
+            if (cSharp == null) {
+                logger.Information("Failed to transpile noise expression '{Expression}' into C#.", expression);
+                return null;
+            }
             // Assign to a discard to force the code into an expression context. In a statement context, some expressions will parse incorrectly.
             // (e.g. "foo*bar" in a statement context is "Declare a variable named `bar` of type `pointer to foo`.")
             CompilationUnitSyntax result = (CompilationUnitSyntax)CSharpSyntaxTree.ParseText("_=" + cSharp).GetRoot();
@@ -141,11 +145,14 @@ internal sealed partial class MathExpression {
     /// <summary>
     /// Transpile the token stream into a valid C# expression, which will then be parsed into a tree and walked.
     /// </summary>
-    internal static string Transpile(IEnumerable<object> tokens) {
+    internal static string? Transpile(IEnumerable<object?> tokens) {
         StringBuilder cSharp = new();
 
-        foreach (object token in tokens) {
+        foreach (object? token in tokens) {
             switch (token) {
+                case null:
+                    return null;
+
                 case string identifier:
                     // Prefix an @ so the identifier (e.g. 'base') cannot be a keyword.
                     cSharp.Append('@').Append(identifier);
@@ -158,7 +165,6 @@ internal sealed partial class MathExpression {
                 case Token.Caret:
                     cSharp.Append(".."); // Transpile exponentation into the tightly-binding range operator. Reinterpret it as Pow later.
                     break;
-
                 case Token.Plus or Token.Minus or Token.Asterisk or Token.Slash or Token.Comma or Token.OpenParen or Token.CloseParen:
                     cSharp.Append((char)(Token)token);
                     break;
@@ -175,9 +181,11 @@ internal sealed partial class MathExpression {
     /// <summary>
     /// Tokenize the input expression, so the non-C# tokens (e.g. ^ for exponentaion) can be converted to valid C#.
     /// </summary>
-    internal static IEnumerable<object> Tokenize(string expression) {
+    internal static IEnumerable<object?> Tokenize(string expression) {
         string remainingExpression = expression;
         while (remainingExpression.Length > 0) {
+            int startLength = remainingExpression.Length;
+
             switch (remainingExpression[0]) {
                 // Single-character tokens:
                 case '^' or '+' or '-' or '*' or '/' or '(' or ')' or ',':
@@ -207,6 +215,12 @@ internal sealed partial class MathExpression {
             if (String().Match(remainingExpression) is { Success: true } str) {
                 remainingExpression = remainingExpression[str.Length..];
                 yield return str.ToString();
+            }
+
+            if (remainingExpression.Length == startLength) {
+                // Don't know how to tokenize this. Bail out, which will eventually cause fallback estimation.
+                yield return null;
+                yield break;
             }
         }
     }
