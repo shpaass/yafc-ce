@@ -63,7 +63,7 @@ internal static class LuaDependentTestHelper {
         // Read the four lua files and generate an empty project.
         Project project;
         Helper helper = new();
-        using (LuaContext context = new LuaContext()) {
+        using (LuaContext context = new LuaContext(new(2, 0, 7))) {
             byte[] bytes = File.ReadAllBytes("Data/Sandbox.lua");
             context.Exec(bytes, "*", "");
 

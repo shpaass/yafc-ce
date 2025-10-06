@@ -142,13 +142,19 @@ internal partial class LuaContext : IDisposable {
 
     private static readonly ILogger logger = Logging.GetLogger<LuaContext>();
     private string currentfile;
-    public LuaContext() {
+    public LuaContext(Version gameVersion) {
         L = luaL_newstate();
         _ = luaL_openlibs(L);
+
+        var helpers = NewTable();
+        helpers["game_version"] = gameVersion.ToString(3);
+        SetGlobal("helpers", helpers);
+
         RegisterApi(Log, "raw_log");
         RegisterApi(Require, "require");
         RegisterApi(DebugTraceback, "debug", "traceback");
         RegisterApi(DebugGetinfo, "debug", "getinfo");
+        RegisterApi(CompareVersions, "helpers", "compare_versions");
         currentfile = "__no__/file";
         _ = lua_pushstring(L, Project.currentYafcVersion.ToString());
         lua_setglobal(L, "yafc_version");
@@ -238,6 +244,19 @@ internal partial class LuaContext : IDisposable {
         LuaTable outdata = NewTable();
         outdata["short_src"] = currentfile;
         PushManagedObject(outdata);
+        return 1;
+    }
+
+    private int CompareVersions(IntPtr lua) {
+        string? string1 = GetString(1);
+        string? string2 = GetString(2);
+        if (Version.TryParse(string1, out Version? version1) && Version.TryParse(string2, out Version? version2)) {
+            lua_pushnumber(lua, version1.CompareTo(version2));
+        }
+        else {
+            // Got something that wasn't a version for one or both arguments?
+            lua_pushnumber(lua, string.Compare(string1, string2));
+        }
         return 1;
     }
 
@@ -510,6 +529,13 @@ internal partial class LuaContext : IDisposable {
         lua_setglobal(L, name);
     }
 
+    /// <summary>
+    /// Stores a C# method that will be called when scripts attempt to call <c>_G[<paramref name="topLevel"/>][<paramref name="name"/>]</c>.
+    /// </summary>
+    /// <param name="callback">The C# method to call when scripts call the specified function.</param>
+    /// <param name="topLevel">The name of the global table that will receive <paramref name="callback"/>. This table may be empty,
+    /// but it must already exist.</param>
+    /// <param name="name">The table key that will receive <paramref name="callback"/>.</param>
     private void RegisterApi(LuaCFunction callback, string topLevel, string name) {
         neverCollect.Add(callback);
         _ = lua_getglobal(L, topLevel);
