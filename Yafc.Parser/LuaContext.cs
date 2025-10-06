@@ -153,7 +153,6 @@ internal partial class LuaContext : IDisposable {
         RegisterApi(Log, "raw_log");
         RegisterApi(Require, "require");
         RegisterApi(DebugTraceback, "debug", "traceback");
-        RegisterApi(DebugGetinfo, "debug", "getinfo");
         RegisterApi(CompareVersions, "helpers", "compare_versions");
         currentfile = "__no__/file";
         _ = lua_pushstring(L, Project.currentYafcVersion.ToString());
@@ -237,13 +236,6 @@ internal partial class LuaContext : IDisposable {
         string rawTraceback = GetString(-1)!; // null-forgiving: luaL_traceback always pushes a string
         string traceback = ReplaceChunkIdsInTraceback(rawTraceback);
         _ = lua_pushstring(L, traceback);
-        return 1;
-    }
-
-    private int DebugGetinfo(IntPtr lua) {
-        LuaTable outdata = NewTable();
-        outdata["short_src"] = currentfile;
-        PushManagedObject(outdata);
         return 1;
     }
 
@@ -563,6 +555,7 @@ internal partial class LuaContext : IDisposable {
         name = fullChunkNames.Count - 1 + " " + name;
         GetReg(tracebackReg);
         chunk = chunk.CleanupBom();
+        SetGlobal("current_file", currentfile);
 
         var result = luaL_loadbufferx(L, in chunk.GetPinnableReference(), chunk.Length, name, null);
 
