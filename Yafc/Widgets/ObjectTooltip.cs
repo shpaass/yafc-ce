@@ -584,6 +584,7 @@ doneDrawing:;
         bool isResearchTriggerBuild = technology.flags.HasFlag(RecipeFlags.HasResearchTriggerBuildEntity);
         bool isResearchTriggerPlatform = technology.flags.HasFlag(RecipeFlags.HasResearchTriggerCreateSpacePlatform);
         bool isResearchTriggerLaunch = technology.flags.HasFlag(RecipeFlags.HasResearchTriggerSendToOrbit);
+        bool isResearchTriggerScripted = technology.flags.HasFlag(RecipeFlags.HasResearchTriggerScripted);
 
         if (!technology.flags.HasFlagAny(RecipeFlags.HasResearchTriggerMask)) {
             BuildRecipe(technology, gui);
@@ -638,7 +639,14 @@ doneDrawing:;
         else if (isResearchTriggerLaunch) {
             BuildSubHeader(gui, LSs.TooltipHeaderTechnologyLaunchItem.L(1));
             using (gui.EnterGroup(contentPadding)) {
-                gui.BuildFactorioObjectButtonWithText(technology.triggerItem);
+                gui.BuildFactorioObjectButtonWithText(technology.triggerObject);
+            }
+        }
+        else if (isResearchTriggerScripted) {
+            BuildSubHeader(gui, LSs.TooltipHeaderTechnologyScripted);
+            using (gui.EnterGroup(contentPadding)) {
+                // null-forgiving: triggerObject is set before setting HasResearchTriggerScripted
+                gui.BuildText(technology.triggerObject!.locDescr, TextBlockDisplayStyle.WrappedText);
             }
         }
 

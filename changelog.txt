@@ -22,7 +22,7 @@
 Version:
 Date:
     Fixes:
-        - Support craft-fluid research triggers.
+        - Support craft-fluid and scripted research triggers.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.16.0
 Date: October 24th 2025

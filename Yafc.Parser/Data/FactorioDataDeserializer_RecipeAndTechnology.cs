@@ -387,10 +387,19 @@ internal partial class FactorioDataDeserializer {
                     break;
                 }
                 Item item = GetObject<Item>(itemName);
-                technology.triggerItem = item;
+                technology.triggerObject = item;
                 technology.flags |= RecipeFlags.HasResearchTriggerSendToOrbit;
                 // Create a launch recipe for items without a `rocket_launch_products`, without altering existing launch recipes.
                 EnsureLaunchRecipe(item, null);
+                break;
+            case "scripted":
+                researchTriggerTable["name"] = technology.name;
+                researchTriggerTable["localised_description"] = researchTriggerTable["trigger_description"];
+                ResearchTrigger trigger = DeserializeCommon<ResearchTrigger>(researchTriggerTable, "trigger");
+                trigger.locName = LSs.TechnologyTrigger.L(technology.locName ?? technology.name);
+                technology.triggerObject = trigger;
+                technology.flags |= RecipeFlags.HasResearchTriggerScripted;
+                rootAccessible.Add(trigger);
                 break;
             default:
                 errorCollector.Error(LSs.ResearchHasAnUnsupportedTriggerType.L(technology.typeDotName, type), ErrorSeverity.MinorDataLoss);
