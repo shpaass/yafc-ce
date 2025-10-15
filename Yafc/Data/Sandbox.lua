@@ -28,6 +28,14 @@ function log(s)
 	raw_log(s);
 end
 
+local raw_getinfo = debug.getinfo
+function debug.getinfo(thread, f, what)
+    local result = raw_getinfo(thread, f, what)
+    if result.short_src then result.short_src = current_file end
+    if result.source then result.source = current_file end
+    return result
+end
+
 serpent = require("Serpent")
 
 table_size = function(t)

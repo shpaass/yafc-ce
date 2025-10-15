@@ -243,6 +243,11 @@ public static partial class FactorioDataSource {
                 }
             }
 
+            CurrentLoadingMod = null;
+            if (factorioVersion is null) {
+                throw new NotSupportedException(LSs.CouldNotReadFactorioInfoJson);
+            }
+
             foreach (var mod in allFoundMods) {
                 CurrentLoadingMod = mod.name;
 
@@ -351,7 +356,7 @@ public static partial class FactorioDataSource {
             DataUtils.netProduction = netProduction;
 
             CurrentLoadingMod = null;
-            dataContext = new LuaContext();
+            dataContext = new LuaContext(factorioVersion);
             object? settings = null;
 
             if (File.Exists(modSettingsPath)) {

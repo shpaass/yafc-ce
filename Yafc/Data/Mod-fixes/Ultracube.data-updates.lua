@@ -26,12 +26,9 @@ data.script_enabled:insert({
     name = "cube-quantum-decoder-dummy"
 })
 
--- Remove the vanilla lab, to remove the vanilla science packs from the default milestones
-data.raw.lab["lab"] = nil
-data.raw.recipe["lab"] = nil
-data.raw.item["lab"] = nil
-if data.raw.technology["electronics"] then
-    data.raw.technology["electronics"].effects = nil
+-- Remove the vanilla lab inputs, to remove the vanilla science packs from the default milestones
+if data.raw.lab.lab then
+    data.raw.lab.lab.inputs = {}
 end
 
 return ...;

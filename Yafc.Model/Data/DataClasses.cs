@@ -383,16 +383,6 @@ public class Item : Goods {
         Recipe? getSpoilRecipe() => Database.recipes.all.OfType<Mechanics>().SingleOrDefault(r => r.name == "spoil." + name);
     }
 
-    /// <summary>
-    /// The prototypes in this array will be loaded in order, before any other prototypes.
-    /// This should correspond to the prototypes for subclasses of item, with more derived classes listed before their base classes.
-    /// e.g. If ItemWithHealth and ModuleWithHealth C# classes were added, all prototypes for both classes must be listed here.
-    /// Ignoring style restrictions, the prototypes could be listed in any order, provided all ModuleWithHealth prototype(s) are listed before "module".
-    /// </summary>
-    /// <remarks>This forces modules to be loaded before other items, since deserialization otherwise creates Item objects for all spoil results.
-    /// It does not protect against modules that spoil into other modules, but one hopes people won't do that.</remarks>
-    internal static string[] ExplicitPrototypeLoadOrder { get; } = ["ammo", "module"];
-
     public Item? fuelResult { get; internal set; }
     public int stackSize { get; internal set; }
     public Entity? placeResult { get; internal set; }
