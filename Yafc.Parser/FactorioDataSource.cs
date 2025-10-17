@@ -168,6 +168,7 @@ public static partial class FactorioDataSource {
     /// <param name="modPath">The path to the mods/ folder, containing mod-list.json and the mods. Both zipped and unzipped mods are supported.
     /// May be empty (but not <see langword="null"/>) to load only vanilla Factorio data.</param>
     /// <param name="projectPath">The path to the project file to create or load. May be <see langword="null"/> or empty.</param>
+    /// <param name="expensive">Whether to use expensive recipes when loading data from Factorio 1.1.</param>
     /// <param name="netProduction">If <see langword="true"/>, recipe selection windows will only display recipes that provide net production or consumption
     /// of the <see cref="Goods"/> in question.
     /// If <see langword="false"/>, recipe selection windows will show all recipes that produce or consume any quantity of that <see cref="Goods"/>.<br/>
@@ -182,7 +183,7 @@ public static partial class FactorioDataSource {
     /// <returns>A <see cref="Project"/> containing the information loaded from <paramref name="projectPath"/>.
     /// Also sets the <see langword="static"/> properties in <see cref="Database"/>.</returns>
     /// <exception cref="NotSupportedException">Thrown if a mod enabled in mod-list.json could not be found in <paramref name="modPath"/>.</exception>
-    public static Project Parse(string factorioPath, string modPath, string projectPath, bool netProduction,
+    public static Project Parse(string factorioPath, string modPath, string projectPath, bool expensive, bool netProduction,
         IProgress<(string MajorState, string MinorState)> progress, ErrorCollector errorCollector, string locale, bool useLatestSave, bool renderIcons = true) {
 
         LuaContext? dataContext = null;
@@ -246,6 +247,11 @@ public static partial class FactorioDataSource {
             CurrentLoadingMod = null;
             if (factorioVersion is null) {
                 throw new NotSupportedException(LSs.CouldNotReadFactorioInfoJson);
+            }
+            if (factorioVersion < new Version(1, 1) || factorioVersion >= new Version(2, 1)) {
+                // To support versions other than 1.1 and 2.0, one of the first steps is adding an appropriate Defines<major>.<minor>.lua
+                // For example, 0.17 would need Defines0.17.lua.
+                throw new NotSupportedException(LSs.UnsupportedFactorioVersion.L(factorioVersion));
             }
 
             foreach (var mod in allFoundMods) {
@@ -350,9 +356,10 @@ public static partial class FactorioDataSource {
             }
 
             byte[] preProcess = File.ReadAllBytes("Data/Sandbox.lua");
-            byte[] postProcess = File.ReadAllBytes("Data/Postprocess.lua");
+            byte[] defines = File.ReadAllBytes($"Data/Defines{factorioVersion.ToString(2)}.lua");
             DataUtils.dataPath = factorioPath;
             DataUtils.modsPath = modPath;
+            DataUtils.expensiveRecipes = expensive;
             DataUtils.netProduction = netProduction;
 
             CurrentLoadingMod = null;
@@ -371,11 +378,17 @@ public static partial class FactorioDataSource {
             // TODO default mod settings
             dataContext.SetGlobal("settings", settings);
 
-            _ = dataContext.Exec(preProcess, "*", "pre");
+            _ = dataContext.Exec(preProcess, "*", "pre", dataContext.Exec(defines, "*", "defines"));
             dataContext.DoModFiles(modLoadOrder, "data.lua", progress);
             dataContext.DoModFiles(modLoadOrder, "data-updates.lua", progress);
             dataContext.DoModFiles(modLoadOrder, "data-final-fixes.lua", progress);
             CurrentLoadingMod = null;
+            byte[] postProcess;
+            if (factorioVersion < FactorioDataDeserializer.v2_0) {
+                postProcess = File.ReadAllBytes($"Data/Postprocess1.1.lua");
+                _ = dataContext.Exec(postProcess, "*", "post");
+            }
+            postProcess = File.ReadAllBytes($"Data/Postprocess.lua");
             _ = dataContext.Exec(postProcess, "*", "post");
 
             FactorioDataDeserializer deserializer = new FactorioDataDeserializer(factorioVersion ?? defaultFactorioVersion);

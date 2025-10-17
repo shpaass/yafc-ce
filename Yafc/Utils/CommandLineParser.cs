@@ -106,7 +106,7 @@ public static class CommandLineParser {
 
         if (projectToOpen == null && recentProjects.Length > 0) {
             ProjectDefinition donor = recentProjects[0];
-            projectToOpen = new ProjectDefinition(donor.dataPath, donor.modsPath, fullPathToProject, donor.netProduction);
+            projectToOpen = new ProjectDefinition(donor.dataPath, donor.modsPath, fullPathToProject, donor.expensive, donor.netProduction);
         }
 
         return projectToOpen;

@@ -32,7 +32,7 @@ internal static class FactorioPropertyTree {
         _ = reader.ReadInt32(); // Patch level
         _ = reader.ReadBoolean();
 
-        if (major != 2) {
+        if (major is not 1 and not 2) {
             return null;
         }
 
