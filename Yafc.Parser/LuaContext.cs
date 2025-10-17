@@ -141,13 +141,21 @@ internal partial class LuaContext : IDisposable {
     private readonly Dictionary<(string mod, string name), byte[]> modFixes = [];
 
     private static readonly ILogger logger = Logging.GetLogger<LuaContext>();
-
-    public LuaContext() {
+    private string currentfile;
+    public LuaContext(Version gameVersion) {
         L = luaL_newstate();
         _ = luaL_openlibs(L);
+
+        var helpers = NewTable();
+        helpers["game_version"] = gameVersion.ToString(3);
+        SetGlobal("helpers", helpers);
+
         RegisterApi(Log, "raw_log");
         RegisterApi(Require, "require");
         RegisterApi(DebugTraceback, "debug", "traceback");
+        RegisterApi(CompareVersions, "helpers", "compare_versions");
+        RegisterApi(EvaluateExpression, "helpers", "evaluate_expression");
+        currentfile = "__no__/file";
         _ = lua_pushstring(L, Project.currentYafcVersion.ToString());
         lua_setglobal(L, "yafc_version");
         var mods = NewTable();
@@ -216,9 +224,9 @@ internal partial class LuaContext : IDisposable {
     }
 
     private int CreateErrorTraceback(IntPtr lua) {
-        string message = GetString(1);
+        string? message = GetString(1);
         luaL_traceback(L, L, message, 0);
-        string rawTraceback = GetString(-1);
+        string rawTraceback = GetString(-1)!; // null-forgiving: luaL_traceback always pushes a string
         string traceback = ReplaceChunkIdsInTraceback(rawTraceback);
         _ = lua_pushstring(L, traceback);
         return 1;
@@ -226,14 +234,39 @@ internal partial class LuaContext : IDisposable {
 
     private int DebugTraceback(IntPtr lua) {
         luaL_traceback(L, L, null, 0);
-        string rawTraceback = GetString(-1);
+        string rawTraceback = GetString(-1)!; // null-forgiving: luaL_traceback always pushes a string
         string traceback = ReplaceChunkIdsInTraceback(rawTraceback);
         _ = lua_pushstring(L, traceback);
         return 1;
     }
 
+    private int CompareVersions(IntPtr lua) {
+        string? string1 = GetString(1);
+        string? string2 = GetString(2);
+        if (Version.TryParse(string1, out Version? version1) && Version.TryParse(string2, out Version? version2)) {
+            lua_pushnumber(lua, version1.CompareTo(version2));
+        }
+        else {
+            // Got something that wasn't a version for one or both arguments?
+            lua_pushnumber(lua, string.Compare(string1, string2));
+        }
+        return 1;
+    }
+
+    private int EvaluateExpression(IntPtr lua) {
+        string? expression = GetString(1);
+        if (expression != null) {
+            LuaTable? variables = PopManagedValue(0) as LuaTable;
+            lua_pushnumber(lua, MathExpression.Evaluate(expression, variables));
+        }
+        else {
+            lua_pushnumber(lua, 0);
+        }
+        return 1;
+    }
+
     private int Log(IntPtr lua) {
-        logger.Information(GetString(1));
+        logger.Information(GetString(1) ?? "A lua script attempted to log a {LuaType} value.", lua_type(lua, 1));
         return 0;
     }
     private void GetReg(int refId) => lua_rawgeti(L, REGISTRY, refId);
@@ -398,7 +431,8 @@ internal partial class LuaContext : IDisposable {
     }
 
     private int Require(IntPtr lua) {
-        string file = GetString(1); // 1
+        string file = GetString(1) ?? throw new NotSupportedException("Cannot require(nil)");
+
         string argument = file;
 
         if (file.Contains("..")) {
@@ -416,7 +450,7 @@ internal partial class LuaContext : IDisposable {
         Pop(1);
         luaL_traceback(L, L, null, 1); //2
         // TODO how to determine where to start require search? Parsing lua traceback output for now
-        string tracebackS = GetString(-1);
+        string tracebackS = GetString(-1)!; // null-forgiving: luaL_traceback always pushes a string
         string[] tracebackVal = tracebackS.Split("\n\t");
         int traceId = -1;
 
@@ -440,10 +474,11 @@ internal partial class LuaContext : IDisposable {
             GetReg(result);
             return 1;
         }
-        else if (FactorioDataSource.ModPathExists(requiredFile.mod, fileExt)) { }
+        // TODO: Does Factorio's require check intermediate directories, in addition to current and mod-root?
         else if (FactorioDataSource.ModPathExists(requiredFile.mod, GetDirectoryName(source) + fileExt)) {
             requiredFile.path = GetDirectoryName(source) + fileExt;
         }
+        else if (FactorioDataSource.ModPathExists(requiredFile.mod, fileExt)) { }
         else if (FactorioDataSource.ModPathExists("core", "lualib/" + fileExt)) {
             requiredFile.mod = "core";
             requiredFile.path = "lualib/" + fileExt;
@@ -463,18 +498,14 @@ internal partial class LuaContext : IDisposable {
         }
 
         logger.Information("Require {RequiredFile}", requiredFile.mod + "/" + requiredFile.path);
+        currentfile = "__" + requiredFile.mod + "__/" + requiredFile.path;
         byte[] bytes = FactorioDataSource.ReadModFile(requiredFile.mod, requiredFile.path);
 
         if (bytes != null) {
             _ = lua_pushstring(L, argument);
             int argumentReg = luaL_ref(L, REGISTRY);
             int result = Exec(bytes, requiredFile.mod, requiredFile.path, argumentReg);
-
-            if (modFixes.TryGetValue(requiredFile, out byte[]? fix)) {
-                string modFixName = "mod-fix-" + requiredFile.mod + "." + requiredFile.path;
-                logger.Information("Running mod-fix {ModFix}", modFixName);
-                result = Exec(fix, "*", modFixName, result);
-            }
+            result = RunModFix(requiredFile.mod, requiredFile.path, result);
 
             required[requiredFile] = result;
             GetReg(result);
@@ -486,6 +517,16 @@ internal partial class LuaContext : IDisposable {
         return 1;
     }
 
+    private int RunModFix(string mod, string path, int result = 0) {
+        if (modFixes.TryGetValue((mod, path), out byte[]? fix)) {
+            string modFixName = $"mod-fix-{mod}.{path}";
+            logger.Information("Running mod-fix {ModFix}", modFixName);
+            result = Exec(fix, "*", modFixName, result);
+        }
+
+        return result;
+    }
+
     protected readonly List<object> neverCollect = []; // references callbacks that could be called from native code to not be garbage collected
     private void RegisterApi(LuaCFunction callback, string name) {
         neverCollect.Add(callback);
@@ -493,6 +534,13 @@ internal partial class LuaContext : IDisposable {
         lua_setglobal(L, name);
     }
 
+    /// <summary>
+    /// Stores a C# method that will be called when scripts attempt to call <c>_G[<paramref name="topLevel"/>][<paramref name="name"/>]</c>.
+    /// </summary>
+    /// <param name="callback">The C# method to call when scripts call the specified function.</param>
+    /// <param name="topLevel">The name of the global table that will receive <paramref name="callback"/>. This table may be empty,
+    /// but it must already exist.</param>
+    /// <param name="name">The table key that will receive <paramref name="callback"/>.</param>
     private void RegisterApi(LuaCFunction callback, string topLevel, string name) {
         neverCollect.Add(callback);
         _ = lua_getglobal(L, topLevel);
@@ -502,15 +550,16 @@ internal partial class LuaContext : IDisposable {
         Pop(1);
     }
 
-    private byte[] GetData(int index) {
+    private string? GetString(int index) {
         nint ptr = lua_tolstring(L, index, out nint len);
+        if (ptr == IntPtr.Zero) {
+            return null;
+        }
         byte[] buf = new byte[(int)len];
         Marshal.Copy(ptr, buf, 0, buf.Length);
 
-        return buf;
+        return Encoding.UTF8.GetString(buf);
     }
-
-    private string GetString(int index) => Encoding.UTF8.GetString(GetData(index));
 
     public int Exec(ReadOnlySpan<byte> chunk, string mod, string name, int argument = 0) {
         ObjectDisposedException.ThrowIf(L == IntPtr.Zero, this);
@@ -519,6 +568,7 @@ internal partial class LuaContext : IDisposable {
         name = fullChunkNames.Count - 1 + " " + name;
         GetReg(tracebackReg);
         chunk = chunk.CleanupBom();
+        SetGlobal("current_file", currentfile);
 
         var result = luaL_loadbufferx(L, in chunk.GetPinnableReference(), chunk.Length, name, null);
 
@@ -537,7 +587,7 @@ internal partial class LuaContext : IDisposable {
 
         if (result != Result.LUA_OK) {
             if (result == Result.LUA_ERRRUN) {
-                throw new LuaException(GetString(-1));
+                throw new LuaException(GetString(-1)!); // null-forgiving: lua_pcallk always pushes a string on error
             }
 
             throw new LuaException("Execution " + mod + "/" + name + " terminated with code " + result + "\n" + GetString(-1));
@@ -564,7 +614,9 @@ internal partial class LuaContext : IDisposable {
             }
 
             logger.Information("Executing file {Filename}", mod + "/" + fileName);
+            currentfile = "__" + mod + "__/" + fileName;
             _ = Exec(bytes, mod, fileName);
+            RunModFix(mod, fileName);
         }
     }
 

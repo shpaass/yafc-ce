@@ -334,11 +334,15 @@ internal partial class FactorioDataDeserializer {
                 break;
             case "build-entity":
                 technology.flags = RecipeFlags.HasResearchTriggerBuildEntity;
-                if (!researchTriggerTable.Get("entity", out entity)) {
-                    errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have an entity field", ErrorSeverity.MinorDataLoss);
-                    break;
+                if (researchTriggerTable.Get("entity", out entity)
+                    || (researchTriggerTable.Get("entity", out LuaTable? entityFilter) && entityFilter.Get("name", out entity))) {
+
+                    technology.getTriggerEntities = new(() => [((Entity)Database.objectsByTypeName["Entity." + entity])]);
                 }
-                technology.getTriggerEntities = new(() => [((Entity)Database.objectsByTypeName["Entity." + entity])]);
+                else {
+                    errorCollector.Error($"Research trigger {type} of {technology.typeDotName} does not have an entity field", ErrorSeverity.MinorDataLoss);
+                }
+
                 break;
             case "create-space-platform":
                 technology.flags = RecipeFlags.HasResearchTriggerCreateSpacePlatform;

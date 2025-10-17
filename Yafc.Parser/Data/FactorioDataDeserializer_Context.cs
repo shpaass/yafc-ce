@@ -113,29 +113,28 @@ internal partial class FactorioDataDeserializer {
     }
 
     /// <summary>
-    /// Calls <see cref="GetObject{TNominal, TActual}(LuaTable)"/>, with both type parameters set to <typeparamref name="T"/>.
-    /// </summary>
-    private T GetObject<T>(LuaTable table) where T : FactorioObject, new() => GetObject<T, T>(table);
-
-    /// <summary>
-    /// Gets or creates an object with the specified nominal and actual types, based on the supplied <see cref="LuaTable"/>. If
-    /// <paramref name="table"/> describes a blueprint parameter, the returned object will not be shown in NEIE, Dependency Explorer, or
+    /// Gets or creates an object with the specified type (or a derived type), based on the supplied <see cref="LuaTable"/>. If
+    /// <paramref name="table"/> describes a blueprint parameter, the returned object will not be shown in the NEIE, Dependency Explorer, or
     /// Desired Product windows.
     /// </summary>
-    /// <typeparam name="TNominal">The nominal type. In general, this is the most-derived type such that all possible callers will know the
-    /// object is of this type, and the least-derived type such that <c>(typeof(<typeparamref name="TNominal"/>),
-    /// <paramref name="table"/>["name"])</c> is unique across all objects.</typeparam>
-    /// <typeparam name="TActual">The concrete type of the object. This can be either same as <typeparamref name="TNominal"/>, or a type derived
-    /// from it. If the object already exists, it must have been created as an object of this type (or a derived type).</typeparam>
-    /// <param name="table">The <see cref="LuaTable"/> to read when to get the object's name. This table must have a <c>name</c> key. If the
-    /// value of its <c>parameter</c> key is <see langword="true"/>, <see cref="FactorioObject.showInExplorers"/> and
-    /// <see cref="Goods.isLinkable"/>, if applicable, will be set to <see langword="false"/>.</param>
-    /// <returns>The new or pre-existing object described by <typeparamref name="TNominal"/> and <c><paramref name="table"/>["name"]</c>.</returns>
-    private TActual GetObject<TNominal, TActual>(LuaTable table) where TNominal : FactorioObject where TActual : TNominal, new() {
+    /// <typeparam name="TReturn">The (compile-time) type of the return value.</typeparam>
+    /// <param name="table">The <see cref="LuaTable"/> to read to get the object's name. This table must have a <c>name</c> key. In addition, if the
+    /// value of its <c>parameter</c> key is <see langword="true"/>, <see cref="FactorioObject.showInExplorers"/>, and <see cref="Goods.isLinkable"/>
+    /// if applicable, will be set to <see langword="false"/>.</param>
+    /// <returns>The new or pre-existing object described by <typeparamref name="TReturn"/> and <paramref name="table"/>.</returns>
+    /// <remarks>The concrete type is determined based on the value of <c>data.raw[some_table][table.name].type</c>. <typeparamref name="TReturn"/>
+    /// serves to cast the result before returning and to select the correct <c>some_table</c>. <typeparamref name="TReturn"/> cannot force the use of
+    /// an inadequate or inappropriate type. For example,
+    /// <c><see cref="GetObject{TReturn}(LuaTable)">GetObject</see>&lt;<see cref="Entity"/>>(data.raw.furnace["electric-furnace"]).<see cref="object.GetType">GetType</see>() == <see langword="typeof"/>(<see cref="EntityCrafter"/>)</c>,
+    /// and <c><see cref="GetObject{TReturn}(LuaTable)">GetObject</see>&lt;<see cref="EntityAccumulator"/>>(data.raw.furnace["electric-furnace"])</c>
+    /// will throw.</remarks>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="table"/> does not describe an object in <c>data.raw</c> that can be loaded as
+    /// a <typeparamref name="TReturn"/>, or if <paramref name="table"/> does not have a name key.</exception>
+    private TReturn GetObject<TReturn>(LuaTable table) where TReturn : FactorioObject, new() {
         if (!table.Get("name", out string? name)) {
             throw new ArgumentException($"{nameof(table)} must contain a 'name' key. Call GetObject(string) instead.", nameof(table));
         }
-        TActual result = GetObject<TNominal, TActual>(name);
+        TReturn result = GetObject<TReturn>(name);
         if (table.Get("parameter", false)) {
             result.showInExplorers = false;
             if (result is Goods goods) {
@@ -146,30 +145,113 @@ internal partial class FactorioDataDeserializer {
     }
 
     /// <summary>
-    /// Calls <see cref="GetObject{TNominal, TActual}(string)"/>, with both type parameters set to <typeparamref name="T"/>.
+    /// Gets or creates an object with the specified type (or a derived type) and name. 
     /// </summary>
-    private T GetObject<T>(string name) where T : FactorioObject, new() => GetObject<T, T>(name);
-
-    /// <summary>
-    /// Gets or creates an object with the specified nominal and actual types, with the supplied name.
-    /// </summary>
-    /// <typeparam name="TNominal">The nominal type. In general, this is the most-derived type such that all possible callers will know the
-    /// object is of this type, and the least-derived type such that <c>(typeof(<typeparamref name="TNominal"/>),
-    /// <paramref name="name"/>)</c> is unique across all objects.</typeparam>
-    /// <typeparam name="TActual">The concrete type of the object. This can be either same as <typeparamref name="TNominal"/>, or a type derived
-    /// from it. If the object already exists, it must have been created as an object of this type (or a derived type).</typeparam>
-    /// <param name="table">The name of the object to get or create.</param>
-    /// <returns>The new or pre-existing object described by <typeparamref name="TNominal"/> and <paramref name="name"/>.</returns>
-    private TActual GetObject<TNominal, TActual>(string name) where TNominal : FactorioObject where TActual : TNominal, new() {
-        var key = (typeof(TNominal), name);
-        if (registeredObjects.TryGetValue(key, out FactorioObject? existing)) {
-            return (TActual)existing;
+    /// <typeparam name="TReturn">The (compile-time) type of the return value.</typeparam>
+    /// <param name="name">The name of the object to get or create.</param>
+    /// <returns>The new or pre-existing object described by <typeparamref name="TReturn"/> and <paramref name="name"/>.</returns>
+    /// <remarks>The concrete type is determined based on the value of <c>data.raw[some_table][name].type</c>. <typeparamref name="TReturn"/>
+    /// serves to cast the result before returning and to select the correct <c>some_table</c>. <typeparamref name="TReturn"/> cannot force the use of
+    /// an inadequate or inappropriate type. For example,
+    /// <c><see cref="GetObject{TReturn}(LuaTable)">GetObject</see>&lt;<see cref="Entity"/>>("electric-furnace").<see cref="object.GetType">GetType</see>() == <see langword="typeof"/>(<see cref="EntityCrafter"/>)</c>,
+    /// and <c><see cref="GetObject{TReturn}(LuaTable)">GetObject</see>&lt;<see cref="EntityAccumulator"/>>("electric-furnace")</c> will throw.</remarks>
+    /// <exception cref="ArgumentException">Thrown if <paramref name="name"/> does not describe an object in <c>data.raw</c> that can be loaded as
+    /// a <typeparamref name="TReturn"/>.</exception>
+    private TReturn GetObject<TReturn>(string name) where TReturn : FactorioObject, new() {
+        // Look for an existing object. All items use Item in the key, and all entities use Entity, so lookup works without the actual C# type.
+        var key = (Type: typeof(TReturn), name);
+        if (typeof(TReturn).IsAssignableTo(typeof(Item))) {
+            key = (typeof(Item), name);
+        }
+        else if (typeof(TReturn).IsAssignableTo(typeof(Entity))) {
+            key = (typeof(Entity), name);
         }
 
-        TActual newItem = new TActual { name = name };
-        allObjects.Add(newItem);
-        registeredObjects[key] = newItem;
-        return newItem;
+        if (registeredObjects.TryGetValue(key, out FactorioObject? existing)) {
+            if (existing is TReturn result) {
+                return result;
+            }
+            // If `existing` was incorrectly constructed (e.g. as an Entity instead of a RailEntity), update the switch expressions below, adding
+            // "type" => typeof(DerivedFactorioObject),
+            throw new ArgumentException($"The best match in data.raw for '{name}' and '{typeof(TReturn).Name}' cannot be loaded as a(n) '{typeof(TReturn).Name}'.", nameof(TReturn));
+        }
+
+        // For the remainder of this method, "prototype" refers to the keys in defines.prototypes.
+        // "C# type" and "tActual" refer to the classes derived from FactorioObject.
+        // "type" refers to the keys in data.raw and/or the values of PrototypeBase::type.
+
+        // No existing object. Determine the C# type for items and entities. (Everything else is as-requested.)
+        Type tActual;
+        string? type = null;
+        if (key.Type == typeof(Item)) {
+            if (!prototypes.TryGetValue(("item", name), out type) && !prototypes.TryGetValue(("asteroid-chunk", name), out type)) {
+                // To add another prototype that can be loaded as an item, add another check above, e.g. TryGetValue(("achievement", name), out type)
+                // for achievements. If necessary, also add an entry to the switch below, so each individual type (e.g. "produce-achievement") is
+                // constructed as the correct C# type.
+                throw new ArgumentException($"data.raw does not contain an object named '{name}' that can be loaded as a(n) {typeof(TReturn).Name}", nameof(name));
+            }
+
+            tActual = type switch {
+                // The C# types to be used for the items in data.raw[type]:
+                "ammo" => typeof(Ammo),
+                "module" => typeof(Module),
+                _ => typeof(Item)
+            };
+        }
+        else if (key.Type == typeof(Entity)) {
+            if (!prototypes.TryGetValue(("entity", name), out type) && !prototypes.TryGetValue(("asteroid-chunk", name), out type)) {
+                // To add another prototype that can be loaded as an entity, add another check above, e.g. TryGetValue(("equipment", name), out type)
+                // for armor equipment. If necessary, also add an entry to the switch below, so each individual type (e.g. "generator-equipment") is
+                // constructed as the correct C# type.
+                throw new ArgumentException($"data.raw does not contain an object named '{name}' that can be loaded as a(n) {typeof(TReturn).Name}", nameof(name));
+            }
+
+            tActual = type switch {
+                // The C# types to be used for the entities in data.raw[type]:
+                "accumulator" => typeof(EntityAccumulator),
+                "agricultural-tower" => typeof(EntityCrafter),
+                "assembling-machine" => typeof(EntityCrafter),
+                "asteroid-collector" => typeof(EntityCrafter),
+                "beacon" => typeof(EntityBeacon),
+                "boiler" => typeof(EntityCrafter),
+                "burner-generator" => typeof(EntityCrafter),
+                "character" => typeof(EntityCrafter),
+                "container" => typeof(EntityContainer),
+                "electric-energy-interface" => typeof(EntityCrafter),
+                "furnace" => typeof(EntityCrafter),
+                "generator" => typeof(EntityCrafter),
+                "inserter" => typeof(EntityInserter),
+                "lab" => typeof(EntityCrafter),
+                "lightning-attractor" => typeof(EntityAttractor),
+                "logistic-container" => typeof(EntityContainer),
+                "mining-drill" => typeof(EntityCrafter),
+                "offshore-pump" => typeof(EntityCrafter),
+                "projectile" => typeof(EntityProjectile),
+                "reactor" => typeof(EntityReactor),
+                "rocket-silo" => typeof(EntityCrafter),
+                "solar-panel" => typeof(EntityCrafter),
+                "transport-belt" => typeof(EntityBelt),
+                "unit-spawner" => typeof(EntitySpawner),
+                _ => typeof(Entity)
+            };
+        }
+        else {
+            tActual = typeof(TReturn);
+        }
+
+        if (!tActual.IsAssignableTo(typeof(TReturn))) {
+            // If data.raw[type][name] should be able to loaded as a TReturn, update the switch expressions above, adding
+            // "type" => typeof(DerivedFactorioObject),
+            throw new ArgumentException($"data.raw['{type}']['{name}'] does not describe an object that can be loaded as a(n) {typeof(TReturn).Name}", nameof(TReturn));
+        }
+
+
+        // Construct, store, and return the new object.
+        TReturn newObject = (TReturn)Activator.CreateInstance(tActual)!; // null-forgiving: CreateInstance only returns null for Nullable<T>.
+        newObject.name = name;
+        allObjects.Add(newObject);
+        registeredObjects[key] = newObject;
+        return newObject;
     }
 
     private int Skip(int from, FactorioObjectSortOrder sortOrder) {

@@ -64,7 +64,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
                     || isNotRelatedToCurrentLink(row)) {
                     continue;
                 }
-                float localFlow = DetermineFlow(link.goods, row);
+                float localFlow = row.DetermineFlow(link.goods);
 
                 if ((row.FindLink(link.goods, out var otherLink) && otherLink != link)) {
                     if (!relationLinks.ContainsKey(otherLink)) {
@@ -264,7 +264,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         List<(RecipeRow row, float flow)> input = [], output = [];
         totalInput = totalOutput = 0;
         foreach (var recipe in link.capturedRecipes.OfType<RecipeRow>()) {
-            float localFlow = DetermineFlow(link.goods, recipe);
+            float localFlow = recipe.DetermineFlow(link.goods);
             if (localFlow > 0) {
                 input.Add((recipe, localFlow));
                 totalInput += localFlow;
@@ -285,13 +285,6 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         scrollArea.RebuildContents();
     }
 
-    private static float DetermineFlow(IObjectWithQuality<Goods> goods, RecipeRow recipe) {
-        float production = recipe.GetProductionForRow(goods);
-        float consumption = recipe.GetConsumptionForRow(goods);
-        float fuelUsage = recipe.fuel == goods ? recipe.FuelInformation.Amount : 0;
-        float localFlow = production - consumption - fuelUsage;
-        return localFlow;
-    }
 
     public static void Show(ProductionLink link) => _ = MainScreen.Instance.ShowPseudoScreen(new ProductionLinkSummaryScreen(link));
 

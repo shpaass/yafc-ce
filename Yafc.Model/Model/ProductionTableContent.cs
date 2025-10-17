@@ -771,6 +771,36 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
         }
     }
 
+    public float DetermineFlow(IObjectWithQuality<Goods> goods) {
+        float production = getProduction(goods);
+        float consumption = getConsumption(goods);
+        float fuelUsage = fuel == goods ? FuelInformation.Amount : 0;
+        float localFlow = production - consumption - fuelUsage;
+        return localFlow;
+
+        float getProduction(IObjectWithQuality<Goods> product) {
+            float amount = 0f;
+
+            foreach (var p in Products) {
+                if (p.Goods == product) {
+                    amount += p.Amount;
+                }
+            }
+            return amount;
+        }
+
+        float getConsumption(IObjectWithQuality<Goods> ingredient) {
+            float amount = 0f;
+
+            foreach (var i in recipe.target.ingredients) {
+                if (i.goods.With(recipe.quality) == ingredient || (ingredient.quality == Quality.Normal && i.ContainsVariant(ingredient.target))) {
+                    amount += i.amount * (float)recipesPerSecond;
+                }
+            }
+            return amount;
+        }
+    }
+
     // To avoid leaking these variables/methods (or just the setter, for recipesPerSecond) into public context,
     // these explicit interface implementations connect to internal members, instead of using implicit implementation via public members
     RecipeParameters IRecipeRow.parameters { get => parameters; set => parameters = value; }

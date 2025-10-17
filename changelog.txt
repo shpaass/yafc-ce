@@ -1,5 +1,8 @@
-// The purpose of the changelog is to provide a concise overview of what was changed.
+﻿// The purpose of the changelog is to provide a concise overview of what was changed.
 // The purpose of the changelog format is to make it more organized.
+// If you want to add an entry to the changelog, then please add it to the section without a release date and version.
+// If there is no such section, then copypaste the previous version, remove the info, and put the result below the commented section.
+// Below is the format and the purpose of each field and section:
 // Versioning follows the x.y.z pattern. Since 0.8.0, the increment has the following meaning:
 // z - it's a bugfix release
 // y - it's a feature release
@@ -21,10 +24,27 @@ Date:
     Features:
         - Add Ctrl+C shortcut to copy building blueprint for hovered recipe in production table.
         - Add "Copy blueprint" button to recipe dropdown menu in production table.
-        - Add tooltip showing Ctrl+C hint when hovering over recipes with buildings.
+        - Add tooltip showing Ctrl+C hint when hovering over recipes with buildings.  
+    Fixes:
+        - Fix rendering of multi-icon technologies (e.g. shooting speed techs)
+        - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.
+        - Fix load errors for Pacifist (#535), PlanetsLib, and some planet mods.
+        - Fix loading mods where modules spoil into other modules.
+----------------------------------------------------------------------------------------------------------------------
+Version: 2.15.0
+Date: September 1st 2025
+    Features:
+        - Add Ctrl+Shift+Click to add the most cost-effective, accessible recipe for an item.
+        - Better accessibility analysis for Ultracube.
     Fixes:
         - Fix icon rendering.
         - Hide fluid temperature options when not part of a recipe or not accepted by that recipe.
+        - Modify text colors for highlighted rows in dark mode to improve readability.
+        - Don't draw table intermediates as <1μ ingredients/products.
+        - The file-picker on the Welcome Screen no longer closes by itself right after being opened.
+    Internal changes:
+        - Enable mod-fixes for the data, data-updates, and data-final-fixes files.
+        - Recompile the lua lib for linux (PR 515). The script now uses CFLAGS and LDFLAGS.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.14.0
 Date: June 15th 2025

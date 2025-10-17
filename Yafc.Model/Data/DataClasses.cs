@@ -37,7 +37,7 @@ public abstract class FactorioObject : IFactorioObjectWrapper, IComparable<Facto
     public string typeDotName => type + '.' + name;
     public string locName { get; internal set; } = null!; // null-forgiving: Copied from name if still null at the end of CalculateMaps
     public string? locDescr { get; internal set; }
-    public FactorioIconPart[]? iconSpec { get; internal set; }
+    internal FactorioIconPart[]? iconSpec { get; set; }
     public Icon icon { get; internal set; }
     public FactorioId id { get; internal set; }
     internal abstract FactorioObjectSortOrder sortingOrder { get; }
@@ -76,7 +76,7 @@ public abstract class FactorioObject : IFactorioObjectWrapper, IComparable<Facto
 
 public class FactorioIconPart(string path) {
     public string path = path;
-    public float size = 32;
+    public int size = 32;
     public float x, y, r = 1, g = 1, b = 1, a = 1;
     public float scale = 1;
 
@@ -382,16 +382,6 @@ public class Item : Goods {
         getBaseSpoilTime = new(() => getSpoilRecipe()?.time ?? 0);
         Recipe? getSpoilRecipe() => Database.recipes.all.OfType<Mechanics>().SingleOrDefault(r => r.name == "spoil." + name);
     }
-
-    /// <summary>
-    /// The prototypes in this array will be loaded in order, before any other prototypes.
-    /// This should correspond to the prototypes for subclasses of item, with more derived classes listed before their base classes.
-    /// e.g. If ItemWithHealth and ModuleWithHealth C# classes were added, all prototypes for both classes must be listed here.
-    /// Ignoring style restrictions, the prototypes could be listed in any order, provided all ModuleWithHealth prototype(s) are listed before "module".
-    /// </summary>
-    /// <remarks>This forces modules to be loaded before other items, since deserialization otherwise creates Item objects for all spoil results.
-    /// It does not protect against modules that spoil into other modules, but one hopes people won't do that.</remarks>
-    internal static string[] ExplicitPrototypeLoadOrder { get; } = ["ammo", "module"];
 
     public Item? fuelResult { get; internal set; }
     public int stackSize { get; internal set; }

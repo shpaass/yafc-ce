@@ -225,10 +225,10 @@ public static class ImmediateWidgets {
             }
 
             if (gui.isBuilding && (options.Checkmark?.Invoke(elem) ?? false)) {
-                gui.DrawIcon(Rect.Square(gui.lastRect.Right - 1f, gui.lastRect.Center.Y, 1.5f), Icon.Check, SchemeColor.Green);
+                gui.DrawIcon(Rect.Square(gui.lastRect.Right - 1f, gui.lastRect.Center.Y, 1.5f), Icon.Check, SchemeColor.GreenIcon);
             }
             else if (gui.isBuilding && (options.YellowMark?.Invoke(elem) ?? false)) {
-                gui.DrawIcon(Rect.Square(gui.lastRect.Right - 1f, gui.lastRect.Center.Y, 1.5f), Icon.Check, SchemeColor.TagColorYellowText);
+                gui.DrawIcon(Rect.Square(gui.lastRect.Right - 1f, gui.lastRect.Center.Y, 1.5f), Icon.Check, SchemeColor.TagColorYellowIcon);
             }
         }
 

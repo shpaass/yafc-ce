@@ -910,6 +910,24 @@ goodsHaveNoProduction:;
     private void OpenProductDropdown(ImGui targetGui, Rect rect, IObjectWithQuality<Goods> goods, float amount, IProductionLink? iLink,
         ProductDropdownType type, RecipeRow? recipe, ProductionTable context, Goods[]? variants = null) {
 
+        if (InputSystem.Instance.control && InputSystem.Instance.shift) {
+            var bestRecipe = goods.target.production
+                // Only currently available recipes are considered.
+                .Where(r => r.IsAccessible() && r.IsAutomatableWithCurrentMilestones())
+                // Barreling recipes should be the last resort, so we sort them to the end. There's too many to weight them by cost.
+                .OrderBy(r => r.name.Contains("barrel", StringComparison.OrdinalIgnoreCase))
+                // Sort by recipe waste percentage, then cost at current milestones.
+                .ThenBy(r => CostAnalysis.InstanceAtMilestones.recipeWastePercentage[r])
+                .ThenBy(r => r.Cost(true))
+                .FirstOrDefault();
+
+            if (bestRecipe != null) {
+                RebuildIf(context.CreateLink(goods));
+                context.AddRecipe(bestRecipe.With(goods.quality), DefaultVariantOrdering);
+            }
+            return;
+        }
+
         if (InputSystem.Instance.shift) {
             Project.current.preferences.SetSourceResource(goods.target, !goods.IsSourceResource());
             targetGui.Rebuild();
@@ -1578,7 +1596,7 @@ goodsHaveNoProduction:;
     private static readonly (Icon icon, SchemeColor color)[] tagIcons = [
         (Icon.Empty, SchemeColor.BackgroundTextFaint),
         (Icon.Check, SchemeColor.Green),
-        (Icon.Warning, SchemeColor.Secondary),
+        (Icon.Warning, SchemeColor.WarningIcon),
         (Icon.Error, SchemeColor.Error),
         (Icon.Edit, SchemeColor.Primary),
         (Icon.Help, SchemeColor.BackgroundText),

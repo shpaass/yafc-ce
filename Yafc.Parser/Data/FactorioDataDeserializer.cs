@@ -15,19 +15,45 @@ namespace Yafc.Parser;
 internal partial class FactorioDataDeserializer {
     private static readonly ILogger logger = Logging.GetLogger<FactorioDataDeserializer>();
     private LuaTable raw = null!; // null-forgiving: Initialized at the beginning of LoadData.
-    private bool GetRef<T>(LuaTable table, string key, [NotNullWhen(true)] out T? result) where T : FactorioObject, new() {
+
+    /// <summary>
+    /// Gets or creates an object with the specified type (or a derived type), based on the specified value in the lua table. If the specified key
+    /// does not exist, this method does not get or create an object and returns <see langword="false"/>.
+    /// </summary>
+    /// <typeparam name="TReturn">The (compile-time) type of the return value.</typeparam>
+    /// <param name="table">The <see cref="LuaTable"/> to read to get the object's name.</param>
+    /// <param name="key">The table key to read to get the object's name.</param>
+    /// <param name="result">When successful, the new or pre-existing object described by <typeparamref name="TReturn"/> and
+    /// <c><paramref name="table"/>[<paramref name="key"/>]</c>. Otherwise, <see langword="null"/>.</param>
+    /// <returns><see langword="true"/>, if the specified key was present in the table, or <see langword="false"/> otherwise.</returns>
+    /// <exception cref="ArgumentException">Thrown if <c><paramref name="table"/>[<paramref name="key"/>]</c> does not describe an object in
+    /// <c>data.raw</c> that can be loaded as a <typeparamref name="TReturn"/>.</exception>
+    /// <seealso cref="GetObject{TReturn}(string)"/>
+    private bool GetRef<TReturn>(LuaTable table, string key, [NotNullWhen(true)] out TReturn? result) where TReturn : FactorioObject, new() {
         result = null;
         if (!table.Get(key, out string? name)) {
             return false;
         }
 
-        result = GetObject<T>(name);
+        result = GetObject<TReturn>(name);
 
         return true;
     }
 
-    private T? GetRef<T>(LuaTable table, string key) where T : FactorioObject, new() {
-        _ = GetRef<T>(table, key, out var result);
+    /// <summary>
+    /// Gets or creates an object with the specified type (or a derived type), based on the specified value in the lua table. If the specified key
+    /// does not exist, this method does not get or create an object and returns <see langword="null"/>.
+    /// </summary>
+    /// <typeparam name="TReturn">The (compile-time) type of the return value.</typeparam>
+    /// <param name="table">The <see cref="LuaTable"/> to read to get the object's name.</param>
+    /// <param name="key">The table key to read to get the object's name.</param>
+    /// <returns>If the specified key was present in the table, the new or pre-existing object described by <typeparamref name="TReturn"/> and
+    /// <c><paramref name="table"/>[<paramref name="key"/>]</c>. Otherwise, <see langword="null"/>.</returns>
+    /// <exception cref="ArgumentException">Thrown if <c><paramref name="table"/>[<paramref name="key"/>]</c> does not describe an object in
+    /// <c>data.raw</c> that can be loaded as a <typeparamref name="TReturn"/>.</exception>
+    /// <seealso cref="GetObject{TReturn}(string)"/>
+    private TReturn? GetRef<TReturn>(LuaTable table, string key) where TReturn : FactorioObject, new() {
+        _ = GetRef<TReturn>(table, key, out var result);
 
         return result;
     }
@@ -90,7 +116,7 @@ internal partial class FactorioDataDeserializer {
         fluid.iconSpec =
         [
             .. fluid.iconSpec ?? [],
-            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { y = -16, x = (n * 7) - 12, scale = 0.28f }),
+            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { size = 64, y = -32, x = (n * 14) - 24, scale = 0.28f }),
         ];
     }
 
@@ -118,11 +144,9 @@ internal partial class FactorioDataDeserializer {
         raw = (LuaTable?)data["raw"] ?? throw new ArgumentException("Could not load data.raw from data argument", nameof(data));
         LuaTable itemPrototypes = (LuaTable?)prototypes?["item"] ?? throw new ArgumentException("Could not load prototypes.item from data argument", nameof(prototypes));
 
-        foreach (object prototypeName in Item.ExplicitPrototypeLoadOrder.Intersect(itemPrototypes.ObjectElements.Keys)) {
-            DeserializePrototypes(raw, (string)prototypeName, DeserializeItem, progress, errorCollector);
-        }
+        LoadPrototypes(raw, prototypes);
 
-        foreach (object prototypeName in itemPrototypes.ObjectElements.Keys.Except(Item.ExplicitPrototypeLoadOrder)) {
+        foreach (object prototypeName in itemPrototypes.ObjectElements.Keys) {
             DeserializePrototypes(raw, (string)prototypeName, DeserializeItem, progress, errorCollector);
         }
 
@@ -244,8 +268,9 @@ internal partial class FactorioDataDeserializer {
     }
 
     private unsafe Icon CreateIconFromSpec(Dictionary<(string mod, string path), IntPtr> cache, params FactorioIconPart[] spec) {
-        const int iconSize = IconCollection.IconSize;
-        nint targetSurface = SDL.SDL_CreateRGBSurfaceWithFormat(0, iconSize, iconSize, 0, SDL.SDL_PIXELFORMAT_RGBA8888);
+        const int cachedIconSize = IconCollection.IconSize;
+        int renderSize = MathUtils.Round(spec[0].size * spec[0].scale);
+        nint targetSurface = SDL.SDL_CreateRGBSurfaceWithFormat(0, renderSize, renderSize, 0, SDL.SDL_PIXELFORMAT_RGBA8888);
         _ = SDL.SDL_SetSurfaceBlendMode(targetSurface, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
 
         foreach (var icon in spec) {
@@ -272,10 +297,6 @@ internal partial class FactorioDataDeserializer {
                                 image = SDL.SDL_ConvertSurfaceFormat(old, SDL.SDL_PIXELFORMAT_RGBA8888, 0);
                                 SDL.SDL_FreeSurface(old);
                             }
-
-                            if (surface.h > iconSize * 2) {
-                                image = SoftwareScaler.DownscaleIcon(image, iconSize);
-                            }
                         }
                         cache[modPath] = image;
                     }
@@ -287,10 +308,10 @@ internal partial class FactorioDataDeserializer {
             }
 
             ref var sdlSurface = ref RenderingUtils.AsSdlSurface(image);
-            int targetSize = icon.scale == 1f ? iconSize : MathUtils.Ceil(icon.size * icon.scale) * (iconSize / 32); // TODO research formula
+            int targetSize = MathUtils.Round(icon.size * icon.scale);
             _ = SDL.SDL_SetSurfaceColorMod(image, MathUtils.FloatToByte(icon.r), MathUtils.FloatToByte(icon.g), MathUtils.FloatToByte(icon.b));
             //SDL.SDL_SetSurfaceAlphaMod(image, MathUtils.FloatToByte(icon.a));
-            int basePosition = (iconSize - targetSize) / 2;
+            int basePosition = (renderSize - targetSize) / 2;
             SDL.SDL_Rect targetRect = new SDL.SDL_Rect {
                 x = basePosition,
                 y = basePosition,
@@ -300,14 +321,14 @@ internal partial class FactorioDataDeserializer {
 
             if (icon.x != 0) {
                 // These two formulas have variously multiplied icon.x (or icon.y) by a scaling factor of iconSize / icon.size,
-                // iconSize * icon.scale, or iconSize. (const int iconSize = 32)
+                // iconSize * icon.scale, or iconSize (iconSize is now const int cachedIconSize = 32).
                 // Presumably the scaling factor had a purpose, but I can't find it. Py and Vanilla objects (e.g. Recipe.Moss-1 and
                 // Entity.lane-splitter) draw correctly after removing the scaling factor.
-                targetRect.x = MathUtils.Clamp(targetRect.x + MathUtils.Round(icon.x), 0, iconSize - targetRect.w);
+                targetRect.x = MathUtils.Clamp(targetRect.x + MathUtils.Round(icon.x), 0, renderSize - targetRect.w);
             }
 
             if (icon.y != 0) {
-                targetRect.y = MathUtils.Clamp(targetRect.y + MathUtils.Round(icon.y), 0, iconSize - targetRect.h);
+                targetRect.y = MathUtils.Clamp(targetRect.y + MathUtils.Round(icon.y), 0, renderSize - targetRect.h);
             }
 
             SDL.SDL_Rect srcRect = new SDL.SDL_Rect {
@@ -317,7 +338,41 @@ internal partial class FactorioDataDeserializer {
             _ = SDL.SDL_BlitScaled(image, ref srcRect, targetSurface, ref targetRect);
         }
 
+        if (RenderingUtils.AsSdlSurface(targetSurface).h > cachedIconSize * 2) {
+            targetSurface = SoftwareScaler.DownscaleIcon(targetSurface, cachedIconSize);
+        }
         return IconCollection.AddIcon(targetSurface);
+    }
+
+    /// <summary>
+    /// A lookup table from (prototype, name) (e.g. ("item", "speed-module")) to subtype (e.g. "module").
+    /// This is used to determine the correct concrete type when constructing an item or entity by name.
+    /// Most values are unused, but they're all stored for simplicity and future-proofing.
+    /// </summary>
+    private readonly Dictionary<(string prototype, string name), string> prototypes = new() {
+        [("item", "science")] = "item",
+        [("item", "item-total-input")] = "item",
+        [("item", "item-total-output")] = "item",
+    };
+
+    /// <summary>
+    /// Load all keys (object names) from <c>data.raw[<em>type</em>]</c>, for all <em>type</em>s. Create a lookup from
+    /// (<em>prototype</em>, <em>name</em>) to <em>type</em>, where <c>defines.prototypes[<em>prototype</em>]</c> contains the key <em>type</em>.
+    /// </summary>
+    /// <param name="raw">The <c>data.raw</c> table.</param>
+    /// <param name="prototypes">The <c>defines.prototypes</c> table.</param>
+    /// <remarks>This stored data allows requests like "I need the 'cerys-radioactive-module-decayed' item" to correctly respond with a module,
+    /// regardless of where the item name is first encountered.</remarks>
+    private void LoadPrototypes(LuaTable raw, LuaTable prototypes) {
+        foreach ((object p, object? t) in prototypes.ObjectElements) {
+            if (p is string prototype && t is LuaTable types) { // here, 'prototype' is item, entity, equipment, etc.
+                foreach (string type in types.ObjectElements.Keys.Cast<string>()) { // 'type' is module, accumulator, solar-panel-equipment, etc.
+                    foreach (string name in raw.Get<LuaTable>(type)?.ObjectElements.Keys.Cast<string>() ?? []) {
+                        this.prototypes[(prototype, name)] = type;
+                    }
+                }
+            }
+        }
     }
 
     private static void DeserializePrototypes(LuaTable data, string type, Action<LuaTable, ErrorCollector> deserializer,
@@ -391,7 +446,7 @@ internal partial class FactorioDataDeserializer {
 
     private void DeserializeItem(LuaTable table, ErrorCollector _1) {
         if (table.Get("type", "") == "module" && table.Get("effect", out LuaTable? moduleEffect)) {
-            Module module = GetObject<Item, Module>(table);
+            Module module = GetObject<Module>(table);
             var effect = ParseEffect(moduleEffect);
             module.moduleSpecification = new ModuleSpecification {
                 category = table.Get("category", ""),
@@ -403,7 +458,7 @@ internal partial class FactorioDataDeserializer {
             };
         }
         else if (table.Get("type", "") == "ammo" && table["ammo_type"] is LuaTable ammo_type) {
-            Ammo ammo = GetObject<Item, Ammo>(table);
+            Ammo ammo = GetObject<Ammo>(table);
             ammo_type.ReadObjectOrArray(readAmmoType);
 
             if (ammo_type["target_filter"] is LuaTable targets) {
@@ -742,7 +797,7 @@ nextWeightCalculation:;
         }
 
         if (table.Get("icon", out string? s)) {
-            target.iconSpec = [new FactorioIconPart(s) { size = table.Get("icon_size", 64f) }];
+            target.iconSpec = [new FactorioIconPart(s) { size = table.Get("icon_size", 64) }];
         }
         else if (table.Get("icons", out LuaTable? iconList)) {
             target.iconSpec = [.. iconList.ArrayElements<LuaTable>().Select(x => {
@@ -750,10 +805,16 @@ nextWeightCalculation:;
                     throw new NotSupportedException($"One of the icon layers for {name} does not have a path.");
                 }
 
-                FactorioIconPart part = new(path) {
-                    size = x.Get("icon_size", 64f),
-                    scale = x.Get("scale", 1f)
+                int expectedSize = target switch {
+                    // These are the only expected sizes for icons we render.
+                    // New classes of icons (e.g. achievements) will need new cases to make IconParts with default scale render correctly.
+                    // https://lua-api.factorio.com/latest/types/IconData.html
+                    Technology => 256,
+                    _ => 64
                 };
+
+                FactorioIconPart part = new(path) { size = x.Get("icon_size", 64) };
+                part.scale = x.Get("scale", expectedSize / 2f / part.size);
 
                 if (x.Get("shift", out LuaTable? shift)) {
                     part.x = shift.Get<float>(1);

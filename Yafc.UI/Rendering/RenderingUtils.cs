@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using SDL2;
 
@@ -16,52 +17,258 @@ public static class RenderingUtils {
 
     public static readonly SDL.SDL_Color Black = new SDL.SDL_Color { a = 255 };
     public static readonly SDL.SDL_Color White = new SDL.SDL_Color { r = 255, g = 255, b = 255, a = 255 };
+    public static readonly SDL.SDL_Color MutedGrey = new SDL.SDL_Color { r = 0xA0, g = 0xA0, b = 0xA0, a = 255 };
     public static readonly SDL.SDL_Color BlackTransparent = new SDL.SDL_Color { a = SEMITRANSPARENT };
     public static readonly SDL.SDL_Color WhiteTransparent = new SDL.SDL_Color { r = 255, g = 255, b = 255, a = SEMITRANSPARENT };
 
-    public static SchemeColor GetTextColorFromBackgroundColor(SchemeColor color) => (SchemeColor)((int)color & ~3) + 2;
 
-#pragma warning disable IDE0055 // IDE0055: Fix formatting. No need - the values are grouped for better readability
+    // Color scheme definition - organized by SchemeColor enum order for clarity
+    private static readonly SDL.SDL_Color[] LightModeScheme = BuildLightModeScheme();
+    private static readonly SDL.SDL_Color[] DarkModeScheme = BuildDarkModeScheme();
 
-    private static readonly SDL.SDL_Color[] LightModeScheme = [
-        default, new SDL.SDL_Color { b = 255, g = 128, a = 60 }, ColorFromHex(0x0645AD), ColorFromHex(0x1b5e20), // Special group
-        White, Black, White, WhiteTransparent, // pure group
+    private static SDL.SDL_Color[] BuildLightModeScheme() {
+        // Automatically determine array size from the largest enum value
+        var maxEnumValue = Enum.GetValues<SchemeColor>().Max();
+        var colors = new SDL.SDL_Color[(int)maxEnumValue + 1];
 
-        ColorFromHex(0xf4f4f4), White, Black, BlackTransparent, // Background group
-        ColorFromHex(0x26c6da), ColorFromHex(0x0095a8), Black, BlackTransparent, // Primary group
-        ColorFromHex(0xff9800), ColorFromHex(0xc66900), Black, BlackTransparent, // Secondary group
-        ColorFromHex(0xbf360c), ColorFromHex(0x870000), White, WhiteTransparent, // Error group
-        ColorFromHex(0xe4e4e4), ColorFromHex(0xc4c4c4), Black, BlackTransparent, // Grey group
-        ColorFromHex(0xbd33a4), ColorFromHex(0x8b008b), Black, BlackTransparent, // Magenta group
-        ColorFromHex(0x6abf69), ColorFromHex(0x388e3c), Black, BlackTransparent, // Green group
+        // Local helper function to set colors cleanly
+        void Set(SchemeColor schemeColor, SDL.SDL_Color color) => colors[(int)schemeColor] = color;
 
-        // Row highlighting colors (background, background alt, text, text alt)
-        ColorFromHex(0xe8ffe8), ColorFromHex(0xefffef), ColorFromHex(0x56ad65), ColorFromHex(0x0), // Green
-        ColorFromHex(0xffffe8), ColorFromHex(0xffffef), ColorFromHex(0x8c8756), ColorFromHex(0x0), // Yellow
-        ColorFromHex(0xffe8e8), ColorFromHex(0xffefef), ColorFromHex(0xaa5555), ColorFromHex(0x0), // Red
-        ColorFromHex(0xe8efff), ColorFromHex(0xeff4ff), ColorFromHex(0x526ea5), ColorFromHex(0x0), // Blue
-    ];
+        // Special colors (SchemeColor.None through SchemeColor.Reserved1)
+        Set(SchemeColor.None, default);
+        Set(SchemeColor.TextSelection, new SDL.SDL_Color { b = 255, g = 128, a = 60 });
+        Set(SchemeColor.Link, ColorFromHex(0x0645AD));
+        Set(SchemeColor.Reserved1, ColorFromHex(0x1b5e20));
 
-    private static readonly SDL.SDL_Color[] DarkModeScheme = [
-        default, new SDL.SDL_Color { b = 255, g = 128, a = 120 }, ColorFromHex(0xff9800), ColorFromHex(0x1b5e20), // Special group
-        Black, White, White, WhiteTransparent, // pure group
+        // Pure colors (always the same regardless of theme)
+        Set(SchemeColor.PureBackground, White);
+        Set(SchemeColor.PureForeground, Black);
+        Set(SchemeColor.Source, White);
+        Set(SchemeColor.SourceFaint, WhiteTransparent);
 
-        ColorFromHex(0x141414), Black, White, WhiteTransparent, // Background group
-        ColorFromHex(0x006978), ColorFromHex(0x0097a7), White, WhiteTransparent, // Primary group
-        ColorFromHex(0x5b2800), ColorFromHex(0x8c5100), White, WhiteTransparent, // Secondary group
-        ColorFromHex(0xbf360c), ColorFromHex(0x870000), White, WhiteTransparent, // Error group
-        ColorFromHex(0x343434), ColorFromHex(0x545454), White, WhiteTransparent, // Grey group
-        ColorFromHex(0x8b008b), ColorFromHex(0xbd33a4), Black, BlackTransparent, // Magenta group
-        ColorFromHex(0x00600f), ColorFromHex(0x00701a), Black, BlackTransparent, // Green group
+        // Background group - main UI background colors
+        Set(SchemeColor.Background, ColorFromHex(0xf4f4f4));        // Light grey background
+        Set(SchemeColor.BackgroundAlt, White);                      // White alternative
+        Set(SchemeColor.BackgroundText, Black);                     // Black text on background
+        Set(SchemeColor.BackgroundTextFaint, BlackTransparent);     // Faded black text
+        Set(SchemeColor.BackgroundIcon, Black);                     // Black icons on background
+        Set(SchemeColor.BackgroundIconAlt, ColorFromHex(0x666666)); // Grey icons on background
 
-        // Row highlighting colors (background, background alt, text, text alt)
-        ColorFromHex(0x0d261f), ColorFromHex(0x050f0c), ColorFromHex(0x226355), ColorFromHex(0x0), // Green
-        ColorFromHex(0x28260b), ColorFromHex(0x191807), ColorFromHex(0x5b582a), ColorFromHex(0x0), // Yellow
-        ColorFromHex(0x270c0c), ColorFromHex(0x190808), ColorFromHex(0x922626), ColorFromHex(0x0), // Red
-        ColorFromHex(0x0c0c27), ColorFromHex(0x080819), ColorFromHex(0x2626ab), ColorFromHex(0x0)  // Blue
-    ];
+        // Primary group - main accent colors (cyan/teal)
+        Set(SchemeColor.Primary, ColorFromHex(0x26c6da));           // Light cyan
+        Set(SchemeColor.PrimaryAlt, ColorFromHex(0x0095a8));        // Darker cyan
+        Set(SchemeColor.PrimaryText, Black);                        // Black text on primary
+        Set(SchemeColor.PrimaryTextFaint, BlackTransparent);        // Faded black text
+        Set(SchemeColor.PrimaryIcon, ColorFromHex(0x26c6da));       // Cyan icons
+        Set(SchemeColor.PrimaryIconAlt, ColorFromHex(0x0095a8));    // Darker cyan icons
 
-#pragma warning restore IDE0055
+        // Secondary group - warning/attention colors (orange)
+        Set(SchemeColor.Secondary, ColorFromHex(0xff9800));         // Orange - used for solver issues
+        Set(SchemeColor.SecondaryAlt, ColorFromHex(0xc66900));      // Darker orange
+        Set(SchemeColor.SecondaryText, Black);                      // Black text on secondary
+        Set(SchemeColor.SecondaryTextFaint, BlackTransparent);      // Faded black text
+        Set(SchemeColor.SecondaryIcon, ColorFromHex(0xff9800));     // Orange icons
+        Set(SchemeColor.SecondaryIconAlt, ColorFromHex(0xc66900));  // Darker orange icons
+
+        // Error group - critical error colors (red)
+        Set(SchemeColor.Error, ColorFromHex(0xbf360c));             // Bright red - critical issues
+        Set(SchemeColor.ErrorAlt, ColorFromHex(0x870000));          // Dark red - deadlock/overproduction
+        Set(SchemeColor.ErrorText, White);                          // White text on error
+        Set(SchemeColor.ErrorTextFaint, WhiteTransparent);          // Faded white text
+        Set(SchemeColor.ErrorIcon, ColorFromHex(0xf44336));         // Bright red icons
+        Set(SchemeColor.ErrorIconAlt, ColorFromHex(0xd32f2f));      // Darker red icons
+
+        // Grey group - neutral/disabled colors
+        Set(SchemeColor.Grey, ColorFromHex(0xe4e4e4));              // Light grey
+        Set(SchemeColor.GreyAlt, ColorFromHex(0xc4c4c4));           // Medium grey
+        Set(SchemeColor.GreyText, Black);                           // Black text on grey
+        Set(SchemeColor.GreyTextFaint, BlackTransparent);           // Faded black text
+        Set(SchemeColor.GreyIcon, ColorFromHex(0x757575));          // Medium grey icons
+        Set(SchemeColor.GreyIconAlt, ColorFromHex(0x616161));       // Darker grey icons
+
+        // Magenta group - overproduction indication
+        Set(SchemeColor.Magenta, ColorFromHex(0xbd33a4));           // Magenta - overproduction
+        Set(SchemeColor.MagentaAlt, ColorFromHex(0x8b008b));        // Dark magenta
+        Set(SchemeColor.MagentaText, Black);                        // Black text on magenta
+        Set(SchemeColor.MagentaTextFaint, BlackTransparent);        // Faded black text
+        Set(SchemeColor.MagentaIcon, ColorFromHex(0xe91e63));       // Bright magenta icons
+        Set(SchemeColor.MagentaIconAlt, ColorFromHex(0xc2185b));    // Darker magenta icons
+
+        // Green group - success/positive colors
+        Set(SchemeColor.Green, ColorFromHex(0x6abf69));             // Light green
+        Set(SchemeColor.GreenAlt, ColorFromHex(0x388e3c));          // Dark green
+        Set(SchemeColor.GreenText, Black);                          // Black text on green
+        Set(SchemeColor.GreenTextFaint, BlackTransparent);          // Faded black text
+        Set(SchemeColor.GreenIcon, ColorFromHex(0x4caf50));         // Bright green for icons
+        Set(SchemeColor.GreenIconAlt, ColorFromHex(0x388e3c));      // Darker green for icons
+
+        // Warning group - for warning icons like "!" triangle
+        Set(SchemeColor.Warning, ColorFromHex(0xff9800));           // Orange background for warnings
+        Set(SchemeColor.WarningAlt, ColorFromHex(0xc66900));        // Darker orange
+        Set(SchemeColor.WarningText, Black);                        // Black text on warning
+        Set(SchemeColor.WarningTextFaint, BlackTransparent);        // Faded black text
+        Set(SchemeColor.WarningIcon, ColorFromHex(0xff9800));       // Bright orange for warning icons
+        Set(SchemeColor.WarningIconAlt, ColorFromHex(0xf57c00));    // Darker orange for warning icons
+
+        // Tagged row colors - for row highlighting/categorization
+        // Green tag
+        Set(SchemeColor.TagColorGreen, ColorFromHex(0xe8ffe8));
+        Set(SchemeColor.TagColorGreenAlt, ColorFromHex(0xefffef));
+        Set(SchemeColor.TagColorGreenText, ColorFromHex(0x56ad65));
+        Set(SchemeColor.TagColorGreenTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorGreenIcon, ColorFromHex(0x4caf50));        // Bright green for icons
+        Set(SchemeColor.TagColorGreenIconAlt, ColorFromHex(0x388e3c));     // Darker green for icons
+
+        // Yellow tag
+        Set(SchemeColor.TagColorYellow, ColorFromHex(0xffffe8));
+        Set(SchemeColor.TagColorYellowAlt, ColorFromHex(0xffffef));
+        Set(SchemeColor.TagColorYellowText, ColorFromHex(0x8c8756));
+        Set(SchemeColor.TagColorYellowTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorYellowIcon, ColorFromHex(0xffeb3b));       // Bright yellow for icons
+        Set(SchemeColor.TagColorYellowIconAlt, ColorFromHex(0xfbc02d));    // Darker yellow for icons
+
+        // Red tag
+        Set(SchemeColor.TagColorRed, ColorFromHex(0xffe8e8));
+        Set(SchemeColor.TagColorRedAlt, ColorFromHex(0xffefef));
+        Set(SchemeColor.TagColorRedText, ColorFromHex(0xaa5555));
+        Set(SchemeColor.TagColorRedTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorRedIcon, ColorFromHex(0xf44336));          // Bright red for icons
+        Set(SchemeColor.TagColorRedIconAlt, ColorFromHex(0xd32f2f));       // Darker red for icons
+
+        // Blue tag
+        Set(SchemeColor.TagColorBlue, ColorFromHex(0xe8efff));
+        Set(SchemeColor.TagColorBlueAlt, ColorFromHex(0xeff4ff));
+        Set(SchemeColor.TagColorBlueText, ColorFromHex(0x526ea5));
+        Set(SchemeColor.TagColorBlueTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorBlueIcon, ColorFromHex(0x2196f3));         // Bright blue for icons
+        Set(SchemeColor.TagColorBlueIconAlt, ColorFromHex(0x1976d2));      // Darker blue for icons
+
+        return colors;
+    }
+
+    private static SDL.SDL_Color[] BuildDarkModeScheme() {
+        // Automatically determine array size from the largest enum value
+        var maxEnumValue = Enum.GetValues<SchemeColor>().Max();
+        var colors = new SDL.SDL_Color[(int)maxEnumValue + 1];
+
+        // Local helper function to set colors cleanly
+        void Set(SchemeColor schemeColor, SDL.SDL_Color color) => colors[(int)schemeColor] = color;
+
+        // Special colors (SchemeColor.None through SchemeColor.Reserved1)
+        Set(SchemeColor.None, default);
+        Set(SchemeColor.TextSelection, new SDL.SDL_Color { b = 255, g = 128, a = 120 });
+        Set(SchemeColor.Link, ColorFromHex(0xff9800));
+        Set(SchemeColor.Reserved1, ColorFromHex(0x1b5e20));
+
+        // Pure colors (always the same regardless of theme)
+        Set(SchemeColor.PureBackground, Black);
+        Set(SchemeColor.PureForeground, White);
+        Set(SchemeColor.Source, White);
+        Set(SchemeColor.SourceFaint, WhiteTransparent);
+
+        // Background group - main UI background colors
+        Set(SchemeColor.Background, ColorFromHex(0x141414));        // Dark grey background
+        Set(SchemeColor.BackgroundAlt, Black);                      // Black alternative
+        Set(SchemeColor.BackgroundText, White);                     // White text on background
+        Set(SchemeColor.BackgroundTextFaint, WhiteTransparent);     // Faded white text
+        Set(SchemeColor.BackgroundIcon, White);                     // White icons on dark background
+        Set(SchemeColor.BackgroundIconAlt, ColorFromHex(0xcccccc)); // Light grey icons on dark background
+
+        // Primary group - main accent colors (cyan/teal)
+        Set(SchemeColor.Primary, ColorFromHex(0x006978));           // Dark cyan
+        Set(SchemeColor.PrimaryAlt, ColorFromHex(0x0097a7));        // Lighter cyan
+        Set(SchemeColor.PrimaryText, White);                        // White text on primary
+        Set(SchemeColor.PrimaryTextFaint, WhiteTransparent);        // Faded white text
+        Set(SchemeColor.PrimaryIcon, ColorFromHex(0x4dd0e1));       // Bright cyan icons for dark mode
+        Set(SchemeColor.PrimaryIconAlt, ColorFromHex(0x26c6da));    // Lighter cyan icons for dark mode
+
+        // Secondary group - warning/attention colors (orange)
+        Set(SchemeColor.Secondary, ColorFromHex(0x5b2800));         // Dark orange - used for solver issues
+        Set(SchemeColor.SecondaryAlt, ColorFromHex(0x8c5100));      // Lighter orange
+        Set(SchemeColor.SecondaryText, White);                      // White text on secondary
+        Set(SchemeColor.SecondaryTextFaint, WhiteTransparent);      // Faded white text
+        Set(SchemeColor.SecondaryIcon, ColorFromHex(0xff9800));     // Bright orange icons for dark mode
+        Set(SchemeColor.SecondaryIconAlt, ColorFromHex(0xffa726));  // Lighter orange icons for dark mode
+
+        // Error group - critical error colors (red)
+        Set(SchemeColor.Error, ColorFromHex(0xbf360c));             // Bright red - critical issues
+        Set(SchemeColor.ErrorAlt, ColorFromHex(0x870000));          // Dark red - deadlock/overproduction
+        Set(SchemeColor.ErrorText, White);                          // White text on error
+        Set(SchemeColor.ErrorTextFaint, WhiteTransparent);          // Faded white text
+        Set(SchemeColor.ErrorIcon, ColorFromHex(0xef5350));         // Bright red icons for dark mode
+        Set(SchemeColor.ErrorIconAlt, ColorFromHex(0xf44336));      // Lighter red icons for dark mode
+
+        // Grey group - neutral/disabled colors
+        Set(SchemeColor.Grey, ColorFromHex(0x343434));              // Dark grey
+        Set(SchemeColor.GreyAlt, ColorFromHex(0x545454));           // Lighter grey
+        Set(SchemeColor.GreyText, White);                           // White text on grey
+        Set(SchemeColor.GreyTextFaint, WhiteTransparent);           // Faded white text
+        Set(SchemeColor.GreyIcon, ColorFromHex(0xbdbdbd));          // Light grey icons for dark mode
+        Set(SchemeColor.GreyIconAlt, ColorFromHex(0x9e9e9e));       // Medium grey icons for dark mode
+
+        // Magenta group - overproduction indication
+        Set(SchemeColor.Magenta, ColorFromHex(0x8b008b));           // Dark magenta - overproduction
+        Set(SchemeColor.MagentaAlt, ColorFromHex(0xbd33a4));        // Light magenta
+        Set(SchemeColor.MagentaText, Black);                        // Black text on magenta
+        Set(SchemeColor.MagentaTextFaint, BlackTransparent);        // Faded black text
+        Set(SchemeColor.MagentaIcon, ColorFromHex(0xf06292));       // Bright magenta icons for dark mode
+        Set(SchemeColor.MagentaIconAlt, ColorFromHex(0xe91e63));    // Lighter magenta icons for dark mode
+
+        // Green group - success/positive colors
+        Set(SchemeColor.Green, ColorFromHex(0x00600f));             // Dark green
+        Set(SchemeColor.GreenAlt, ColorFromHex(0x00701a));          // Lighter green
+        Set(SchemeColor.GreenText, Black);                          // Black text on green
+        Set(SchemeColor.GreenTextFaint, BlackTransparent);          // Faded black text
+        Set(SchemeColor.GreenIcon, ColorFromHex(0x66bb6a));         // Bright green for dark mode icons
+        Set(SchemeColor.GreenIconAlt, ColorFromHex(0x4caf50));      // Lighter green for dark mode icons
+
+        // Warning group - for warning icons like "!" triangle
+        Set(SchemeColor.Warning, ColorFromHex(0x5b2800));           // Dark orange background for warnings
+        Set(SchemeColor.WarningAlt, ColorFromHex(0x8c5100));        // Lighter orange
+        Set(SchemeColor.WarningText, White);                        // White text on warning
+        Set(SchemeColor.WarningTextFaint, WhiteTransparent);        // Faded white text
+        Set(SchemeColor.WarningIcon, ColorFromHex(0xf36a00));       // Bright orange for warning icons in dark mode
+        Set(SchemeColor.WarningIconAlt, ColorFromHex(0xff9300));    // Lighter orange for warning icons in dark mode
+
+        // Tagged row colors - for row highlighting/categorization
+        // Green tag
+        Set(SchemeColor.TagColorGreen, ColorFromHex(0x0d261f));
+        Set(SchemeColor.TagColorGreenAlt, ColorFromHex(0x050f0c));
+        // Set(SchemeColor.TagColorGreenText, ColorFromHex(0x226355));
+        Set(SchemeColor.TagColorGreenText, MutedGrey);
+        Set(SchemeColor.TagColorGreenTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorGreenIcon, ColorFromHex(0x66bb6a));        // Bright green for dark mode icons
+        Set(SchemeColor.TagColorGreenIconAlt, ColorFromHex(0x4caf50));     // Lighter green for dark mode icons
+
+        // Yellow tag
+        Set(SchemeColor.TagColorYellow, ColorFromHex(0x28260b));
+        Set(SchemeColor.TagColorYellowAlt, ColorFromHex(0x191807));
+        // Set(SchemeColor.TagColorYellowText, ColorFromHex(0x5b582a));
+        Set(SchemeColor.TagColorYellowText, MutedGrey);
+        Set(SchemeColor.TagColorYellowTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorYellowIcon, ColorFromHex(0xffee58));       // Bright yellow for dark mode icons
+        Set(SchemeColor.TagColorYellowIconAlt, ColorFromHex(0xffeb3b));    // Lighter yellow for dark mode icons
+
+        // Red tag
+        Set(SchemeColor.TagColorRed, ColorFromHex(0x270c0c));
+        Set(SchemeColor.TagColorRedAlt, ColorFromHex(0x190808));
+        // Set(SchemeColor.TagColorRedText, ColorFromHex(0x922626));
+        Set(SchemeColor.TagColorRedText, MutedGrey);
+        Set(SchemeColor.TagColorRedTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorRedIcon, ColorFromHex(0xef5350));          // Bright red for dark mode icons
+        Set(SchemeColor.TagColorRedIconAlt, ColorFromHex(0xf44336));       // Lighter red for dark mode icons
+
+        // Blue tag
+        Set(SchemeColor.TagColorBlue, ColorFromHex(0x0c0c27));
+        Set(SchemeColor.TagColorBlueAlt, ColorFromHex(0x080819));
+        // Set(SchemeColor.TagColorBlueText, ColorFromHex(0x2626ab));
+        Set(SchemeColor.TagColorBlueText, MutedGrey);
+        Set(SchemeColor.TagColorBlueTextFaint, ColorFromHex(0x0));
+        Set(SchemeColor.TagColorBlueIcon, ColorFromHex(0x42a5f5));         // Bright blue for dark mode icons
+        Set(SchemeColor.TagColorBlueIconAlt, ColorFromHex(0x2196f3));      // Lighter blue for dark mode icons
+
+        return colors;
+    }
 
     private static SDL.SDL_Color[] SchemeColors = LightModeScheme;
 

@@ -40,6 +40,8 @@ public abstract class Window : IDisposable {
 
     public event OnFocusLost? onFocusLost;
 
+    public Window? ChildWindow { get; set; }
+
     internal void Create() {
         if (surface is null) {
             throw new InvalidOperationException($"surface must be set by a derived class before calling {nameof(Create)}.");
@@ -166,6 +168,7 @@ public abstract class Window : IDisposable {
     protected internal virtual void Close() {
         visible = false;
         closed = true;
+        ChildWindow?.Close();
         surface?.Dispose();
         SDL.SDL_DestroyWindow(window);
         Dispose();
@@ -182,6 +185,8 @@ public abstract class Window : IDisposable {
     }
 
     public virtual void FocusLost() => onFocusLost?.Invoke();
+
+    internal void FocusGained() => ChildWindow?.Focus();
 
     public virtual void Minimized() { }
 
