@@ -12,6 +12,7 @@ namespace Yafc;
 
 public class ProductionTableView : ProjectPageView<ProductionTable> {
     private readonly FlatHierarchy<RecipeRow, ProductionTable> flatHierarchyBuilder;
+    private RecipeRow? hoveredRecipe;
 
     public ProductionTableView() {
         DataGrid<RecipeRow> grid = new DataGrid<RecipeRow>(new RecipePadColumn(this), new RecipeColumn(this), new EntityColumn(this),
@@ -120,7 +121,22 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
     private class RecipeColumn(ProductionTableView view) : ProductionTableDataColumn(view, LSs.ProductionTableHeaderRecipe, 13f, 13f, 30f, widthStorage: nameof(Preferences.recipeColumnWidth)) {
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
             gui.spacing = 0.5f;
-            switch (gui.BuildFactorioObjectButton(recipe.recipe, ButtonDisplayStyle.ProductionTableUnscaled)) {
+            var buttonEvent = gui.BuildFactorioObjectButton(recipe.recipe, ButtonDisplayStyle.ProductionTableUnscaled);
+
+            // Track hovered recipe for Ctrl+C functionality and show tooltip
+            if (gui.IsMouseOver(gui.lastRect)) {
+                view.hoveredRecipe = recipe;
+
+                // Show tooltip with Ctrl+C hint if the recipe has an entity (can generate blueprint)
+                if (recipe.entity != null) {
+                    gui.ShowTooltip(gui.lastRect, tooltip => {
+                        tooltip.BuildText(recipe.recipe.target.locName, Font.subheader);
+                        tooltip.BuildText(LSs.TooltipCopyBuildingBlueprint, TextBlockDisplayStyle.WrappedText);
+                    });
+                }
+            }
+
+            switch (buttonEvent) {
                 case Click.Left:
                     gui.ShowDropDown(delegate (ImGui imgui) {
                         DrawRecipeTagSelect(imgui, recipe);
@@ -143,6 +159,11 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
 
                         if (recipe.subgroup != null && imgui.BuildButton(LSs.ShoppingList) && imgui.CloseDropdown()) {
                             view.BuildShoppingList(recipe);
+                        }
+
+                        // Add "Copy blueprint" button if recipe has an entity
+                        if (recipe.entity != null && imgui.BuildButton(LSs.ButtonCopyBlueprint) && imgui.CloseDropdown()) {
+                            view.CopyRecipeBlueprint(recipe);
                         }
 
                         if (imgui.BuildCheckBox(LSs.ProductionTableShowTotalIo, recipe.showTotalIO, out bool newShowTotalIO)) {
@@ -1674,5 +1695,21 @@ goodsHaveNoProduction:;
                 }
             }
         }
+    }
+
+    public override bool ControlKey(SDL.SDL_Scancode code) {
+        // Handle Ctrl+C to copy blueprint for hovered recipe
+        if (code == SDL.SDL_Scancode.SDL_SCANCODE_C && hoveredRecipe?.entity != null) {
+            CopyRecipeBlueprint(hoveredRecipe);
+            return true;
+        }
+
+        return base.ControlKey(code);
+    }
+
+    private void CopyRecipeBlueprint(RecipeRow recipe) {
+        if (recipe.entity == null) return;
+        
+        BlueprintUtilities.ExportRecipiesAsBlueprint(recipe.recipe.target.locName, [recipe], Preferences.Instance.exportEntitiesWithFuelFilter);
     }
 }
