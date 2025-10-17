@@ -14,6 +14,7 @@ public class Project : ModelObject {
     public static Version currentYafcVersion { get; set; } = new Version(0, 4, 0);
     public uint projectVersion => undo.version;
     public string? attachedFileName { get; private set; }
+
     public bool justCreated { get; private set; } = true;
     public ProjectSettings settings { get; }
     public ProjectPreferences preferences { get; }
@@ -183,6 +184,7 @@ public class Project : ModelObject {
 
     public void Save(Stream stream) {
         using Utf8JsonWriter writer = new Utf8JsonWriter(stream, JsonUtils.DefaultWriterOptions);
+
         SerializationMap<Project>.SerializeToJson(this, writer);
     }
 
@@ -292,6 +294,7 @@ public class ProjectSettings(Project project) : ModelObject<Project>(project) {
     public int reactorSizeY { get; set; } = 2;
     public float PollutionCostModifier { get; set; } = 0;
     public float spoilingRate { get; set; } = 1;
+    public bool isPagesListPinned { get; set; }
 
     public event Action<bool>? changed;
     protected internal override void ThisChanged(bool visualOnly) => changed?.Invoke(visualOnly);
