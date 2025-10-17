@@ -1691,34 +1691,7 @@ goodsHaveNoProduction:;
 
     private void CopyRecipeBlueprint(RecipeRow recipe) {
         if (recipe.entity == null) return;
-
-        BlueprintEntity entity = new BlueprintEntity { index = 1, name = recipe.entity.target.name };
-
-        if (!recipe.recipe.Is<Mechanics>()) {
-            entity.recipe = recipe.recipe.target.name;
-            entity.recipe_quality = recipe.recipe.quality.name;
-        }
-
-        var modules = recipe.usedModules.modules;
-
-        if (modules != null) {
-            int idx = 0;
-            foreach (var (module, count, beacon) in modules) {
-                if (!beacon) {
-                    BlueprintItem item = new BlueprintItem { id = { name = module.target.name, quality = module.quality.name } };
-                    item.items.inInventory.AddRange(Enumerable.Range(idx, count).Select(i => new BlueprintInventoryItem { stack = i }));
-                    entity.items.Add(item);
-                    idx += count;
-                }
-            }
-        }
-
-        if (Preferences.Instance.exportEntitiesWithFuelFilter && recipe.fuel is not null && !recipe.fuel.target.isPower) {
-            entity.SetFuel(recipe.fuel.target.name, recipe.fuel.quality.name);
-        }
-
-        // Use the existing utility function to generate and copy the blueprint
-        // This automatically handles proper base64 encoding
-        _ = BlueprintUtilities.ExportRecipiesAsBlueprint(recipe.recipe.target.locName, [recipe], Preferences.Instance.exportEntitiesWithFuelFilter);
+        
+        BlueprintUtilities.ExportRecipiesAsBlueprint(recipe.recipe.target.locName, [recipe], Preferences.Instance.exportEntitiesWithFuelFilter);
     }
 }
