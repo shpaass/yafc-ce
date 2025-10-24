@@ -80,12 +80,17 @@ internal partial class FactorioDataDeserializer {
 
         EntityEnergy energy = new EntityEnergy();
         entity.energy = energy;
-        LuaTable? table = energySource.Get<LuaTable>("emissions_per_minute");
         List<(string, float)> emissions = [];
-        foreach (var (key, value) in table?.ObjectElements ?? []) {
-            if (key is string k && value is double v) {
-                emissions.Add((k, (float)v));
+        // emissions_per_minute is a table in 2.0, and a number in 1.1.
+        if (energySource.Get("emissions_per_minute", out LuaTable? table) && factorioVersion >= v2_0) {
+            foreach (var (key, value) in table?.ObjectElements ?? []) {
+                if (key is string k && value is double v) {
+                    emissions.Add((k, (float)v));
+                }
             }
+        }
+        else if (energySource.Get("emissions_per_minute", out float emission) && factorioVersion < v2_0) {
+            emissions.Add(("pollution", emission));
         }
         energy.emissions = emissions.AsReadOnly();
         energy.effectivity = energySource.Get("effectivity", 1f);
@@ -103,6 +108,11 @@ internal partial class FactorioDataDeserializer {
                     foreach (string cat in categories.ArrayElements<string>()) {
                         fuelUsers.Add(entity, cat);
                     }
+                }
+                else {
+                    // fuel_category is not used in 2.0. Assume it's not present for 2.0 mods. Use this to load either the 1.1 value (or default),
+                    // or the { "chemical" } default value for 2.0's fuel_categories.
+                    fuelUsers.Add(entity, energySource.Get("fuel_category", "chemical"));
                 }
 
                 break;
@@ -148,7 +158,8 @@ internal partial class FactorioDataDeserializer {
             entity.allowedModuleCategories = [.. categories.ArrayElements<string>()];
         }
 
-        entity.moduleSlots = table.Get("module_slots", 0);
+        // table.module_specification.module_slots in 1.1; table.module_slots in 2.0. Assume module_specification is not present for 2.0 mods.
+        entity.moduleSlots = table.Get<LuaTable>("module_specification")?.Get<int>("module_slots") ?? table.Get("module_slots", 0);
     }
 
     private Recipe CreateLaunchRecipe(EntityCrafter entity, Recipe recipe, int partsRequired, int outputCount) {
@@ -383,7 +394,7 @@ internal partial class FactorioDataDeserializer {
 
                 if (factorioType == "rocket-silo") {
                     bool launchToSpacePlatforms = table.Get("launch_to_space_platforms", false);
-                    int rocketInventorySize = table.Get("to_be_inserted_to_rocket_inventory_size", 0);
+                    int rocketInventorySize = table.Get("to_be_inserted_to_rocket_inventory_size", factorioVersion < v2_0 ? 1 : 0);
 
                     if (rocketInventorySize > 0) {
                         _ = table.Get("rocket_parts_required", out int partsRequired, 100);
@@ -411,7 +422,8 @@ internal partial class FactorioDataDeserializer {
             case "inserter":
                 var inserter = GetObject<EntityInserter>(table);
                 inserter.inserterSwingTime = 1f / (table.Get("rotation_speed", 1f) * 60);
-                inserter.isBulkInserter = table.Get("bulk", false);
+                // Assume mods don't declare bulk(2.0)/stack(1.1) inconsistently.
+                inserter.isBulkInserter = table.Get("bulk", false) || table.Get("stack", false);
                 break;
             case "lab":
                 var lab = GetObject<EntityCrafter>(table);

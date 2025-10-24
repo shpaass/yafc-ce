@@ -21,11 +21,14 @@
 ----------------------------------------------------------------------------------------------------------------------
 Version:
 Date:
+    Features:
+        - Restore support for Factorio 1.1.
     Fixes:
         - Fix rendering of multi-icon technologies (e.g. shooting speed techs)
         - Add simplified support for debug.getinfo(), only returns short_src. Fixes #455, #504.
         - Fix load errors for Pacifist (#535), PlanetsLib, and some planet mods.
         - Fix loading mods where modules spoil into other modules.
+        - Modules were not exported correctly in labs or mining drills.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.15.0
 Date: September 1st 2025

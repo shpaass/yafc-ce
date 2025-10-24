@@ -403,7 +403,8 @@ internal partial class FactorioDataDeserializer {
             float energyBase = float.Parse(energy[..^2]);
 
             switch (energyMul) {
-                case 'k': return energyBase * 1e-3f;
+                // 2.0 only allows k; 1.1 allows either. Assume 2.0 mods don't rely on whatever Factorio does with 'K'.
+                case 'k' or 'K': return energyBase * 1e-3f;
                 case 'M': return energyBase;
                 case 'G': return energyBase * 1e3f;
                 case 'T': return energyBase * 1e6f;
@@ -418,13 +419,18 @@ internal partial class FactorioDataDeserializer {
         return float.Parse(energy[..^1]) * 1e-6f;
     }
 
-    private static Effect ParseEffect(LuaTable table) => new Effect {
-        consumption = table.Get("consumption", 0f),
-        speed = table.Get("speed", 0f),
-        productivity = table.Get("productivity", 0f),
-        pollution = table.Get("pollution", 0f),
-        quality = table.Get("quality", 0f),
-    };
+    private static Effect ParseEffect(LuaTable table) {
+        return new Effect {
+            consumption = load(table, "consumption"),
+            speed = load(table, "speed"),
+            productivity = load(table, "productivity"),
+            pollution = load(table, "pollution"),
+            quality = load(table, "quality"),
+        };
+
+        // table[effect].bonus in 1.1; table[effect] in 2.0. Assume [effect] is not a table in 2.0.
+        static float load(LuaTable table, string effect) => table.Get<LuaTable>(effect)?.Get("bonus", 0f) ?? table.Get(effect, 0f);
+    }
 
     private static EffectReceiver ParseEffectReceiver(LuaTable? table) {
         if (table == null) {
@@ -498,15 +504,21 @@ internal partial class FactorioDataDeserializer {
             }
         }
 
-        if (table.Get("send_to_orbit_mode", "not-sendable") != "not-sendable" || item.factorioType == "space-platform-starter-pack") {
-            Product[] launchProducts;
-            if (table.Get("rocket_launch_products", out LuaTable? products)) {
+        Product[]? launchProducts = null;
+        if (table.Get("send_to_orbit_mode", "not-sendable") != "not-sendable" || item.factorioType == "space-platform-starter-pack"
+            || factorioVersion < v2_0) {
+
+            if (table.Get("rocket_launch_product", out LuaTable? product)) {
+                launchProducts = [LoadProduct("rocket_launch_product", item.stackSize)(product)];
+            }
+            else if (table.Get("rocket_launch_products", out LuaTable? products)) {
                 launchProducts = [.. products.ArrayElements<LuaTable>().Select(LoadProduct(item.typeDotName, item.stackSize))];
             }
-            else {
+            else if (factorioVersion >= v2_0) {
                 launchProducts = [];
             }
-
+        }
+        if (launchProducts != null) {
             EnsureLaunchRecipe(item, launchProducts);
         }
 
@@ -559,6 +571,10 @@ internal partial class FactorioDataDeserializer {
     // This was constructed from educated guesses and https://forums.factorio.com/viewtopic.php?f=23&t=120781.
     // It was compared with https://rocketcal.cc/weights.json. Where the results differed, these results were verified in Factorio.
     private void CalculateItemWeights() {
+        if (factorioVersion < v2_0) {
+            return;
+        }
+
         Dictionary<Item, List<Item>> dependencies = [];
         foreach (Recipe recipe in allObjects.OfType<Recipe>()) {
             foreach (Item ingredient in recipe.ingredients.Select(i => i.goods).OfType<Item>()) {
@@ -656,11 +672,12 @@ nextWeightCalculation:;
     /// the existing launch products of a preexisting recipe, or set no products for a new recipe.</param>
     private void EnsureLaunchRecipe(Item item, Product[]? launchProducts) {
         Recipe recipe = CreateSpecialRecipe(item, SpecialNames.RocketLaunch, LSs.SpecialRecipeLaunched);
+        // When this is called in 2.0, we don't know the item weight or the rocket capacity.
+        // CalculateItemWeights will scale this ingredient and the products appropriately (but not the launch slot), only in 2.0.
+        int ingredientCount = factorioVersion < v2_0 ? item.stackSize : 1;
         recipe.ingredients =
         [
-            // When this is called, we don't know the item weight or the rocket capacity.
-            // CalculateItemWeights will scale this ingredient and the products appropriately (but not the launch slot)
-            new Ingredient(item, 1),
+            new Ingredient(item, ingredientCount),
             new Ingredient(rocketLaunch, 1),
         ];
         recipe.products = launchProducts ?? recipe.products ?? [];
@@ -694,6 +711,8 @@ nextWeightCalculation:;
 
             string recipeCategory = SpecialNames.PumpingRecipe + "tile";
             Recipe recipe = CreateSpecialRecipe(pumpingFluid, recipeCategory, LSs.SpecialRecipePumping);
+            // We changed the names of pumping recipes when adding support for 2.0.
+            formerAliases[$"Mechanics.pump.{pumpingFluid.name}.{pumpingFluid.name}"] = recipe;
 
             if (recipe.products == null) {
                 recipe.products = [new Product(pumpingFluid, 1200f)]; // set to Factorio default pump amounts - looks nice in tooltip
@@ -744,6 +763,18 @@ nextWeightCalculation:;
             }
             else if (type == "research-progress" && table.Get("research_item", out string? researchItem)) {
                 return GetObject<Item>(researchItem);
+            }
+        }
+        else if (factorioVersion < v2_0) {
+            // In 1.1, type is optional, and an item ingredient/product can be represented as { [1] = "name", [2] = amount }
+            if (table.Get("name", out string? name)) {
+                return GetObject<Item>(name);
+            }
+
+            if (table.Get(1, out name)) {
+                // Copy the amount from [2] to ["amount"] to translate for later code.
+                table["amount"] = table.Get<int>(2);
+                return GetObject<Item>(name);
             }
         }
         return null;
@@ -809,12 +840,17 @@ nextWeightCalculation:;
                     // These are the only expected sizes for icons we render.
                     // New classes of icons (e.g. achievements) will need new cases to make IconParts with default scale render correctly.
                     // https://lua-api.factorio.com/latest/types/IconData.html
-                    Technology => 256,
+                    Technology => 256, // I think this should be 512 in 1.1, but that doesn't fix vanilla icons, and makes SE icons worse.
                     _ => 64
                 };
 
                 FactorioIconPart part = new(path) { size = x.Get("icon_size", 64) };
                 part.scale = x.Get("scale", expectedSize / 2f / part.size);
+                if (factorioVersion < v2_0) {
+                    // Mystery adjustment that makes 1.1 technology icons render correctly, and doesn't appear to mess up the recipe icons.
+                    // (Checked many of vanilla/SE's tech icons and the se-simulation-* recipes.)
+                    part.scale *= part.size / 64f;
+                }
 
                 if (x.Get("shift", out LuaTable? shift)) {
                     part.x = shift.Get<float>(1);
