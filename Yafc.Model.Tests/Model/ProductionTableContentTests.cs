@@ -137,7 +137,7 @@ public class ProductionTableContentTests {
 
                         await table.Solve(page);
 
-                        foreach (var (display, solver) in row.Ingredients.Zip(((IRecipeRow)row).IngredientsForSolver)) {
+                        foreach (var (display, solver) in row.Ingredients.Zip(row.IngredientsForSolver)) {
                             var (solverGoods, solverAmount, _, _, _) = solver;
                             var (displayGoods, displayAmount, _, _) = display;
 
@@ -154,7 +154,7 @@ public class ProductionTableContentTests {
                             }
                         }
 
-                        foreach (var (display, solver) in row.Products.Zip(((IRecipeRow)row).ProductsForSolver
+                        foreach (var (display, solver) in row.Products.Zip(row.ProductsForSolver
                             // ProductsForSolver doesn't include the spent fuel. Append an entry for the spent fuel, in the case that the spent
                             // fuel is not a recipe product.
                             // If the spent fuel is also a recipe product, this value will ignored in favor of the recipe-product value.

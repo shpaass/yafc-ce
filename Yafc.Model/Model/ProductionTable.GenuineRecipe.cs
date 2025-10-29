@@ -39,13 +39,13 @@ public partial class ProductionTable {
         public IObjectWithQuality<Goods>? fuel => row.fuel;
         public float fixedBuildings => row.fixedBuildings;
         public double recipesPerSecond { get => row.recipesPerSecond; set => row.recipesPerSecond = value; }
-        public float RecipeTime => ((IRecipeRow)row).RecipeTime;
+        public float RecipeTime => row.recipe.target.time;
         public RecipeParameters parameters { get => row.parameters; set => row.parameters = value; }
         public RecipeLinks links => row.links;
-        public IEnumerable<SolverIngredient> IngredientsForSolver => ((IRecipeRow)row).IngredientsForSolver;
-        public IEnumerable<SolverProduct> ProductsForSolver => ((IRecipeRow)row).ProductsForSolver;
-        public string SolverName => ((IRecipeRow)row).SolverName;
-        public double BaseCost => ((IRecipeRow)row).BaseCost;
+        public IEnumerable<SolverIngredient> IngredientsForSolver => row.IngredientsForSolver;
+        public IEnumerable<SolverProduct> ProductsForSolver => row.ProductsForSolver;
+        public string SolverName => row.recipe.QualityName();
+        public double BaseCost => (row.recipe.target as Recipe)?.RecipeBaseCost() ?? 0;
 
         public void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used)
             => row.GetModulesInfo(recipeParams, entity, ref effects, ref used);

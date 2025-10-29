@@ -279,6 +279,7 @@ goodsHaveNoProduction:;
                         r => table.AddRecipe(r, DefaultVariantOrdering));
                 }
             }
+            if (gui.BuildButton("Add empty table")) { }
         }
 
         private void ExportIo(float multiplier) {

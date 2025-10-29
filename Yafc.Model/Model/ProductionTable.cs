@@ -427,8 +427,8 @@ match:
             }
 
             HashSet<RecipeRow> recipes = [.. GetAllRecipes(), parent];
-            foreach (IRecipeRow iRec in link.capturedRecipes) {
-                if (iRec is not RecipeRow recipe || (!recipes.Contains(recipe) && recipe.DetermineFlow(flow.goods) != 0)) {
+            foreach (IRecipeRow row in link.capturedRecipes) {
+                if (row.RecipeRow is not RecipeRow recipe || (!recipes.Contains(recipe) && recipe.DetermineFlow(flow.goods) != 0)) {
                     return true;
                 }
             }
@@ -443,9 +443,7 @@ match:
     private static void AddLinkCoefficient(Constraint cst, Variable var, IProductionLink link, IRecipeRow recipe, float amount) {
         // GetCoefficient will return 0 when the variable is not available in the constraint
         amount += (float)cst.GetCoefficient(var);
-        // To avoid false negatives when testing "iRecipeRow is RecipeRow" or otherwise inspecting the content of capturedRecipes,
-        // store the underlying RecipeRow if available.
-        _ = link.capturedRecipes.Add(recipe.RecipeRow ?? recipe);
+        _ = link.capturedRecipes.Add(recipe);
         cst.SetCoefficient(var, amount);
     }
 

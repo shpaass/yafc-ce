@@ -304,7 +304,7 @@ public interface IRecipeRow {
 /// <summary>
 /// Represents a row in a production table that can be configured by the user.
 /// </summary>
-public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<ProductionTable>, IRecipeRow {
+public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<ProductionTable> {
     private IObjectWithQuality<EntityCrafter>? _entity;
     private IObjectWithQuality<Goods>? _fuel;
     private float _fixedBuildings;
@@ -493,7 +493,7 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
         }
     }
 
-    IEnumerable<SolverIngredient> IRecipeRow.IngredientsForSolver => BuildIngredients(true);
+    internal IEnumerable<SolverIngredient> IngredientsForSolver => BuildIngredients(true);
 
     private IEnumerable<SolverIngredient> BuildIngredients(bool forSolver) {
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the ingredients for one recipe, to produce recipesPerSecond.
@@ -516,7 +516,6 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     }
 
     internal IEnumerable<SolverProduct> ProductsForSolver => BuildProducts(true);
-    IEnumerable<SolverProduct> IRecipeRow.ProductsForSolver => ProductsForSolver;
 
     private IEnumerable<SolverProduct> BuildProducts(bool forSolver) {
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the products for one recipe, to produce recipesPerSecond.
@@ -799,24 +798,6 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
             }
             return amount;
         }
-    }
-
-    // To avoid leaking these variables/methods (or just the setter, for recipesPerSecond) into public context,
-    // these explicit interface implementations connect to internal members, instead of using implicit implementation via public members
-    RecipeParameters IRecipeRow.parameters { get => parameters; set => parameters = value; }
-    double IRecipeRow.recipesPerSecond { get => recipesPerSecond; set => recipesPerSecond = value; }
-    RecipeLinks IRecipeRow.links => links;
-    float IRecipeRow.RecipeTime => recipe.target.time;
-    string IRecipeRow.SolverName => recipe.QualityName();
-    double IRecipeRow.BaseCost => (recipe.target as Recipe)?.RecipeBaseCost() ?? 0;
-    RecipeRow? IRecipeRow.RecipeRow => this;
-
-    void IRecipeRow.GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used)
-        => GetModulesInfo(recipeParams, entity, ref effects, ref used);
-    bool IRecipeRow.FindLink(IObjectWithQuality<Goods> goods, [MaybeNullWhen(false)] out IProductionLink link) {
-        bool result = linkRoot.FindLink(goods, out var concreteLink);
-        link = concreteLink;
-        return result;
     }
 }
 
