@@ -23,7 +23,7 @@ public partial class ProductionTable {
         /// </summary>
         public float amount => 0;
 
-        public HashSet<IRecipeRow> capturedRecipes { get; } = [];
+        public HashSet<ISolverRow> capturedRecipes { get; } = [];
         public int solverIndex { get; set; }
         public float linkFlow { set { } }
         public float notMatchedFlow { get; set; }

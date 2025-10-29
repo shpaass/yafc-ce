@@ -11,7 +11,7 @@ public partial class ProductionTable {
     /// <param name="quality">The quality of the recipe's input pack.</param>
     /// <param name="productLink">The (genuine) link for the output pack.</param>
     /// <param name="ingredientLink">The (implicit) link for the input pack.</param>
-    private class ScienceDecomposition(Goods pack, Quality quality, IProductionLink productLink, ImplicitLink ingredientLink) : IRecipeRow {
+    private class ScienceDecomposition(Goods pack, Quality quality, IProductionLink productLink, ImplicitLink ingredientLink) : ISolverRow {
         public IObjectWithQuality<Goods>? fuel => null;
 
         /// <summary>
@@ -49,6 +49,6 @@ public partial class ProductionTable {
         /// <summary>
         /// Always null; this does not represent a user-visible <see cref="RecipeRow"/>.
         /// </summary>
-        RecipeRow? IRecipeRow.RecipeRow => null;
+        RecipeRow? ISolverRow.RecipeRow => null;
     }
 }

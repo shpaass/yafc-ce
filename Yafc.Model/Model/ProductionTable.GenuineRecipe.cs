@@ -11,7 +11,7 @@ public partial class ProductionTable {
     /// <param name="extraLinks">The <see cref="Dictionary{TKey, TValue}"/> that will eventually the contain extra links this recipe needs to
     /// consider. This may be incomplete at the time of construction, provided it is complete before the first call to <see cref="FindLink"/>.
     /// </param>
-    private class GenuineRecipe(RecipeRow row, Dictionary<(ProductionTable, IObjectWithQuality<Goods>), IProductionLink> extraLinks) : IRecipeRow {
+    private class GenuineRecipe(RecipeRow row, Dictionary<(ProductionTable, IObjectWithQuality<Goods>), IProductionLink> extraLinks) : ISolverRow {
         /// <summary>
         /// Check both <see cref="row"/> and <see cref="extraLinks"/> for a link corresponding to <paramref name="goods"/>.
         /// </summary>
@@ -45,6 +45,6 @@ public partial class ProductionTable {
         public string SolverName => row.recipe.QualityName();
         public double BaseCost => (row.recipe.target as Recipe)?.RecipeBaseCost() ?? 0;
 
-        RecipeRow? IRecipeRow.RecipeRow => row;
+        RecipeRow? ISolverRow.RecipeRow => row;
     }
 }

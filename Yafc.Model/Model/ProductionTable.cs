@@ -94,7 +94,7 @@ public sealed partial class ProductionTable : ProjectPageContents, IComparer<Pro
     /// <returns>A tuple containing (1) the normal science packs links for science recipes at this or a deeper level, and (2) the quality science
     /// packs produced at this or a deeper level, but not linked.</returns>
     private (Dictionary<Goods, IProductionLink> linkedConsumption, HashSet<IObjectWithQuality<Goods>> unlinkedProduction)
-        Setup(List<IRecipeRow> allRecipes, List<IProductionLink> allLinks,
+        Setup(List<ISolverRow> allRecipes, List<IProductionLink> allLinks,
             Dictionary<(ProductionTable, IObjectWithQuality<Goods>), IProductionLink> extraLinks) {
 
         containsDesiredProducts = false;
@@ -427,7 +427,7 @@ match:
             }
 
             HashSet<RecipeRow> recipes = [.. GetAllRecipes(), parent];
-            foreach (IRecipeRow row in link.capturedRecipes) {
+            foreach (ISolverRow row in link.capturedRecipes) {
                 if (row.RecipeRow is not RecipeRow recipe || (!recipes.Contains(recipe) && recipe.DetermineFlow(flow.goods) != 0)) {
                     return true;
                 }
@@ -440,7 +440,7 @@ match:
     /// Add/update the variable value for the constraint with the given amount, and store the recipe to the production link.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void AddLinkCoefficient(Constraint cst, Variable var, IProductionLink link, IRecipeRow recipe, float amount) {
+    private static void AddLinkCoefficient(Constraint cst, Variable var, IProductionLink link, ISolverRow recipe, float amount) {
         // GetCoefficient will return 0 when the variable is not available in the constraint
         amount += (float)cst.GetCoefficient(var);
         _ = link.capturedRecipes.Add(recipe);
@@ -451,7 +451,7 @@ match:
         using var productionTableSolver = DataUtils.CreateSolver();
         var objective = productionTableSolver.Objective();
         objective.SetMinimization();
-        List<IRecipeRow> allRecipes = [];
+        List<ISolverRow> allRecipes = [];
         List<IProductionLink> allLinks = [];
         Setup(allRecipes, allLinks, []);
         Variable[] vars = new Variable[allRecipes.Count];
@@ -711,7 +711,7 @@ match:
         return builtCountExceeded;
     }
 
-    private static void FindAllRecipeLinks(IRecipeRow recipe, List<IProductionLink> sources, List<IProductionLink> targets) {
+    private static void FindAllRecipeLinks(ISolverRow recipe, List<IProductionLink> sources, List<IProductionLink> targets) {
         sources.Clear();
         targets.Clear();
 
@@ -736,7 +736,7 @@ match:
         }
     }
 
-    private static (List<IProductionLink> merges, List<IProductionLink> splits) GetInfeasibilityCandidates(List<IRecipeRow> recipes) {
+    private static (List<IProductionLink> merges, List<IProductionLink> splits) GetInfeasibilityCandidates(List<ISolverRow> recipes) {
         Graph<IProductionLink> graph = new Graph<IProductionLink>();
         List<IProductionLink> sources = [];
         List<IProductionLink> targets = [];

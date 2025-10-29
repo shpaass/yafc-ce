@@ -254,9 +254,9 @@ public interface IGroupedElement<TGroup> {
 
 /// <summary>
 /// Represents an object that can be treated by the solver as one row from a production table.
-/// An <see cref="IRecipeRow"/> may or may not be visible to the user, and may or may not be saved in the project file.
+/// An <see cref="ISolverRow"/> may or may not be visible to the user, and may or may not be saved in the project file.
 /// </summary>
-public interface IRecipeRow {
+public interface ISolverRow {
     // Variable (user-configured, for RecipeRow) properties
     internal IObjectWithQuality<Goods>? fuel { get; }
     /// <summary>
@@ -825,7 +825,7 @@ public interface IProductionLink {
     /// <summary>
     /// The recipes belonging to this production link
     /// </summary>
-    internal HashSet<IRecipeRow> capturedRecipes { get; }
+    internal HashSet<ISolverRow> capturedRecipes { get; }
     internal float notMatchedFlow { get; set; }
     ProductionTable owner { get; }
     IEnumerable<string> LinkWarnings { get; }
@@ -878,7 +878,7 @@ public class ProductionLink(ProductionTable group, IObjectWithQuality<Goods> goo
     public float linkFlow { get; internal set; }
     public float notMatchedFlow { get; internal set; }
     /// <inheritdoc/>
-    public HashSet<IRecipeRow> capturedRecipes { get; } = [];
+    public HashSet<ISolverRow> capturedRecipes { get; } = [];
 
     // To avoid leaking these properties (or setters) into public context, these explicit interface implementations connect to internal members,
     // instead of using implicit implementation via public members
