@@ -21,6 +21,12 @@
 ----------------------------------------------------------------------------------------------------------------------
 Version:
 Date:
+    Fixes:
+        - Support craft-fluid and scripted research triggers.
+        - Consider quality restrictions when analyzing craft-item or build-item technology triggers.
+----------------------------------------------------------------------------------------------------------------------
+Version: 2.16.0
+Date: October 24th 2025
     Features:
         - Restore support for Factorio 1.1.
     Fixes:

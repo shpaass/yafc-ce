@@ -162,11 +162,12 @@ internal partial class FactorioDataDeserializer {
         DeserializePrototypes(raw, "planet", DeserializeLocation, progress, errorCollector);
         DeserializePrototypes(raw, "space-location", DeserializeLocation, progress, errorCollector);
         rootAccessible.Add(GetObject<Location>("nauvis"));
-        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingTechnologies));
-        DeserializePrototypes(raw, "technology", DeserializeTechnology, progress, errorCollector);
         progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingQualities));
         DeserializePrototypes(raw, "quality", DeserializeQuality, progress, errorCollector);
         Quality.Normal = GetObject<Quality>("normal");
+        // Qualities must be loaded before technologies, to properly initialize Technology.triggerMinimumQuality
+        progress.Report((LSs.ProgressLoading, LSs.ProgressLoadingTechnologies));
+        DeserializePrototypes(raw, "technology", DeserializeTechnology, progress, errorCollector);
         rootAccessible.Add(Quality.Normal);
         DeserializePrototypes(raw, "asteroid-chunk", DeserializeAsteroidChunk, progress, errorCollector);
 

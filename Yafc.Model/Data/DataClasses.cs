@@ -27,6 +27,7 @@ internal enum FactorioObjectSortOrder {
     Tiles,
     Qualities,
     Locations,
+    Triggers,
 }
 
 public enum FactorioId { }
@@ -100,9 +101,11 @@ public enum RecipeFlags {
     HasResearchTriggerCreateSpacePlatform = 1 << 8,
     /// <summary>Set when the technology has a research trigger to launch an arbitrary item.</summary>
     HasResearchTriggerSendToOrbit = 1 << 9,
+    /// <summary>Set when the technology has a scripted research trigger.</summary>
+    HasResearchTriggerScripted = 1 << 10,
 
     HasResearchTriggerMask = HasResearchTriggerCraft | HasResearchTriggerCaptureEntity | HasResearchTriggerMineEntity | HasResearchTriggerBuildEntity
-        | HasResearchTriggerCreateSpacePlatform | HasResearchTriggerSendToOrbit,
+        | HasResearchTriggerCreateSpacePlatform | HasResearchTriggerSendToOrbit | HasResearchTriggerScripted,
 }
 
 public abstract class RecipeOrTechnology : FactorioObject {
@@ -137,7 +140,10 @@ public abstract class RecipeOrTechnology : FactorioObject {
                 collector.Add((ingredients, DependencyNode.Flags.Ingredient));
             }
         }
-        collector.Add((crafters, DependencyNode.Flags.CraftingEntity));
+        if (!flags.HasFlagAny(RecipeFlags.HasResearchTriggerMask)) {
+            // Trigger researches do not require a crafter, and sometimes (fluid crafting & scripted triggers) don't have one
+            collector.Add((crafters, DependencyNode.Flags.CraftingEntity));
+        }
         if (sourceEntity != null) {
             collector.Add(([sourceEntity], DependencyNode.Flags.SourceEntity));
         }
@@ -483,6 +489,14 @@ public class Special : Goods {
     public override string type => isPower ? "Power" : "Special";
     public override UnitOfMeasure flowUnitOfMeasure => isVoid ? UnitOfMeasure.None : isPower ? UnitOfMeasure.Megawatt : UnitOfMeasure.PerSecond;
     internal override FactorioObjectSortOrder sortingOrder => FactorioObjectSortOrder.SpecialGoods;
+}
+
+internal sealed class ResearchTrigger : FactorioObject {
+    public ResearchTrigger() => showInExplorers = false;
+    public override string type => "Research trigger";
+
+    internal override FactorioObjectSortOrder sortingOrder => FactorioObjectSortOrder.Triggers;
+    public override DependencyNode GetDependencies() => DependencyNode.Create([], DependencyNode.Flags.Source);
 }
 
 [Flags]
@@ -960,6 +974,8 @@ public class EntityContainer : Entity {
 }
 
 public class Technology : RecipeOrTechnology { // Technology is very similar to recipe
+    private Quality? _triggerMinimumQuality;
+
     public float count { get; internal set; } // TODO support formula count
     public Technology[] prerequisites { get; internal set; } = [];
     public List<Recipe> unlockRecipes { get; } = [];
@@ -973,7 +989,21 @@ public class Technology : RecipeOrTechnology { // Technology is very similar to 
     /// </summary>
     /// <remarks>Lazy-loaded so the database can load and correctly type (eg EntityCrafter, EntitySpawner, etc.) the entities without having to do another pass.</remarks>
     public IReadOnlyList<Entity> triggerEntities => getTriggerEntities.Value;
-    public Item? triggerItem { get; internal set; }
+    /// <summary>
+    /// The object associated with the research trigger. Must not be <see langword="null"/> when <see cref="RecipeFlags.HasResearchTriggerScripted"/>
+    /// or <see cref="RecipeFlags.HasResearchTriggerSendToOrbit"/>.
+    /// </summary>
+    public FactorioObject? triggerObject { get; internal set; }
+    /// <summary>
+    /// For entity and item triggers, the minimum quality. Factorio tracks more complicated filters (e.g. &lt; rare), but the only thing we care about
+    /// for accessibility is the minimum acceptable quality. This is not stored as an <see cref="IObjectWithQuality{T}"/> because those don't exist
+    /// when this field is loaded from the lua tables.
+    /// </summary>
+    [AllowNull]
+    public Quality triggerMinimumQuality {
+        get => _triggerMinimumQuality ?? Quality.Normal;
+        internal set => _triggerMinimumQuality = value;
+    }
 
     /// <summary>
     /// Sets the value used to construct <see cref="triggerEntities"/>.
@@ -994,12 +1024,21 @@ public class Technology : RecipeOrTechnology { // Technology is very similar to 
         if (flags.HasFlag(RecipeFlags.HasResearchTriggerBuildEntity)) {
             nodes.Add((triggerEntities, DependencyNode.Flags.Source));
         }
+        if (flags.HasFlagAny(RecipeFlags.HasResearchTriggerBuildEntity | RecipeFlags.HasResearchTriggerCraft)) {
+            if (triggerMinimumQuality > Quality.Normal) {
+                nodes.Add(([triggerMinimumQuality], DependencyNode.Flags.Source));
+            }
+        }
         if (flags.HasFlag(RecipeFlags.HasResearchTriggerCreateSpacePlatform)) {
             var items = Database.items.all.Where(i => i.factorioType == "space-platform-starter-pack");
             nodes.Add((items.Select(i => Database.objectsByTypeName["Mechanics.launch." + i.name]), DependencyNode.Flags.Source));
         }
         if (flags.HasFlag(RecipeFlags.HasResearchTriggerSendToOrbit)) {
-            nodes.Add(([Database.objectsByTypeName["Mechanics.launch." + triggerItem]], DependencyNode.Flags.Source));
+            nodes.Add(([Database.objectsByTypeName["Mechanics.launch." + triggerObject]], DependencyNode.Flags.Source));
+        }
+        if (flags.HasFlag(RecipeFlags.HasResearchTriggerScripted)) {
+            // null-forgiving: triggerObject is set before setting HasResearchTriggerScripted
+            nodes.Add(([triggerObject!], DependencyNode.Flags.Source));
         }
 
         if (!enabled) {
