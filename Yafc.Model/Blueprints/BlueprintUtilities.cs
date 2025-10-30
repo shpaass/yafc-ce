@@ -108,7 +108,7 @@ public static class BlueprintUtilities {
     public static string ExportRecipiesAsBlueprint(string name, IEnumerable<RecipeRow> recipies, bool includeFuel, bool copyToClipboard = true) {
         // Sort buildings largest to smallest (by height then width) for better packing
         var entities = recipies
-            .Where(r => r.entity is not null)
+            .Where(r => r.entity is not null && r.recipe is not null)
             .OrderByDescending(r => r.entity!.target.size)
             .ToList();
 
@@ -166,7 +166,7 @@ public static class BlueprintUtilities {
             };
 
             if (!recipe.recipe.Is<Mechanics>()) {
-                entity.recipe = recipe.recipe.target.name;
+                entity.recipe = recipe.recipe!.target.name;
                 entity.recipe_quality = recipe.recipe.quality.name;
             }
 

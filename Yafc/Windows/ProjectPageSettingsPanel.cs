@@ -166,7 +166,7 @@ public class ProjectPageSettingsPanel : PseudoScreen {
         public IEnumerable<ExportMaterial> Outputs { get; }
 
         public ExportRecipe(RecipeRow row) {
-            Recipe = row.recipe.QualityName();
+            Recipe = row.recipe!.QualityName();
             Building = ObjectWithQuality.Get(row.entity);
             BuildingCount = row.buildingCount;
             Fuel = new ExportMaterial(row.fuel?.QualityName() ?? LSs.ExportNoFuelSelected, row.FuelInformation.Amount);

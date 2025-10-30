@@ -143,9 +143,8 @@ public sealed partial class ProductionTable : ProjectPageContents, IComparer<Pro
                 }
                 unlinkedProduction.UnionWith(nestedProduction);
             }
-            else {
+            else if (recipe.recipe != null) {
                 // The header recipe for this table, and all recipes that are not part of a nested table.
-                recipe.parameters = RecipeParameters.CalculateParameters(recipe);
                 allRecipes.Add(new GenuineRecipe(recipe, extraLinks));
 
                 if (recipe.recipe.Is<Technology>()) {
@@ -688,7 +687,9 @@ match:
     /// <returns><see langword="true"/> if the link should be preserved, or <see langword="false"/> if it is ok to delete the link.</returns>
     private bool HasDisabledRecipeReferencing(IObjectWithQuality<Goods> goods)
         => GetAllRecipes().Any(row => !row.hierarchyEnabled
-        && (row.fuel == goods || row.recipe.target.ingredients.Any(i => i.goods == goods) || row.recipe.target.products.Any(p => p.goods == goods)));
+        && (row.fuel == goods
+        || (row.recipe?.target.ingredients.Any(i => i.goods == goods.target) ?? false)
+        || (row.recipe?.target.products.Any(p => p.goods == goods.target) ?? false)));
 
     private bool CheckBuiltCountExceeded() {
         bool builtCountExceeded = false;
@@ -826,7 +827,7 @@ match:
         if (owner is RecipeRow { recipe.target: RecipeOrTechnology recipe } && recipe == obj) {
             return true;
         }
-        return recipes.Any(r => r.recipe.target == obj);
+        return recipes.Any(r => r.recipe?.target == obj);
     }
 
     /// <summary>
@@ -838,7 +839,7 @@ match:
     /// Returns <see langword="true"/> if the specified recipe appears at any quality anywhere on this table's <see cref="ProjectPage"/>.
     /// </summary>
     /// <remarks>This is most commonly used for deciding whether to draw a yellow checkmark.</remarks>
-    public bool ContainsAnywhere(RecipeOrTechnology obj) => rootTable.GetAllRecipes().Any(r => r.recipe.target == obj);
+    public bool ContainsAnywhere(RecipeOrTechnology obj) => rootTable.GetAllRecipes().Any(r => r.recipe?.target == obj);
 
     public bool CreateLink(IObjectWithQuality<Goods> goods) {
         if (linkMap.GetValueOrDefault(goods) is ProductionLink || !goods.target.isLinkable) {

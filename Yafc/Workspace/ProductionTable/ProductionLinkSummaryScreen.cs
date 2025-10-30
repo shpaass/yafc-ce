@@ -120,7 +120,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         return table as ProductionTable;
     }
 
-    private bool isNotRelatedToCurrentLink(RecipeRow? row) => (!row.Ingredients.Any(e => e.Goods == link.goods)
+    private bool isNotRelatedToCurrentLink(RecipeRow row) => (!row.Ingredients.Any(e => e.Goods == link.goods)
                         && !row.Products.Any(e => e.Goods == link.goods)
                         && !(row.fuel is not null && row.fuel == link.goods));
     private bool isPartOfCurrentLink(RecipeRow row) => link.capturedRecipes.Any(e => e.RecipeRow == row);

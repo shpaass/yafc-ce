@@ -121,7 +121,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
             gui.spacing = 0.5f;
             switch (gui.BuildFactorioObjectButton(recipe.recipe, ButtonDisplayStyle.ProductionTableUnscaled)) {
-                case Click.Left:
+                case Click.Left when recipe.recipe != null:
                     gui.ShowDropDown(delegate (ImGui imgui) {
                         DrawRecipeTagSelect(imgui, recipe);
 
@@ -182,7 +182,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                 gui.textColor = recipe.hierarchyEnabled ? SchemeColor.BackgroundText : SchemeColor.BackgroundTextFaint;
             }
 
-            gui.BuildText(recipe.recipe.target.locName, TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(recipe.recipe?.target.locName, TextBlockDisplayStyle.WrappedText);
 
             void unpackNestedTable() {
                 var evacuate = recipe.subgroup.recipes;
@@ -279,7 +279,6 @@ goodsHaveNoProduction:;
                         r => table.AddRecipe(r, DefaultVariantOrdering));
                 }
             }
-            if (gui.BuildButton("Add empty table")) { }
         }
 
         private void ExportIo(float multiplier) {
@@ -310,7 +309,7 @@ goodsHaveNoProduction:;
 
     private class EntityColumn(ProductionTableView view) : ProductionTableDataColumn(view, LSs.ProductionTableHeaderEntity, 8f) {
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
-            if (recipe.isOverviewMode) {
+            if (recipe.isOverviewMode || recipe.recipe is null) {
                 return;
             }
 
@@ -343,7 +342,7 @@ goodsHaveNoProduction:;
                 }
             }
 
-            if (recipe.recipe.target.crafters.Length == 0) {
+            if (recipe.recipe?.target.crafters.Length is null or 0) {
                 // ignore all clicks
             }
             else if (click == Click.Left) {
@@ -473,7 +472,7 @@ goodsHaveNoProduction:;
             }
 
             gui.ShowDropDown(gui => {
-                EntityCrafter? favoriteCrafter = recipe.recipe.target.crafters.AutoSelect(DataUtils.FavoriteCrafter);
+                EntityCrafter? favoriteCrafter = recipe.recipe!.target.crafters.AutoSelect(DataUtils.FavoriteCrafter);
                 if (favoriteCrafter == recipe.entity?.target) { favoriteCrafter = null; }
                 bool willResetFixed = favoriteCrafter == null, willResetBuilt = willResetFixed && recipe.fixedBuildings == 0;
 
@@ -597,7 +596,7 @@ goodsHaveNoProduction:;
                     DataUtils.FavoriteCrafter.AddToFavorite(set, 10);
 
                     foreach (var recipe in view.GetRecipesRecursive()) {
-                        if (recipe.recipe.target.crafters.Contains(set)) {
+                        if (recipe.recipe?.target.crafters.Contains(set) ?? false) {
                             _ = recipe.RecordUndo();
                             recipe.entity = set.With(recipe.entity?.quality ?? Quality.Normal);
 
@@ -651,7 +650,7 @@ goodsHaveNoProduction:;
             if (recipe.isOverviewMode) {
                 view.BuildTableIngredients(gui, recipe.subgroup, recipe.owner, ref grid);
             }
-            else {
+            else if (recipe.recipe != null) {
                 foreach (var (goods, amount, link, variants) in recipe.Ingredients) {
                     grid.Next();
                     view.BuildGoodsIcon(gui, goods, link, amount, ProductDropdownType.Ingredient, recipe, recipe.linkRoot, HintLocations.OnProducingRecipes, variants);
@@ -672,7 +671,7 @@ goodsHaveNoProduction:;
             if (recipe.isOverviewMode) {
                 view.BuildTableProducts(gui, recipe.subgroup, recipe.owner, ref grid, false);
             }
-            else {
+            else if (recipe.recipe != null) {
                 foreach (var (goods, amount, link, percentSpoiled) in recipe.Products) {
                     grid.Next();
                     if (recipe.recipe.target is Recipe { preserveProducts: true }) {
@@ -726,7 +725,7 @@ goodsHaveNoProduction:;
         }
 
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
-            if (recipe.isOverviewMode) {
+            if (recipe.isOverviewMode || recipe.recipe is null) {
                 return;
             }
 
@@ -985,11 +984,11 @@ goodsHaveNoProduction:;
                             recipe!.RecordUndo().ChangeVariant(goods.target, variant);
 
                             if (recipe!.fixedIngredient == goods) {
-                                // variants are always fluids, so this could also be .With(Quality.Normal).
-                                recipe.fixedIngredient = variant.With(recipe.recipe.quality);
+                                // variants are always fluids, so all recipes take normal quality.
+                                recipe.fixedIngredient = variant.With(Quality.Normal);
                             }
 
-                            goods = variant.With(recipe.recipe.quality);
+                            goods = variant.With(Quality.Normal);
                             comparer = DataUtils.GetRecipeComparerFor(goods.target);
                             if (recipe.FindLink(goods, out iLink) && iLink.flags.HasFlag(ProductionLink.Flags.HasProduction)) {
                                 _ = gui.CloseDropdown();
@@ -1541,7 +1540,7 @@ goodsHaveNoProduction:;
         }
 
         foreach (var row in contents.recipes) {
-            if (row.fixedBuildings != 0 && row.entity != null) {
+            if (row.recipe != null && row.fixedBuildings != 0 && row.entity != null) {
                 using (gui.EnterRow()) {
                     gui.BuildFactorioObjectIcon(row.recipe);
                     using (gui.EnterGroup(default, RectAllocator.LeftAlign, spacing: 0)) {

@@ -42,8 +42,9 @@ public partial class ProductionTable {
         public RecipeLinks links => row.links;
         public IEnumerable<SolverIngredient> IngredientsForSolver => row.IngredientsForSolver;
         public IEnumerable<SolverProduct> ProductsForSolver => row.ProductsForSolver;
-        public string SolverName => row.recipe.QualityName();
-        public double BaseCost => (row.recipe.target as Recipe)?.RecipeBaseCost() ?? 0;
+        // null-forgiving: GenuineRecipes aren't constructed from non-recipe rows.
+        public string SolverName => row.recipe!.QualityName();
+        public double BaseCost => (row.recipe!.target as Recipe)?.RecipeBaseCost() ?? 0;
 
         RecipeRow? ISolverRow.RecipeRow => row;
     }

@@ -112,6 +112,8 @@ public class ModuleTemplate : ModelObject<ModelObject> {
     }
 
     internal void GetModulesInfo(RecipeRow row, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used, ModuleFillerParameters? filler) {
+        if (row.recipe is null) { return; }
+
         List<(IObjectWithQuality<Module> module, int count, bool beacon)> buffer = [];
         int beaconedModules = 0;
         IObjectWithQuality<Module>? nonBeacon = null;
@@ -308,12 +310,12 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     private IObjectWithQuality<Goods>? _fixedProduct;
     private ModuleTemplate? _modules;
 
-    public IObjectWithQuality<RecipeOrTechnology> recipe { get; }
+    public IObjectWithQuality<RecipeOrTechnology>? recipe { get; }
     // Variable parameters
     public IObjectWithQuality<EntityCrafter>? entity {
         get => _entity;
         set {
-            if (_entity == value) {
+            if (_entity == value || recipe is null) {
                 // Nothing to do
                 return;
             }
@@ -412,7 +414,7 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
             if (value == null) {
                 _fixedProduct = null;
             }
-            else {
+            else if (recipe != null) {
                 // This takes advantage of the fact that ObjectWithQuality automatically downgrades high-quality fluids (etc.) to normal.
                 var products = recipe.target.products.AsEnumerable().Select(p => p.goods.With(recipe.quality));
                 if (value != Database.itemOutput && products.All(p => p != value)) {
@@ -463,7 +465,7 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     public ModuleTemplate? modules {
         get => _modules;
         set {
-            if (SerializationMap.IsDeserializing || fixedBuildings == 0 || _modules == value) {
+            if (SerializationMap.IsDeserializing || fixedBuildings == 0 || _modules == value || recipe is null) {
                 _modules = value;
             }
             else {
@@ -481,7 +483,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     public RecipeRowIngredient FuelInformation => new(fuel, fuelUsagePerSecond, links.fuel, (fuel?.target as Fluid)?.variants?.ToArray());
     public IEnumerable<RecipeRowIngredient> Ingredients {
         get {
-            if (hierarchyEnabled) {
+            if (recipe is null) {
+                return [];
+            }
+            else if (hierarchyEnabled) {
                 return BuildIngredients(false).Select(RecipeRowIngredient.FromSolver);
             }
             else {
@@ -493,6 +498,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     internal IEnumerable<SolverIngredient> IngredientsForSolver => BuildIngredients(true);
 
     private IEnumerable<SolverIngredient> BuildIngredients(bool forSolver) {
+        if (recipe is null) {
+            yield break;
+        }
+
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the ingredients for one recipe, to produce recipesPerSecond.
         for (int i = 0; i < recipe.target.ingredients.Length; i++) {
             Ingredient ingredient = recipe.target.ingredients[i];
@@ -503,7 +512,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
 
     public IEnumerable<RecipeRowProduct> Products {
         get {
-            if (hierarchyEnabled) {
+            if (recipe is null) {
+                return [];
+            }
+            else if (hierarchyEnabled) {
                 return BuildProducts(false).Select(RecipeRowProduct.FromSolver);
             }
             else {
@@ -515,6 +527,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     internal IEnumerable<SolverProduct> ProductsForSolver => BuildProducts(true);
 
     private IEnumerable<SolverProduct> BuildProducts(bool forSolver) {
+        if (recipe is null) {
+            yield break;
+        }
+
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the products for one recipe, to produce recipesPerSecond.
         IObjectWithQuality<Item>? spentFuel = fuel.FuelResult();
         bool handledFuel = spentFuel == null || forSolver; // If we're running the solver or there's no spent fuel, it's already handled.
@@ -626,11 +642,11 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     public float buildingCount => (float)(recipesPerSecond * parameters.recipeTime);
     public bool visible { get; internal set; } = true;
 
-    public RecipeRow(ProductionTable owner, IObjectWithQuality<RecipeOrTechnology> recipe) : base(owner) {
-        this.recipe = recipe ?? throw new ArgumentNullException(nameof(recipe), LSs.LoadErrorRecipeDoesNotExist);
+    public RecipeRow(ProductionTable owner, IObjectWithQuality<RecipeOrTechnology>? recipe = null) : base(owner) {
+        this.recipe = recipe;
 
         links = new RecipeLinks {
-            ingredients = new ProductionLink[recipe.target.ingredients.Length],
+            ingredients = recipe is null ? [] : new ProductionLink[recipe.target.ingredients.Length],
         };
     }
 
@@ -686,7 +702,7 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     /// <returns>If not <see langword="null"/>, an <see cref="Action"/> to perform after the change has completed
     /// that will update <see cref="fixedBuildings"/> to account for the new modules.</returns>
     internal Action? ModuleFillerParametersChanging() {
-        if (fixedFuel || fixedIngredient != null || fixedProduct != null) {
+        if ((fixedFuel || fixedIngredient != null || fixedProduct != null) && recipe is not null) {
             return new ChangeModulesOrEntity(this).Dispose;
         }
         return null;
@@ -701,6 +717,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
         private readonly RecipeParameters oldParameters;
 
         public ChangeModulesOrEntity(RecipeRow row) {
+            if (row.recipe is null) {
+                throw new ArgumentException("Cannot change modules or entity for a non-recipe row.", nameof(row));
+            }
+
             this.row = row;
             _ = row.RecordUndo(); // Unnecessary (but not harmful) when called by set_modules or set_entity. Required when called by ModuleFillerParametersChanging.
 
@@ -731,12 +751,13 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
                 row.fixedBuildings *= row.parameters.recipeTime / oldParameters.recipeTime; // step 3, for fixed ingredient consumption
             }
             else if (row.fixedProduct != null) {
+                // null-forgiving: The constructor throws if row.recipe was null.
                 if (row.fixedProduct == Database.itemOutput) {
-                    float oldAmount = row.recipe.target.products.Where(p => p.goods is Item).Sum(p => p.GetAmountPerRecipe(oldParameters.productivity)) / oldParameters.recipeTime;
+                    float oldAmount = row.recipe!.target.products.Where(p => p.goods is Item).Sum(p => p.GetAmountPerRecipe(oldParameters.productivity)) / oldParameters.recipeTime;
                     float newAmount = row.recipe.target.products.Where(p => p.goods is Item).Sum(p => p.GetAmountPerRecipe(row.parameters.productivity)) / row.parameters.recipeTime;
                     row.fixedBuildings *= oldAmount / newAmount; // step 3, for fixed combined production amount
                 }
-                else if (row.recipe.target.products.SingleOrDefault(p => p.goods == row.fixedProduct.target, false) is not Product product) {
+                else if (row.recipe!.target.products.SingleOrDefault(p => p.goods == row.fixedProduct.target, false) is not Product product) {
                     row.fixedBuildings = 0; // We couldn't find the Product corresponding to fixedProduct. Just clear the fixed amount.
                 }
                 else {
@@ -768,6 +789,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     }
 
     public float DetermineFlow(IObjectWithQuality<Goods> goods) {
+        if (recipe is null) {
+            throw new InvalidOperationException("Cannot determine flow when no recipe is selected.");
+        }
+
         float production = getProduction(goods);
         float consumption = getConsumption(goods);
         float fuelUsage = fuel == goods ? FuelInformation.Amount : 0;

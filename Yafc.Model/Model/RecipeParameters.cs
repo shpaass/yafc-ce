@@ -58,12 +58,15 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
         ModuleEffects activeEffects = default;
         UsedModule modules = default;
 
-        if (entity == null || recipe == null) {
+        if (recipe == null) {
+            recipeTime = 1;
+        }
+        else if (entity == null) {
             warningFlags |= WarningFlags.EntityNotSpecified;
-            recipeTime = row.recipe.target.time;
+            recipeTime = recipe.target.time;
         }
         else {
-            recipeTime = row.recipe.target.time / entity.GetCraftingSpeed();
+            recipeTime = recipe.target.time / entity.GetCraftingSpeed();
             productivity = entity.target.effectReceiver.baseEffect.productivity;
             speed = entity.target.effectReceiver.baseEffect.speed;
             consumption = entity.target.effectReceiver.baseEffect.consumption;
