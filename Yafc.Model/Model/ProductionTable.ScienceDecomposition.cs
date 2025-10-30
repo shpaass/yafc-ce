@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
 namespace Yafc.Model;
@@ -13,8 +12,6 @@ public partial class ProductionTable {
     /// <param name="productLink">The (genuine) link for the output pack.</param>
     /// <param name="ingredientLink">The (implicit) link for the input pack.</param>
     private class ScienceDecomposition(Goods pack, Quality quality, IProductionLink productLink, ImplicitLink ingredientLink) : IRecipeRow {
-        public IObjectWithQuality<EntityCrafter>? entity => null;
-
         public IObjectWithQuality<Goods>? fuel => null;
 
         /// <summary>
@@ -27,21 +24,14 @@ public partial class ProductionTable {
         /// <inheritdoc/>
         public IEnumerable<SolverProduct> ProductsForSolver => [new SolverProduct(pack.With(Quality.Normal), quality.level + 1, productLink, 0, null)];
 
-        public double recipesPerSecond { get; set; }
-        public RecipeParameters parameters { get; set; } = RecipeParameters.Empty;
+        public RecipeParameters parameters { get; } = RecipeParameters.Empty;
+        public double recipesPerSecond { set { } }
         public RecipeLinks links => new() { ingredients = [null] };
-
-        /// <summary>
-        /// Always 1; the solver needs something non-zero to calculate <see cref="fixedBuildings"/>.
-        /// </summary>
-        public float RecipeTime => 1;
 
         /// <inheritdoc/>
         public string SolverName => $"Convert {pack.name} from {quality.name}";
 
         public double BaseCost => 0;
-
-        public void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used) => throw new NotImplementedException();
 
         public bool FindLink(IObjectWithQuality<Goods> goods, [MaybeNullWhen(false)] out IProductionLink link) {
             if (ingredientLink.goods == goods) {

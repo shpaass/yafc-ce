@@ -25,7 +25,7 @@ public partial class ProductionTable {
 
         public HashSet<IRecipeRow> capturedRecipes { get; } = [];
         public int solverIndex { get; set; }
-        public float linkFlow { get; set; }
+        public float linkFlow { set { } }
         public float notMatchedFlow { get; set; }
 
         public ProductionTable owner { get; } = owner;

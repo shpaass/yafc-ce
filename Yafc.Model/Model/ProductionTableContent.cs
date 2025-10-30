@@ -258,12 +258,11 @@ public interface IGroupedElement<TGroup> {
 /// </summary>
 public interface IRecipeRow {
     // Variable (user-configured, for RecipeRow) properties
-    IObjectWithQuality<EntityCrafter>? entity { get; }
-    IObjectWithQuality<Goods>? fuel { get; }
+    internal IObjectWithQuality<Goods>? fuel { get; }
     /// <summary>
     /// If not zero, the fixed building count to be used by the solver.
     /// </summary>
-    float fixedBuildings { get; }
+    internal float fixedBuildings { get; }
 
     // Fixed properties
     /// <summary>
@@ -281,7 +280,6 @@ public interface IRecipeRow {
     /// A name the solver can use to identify this row
     /// </summary>
     internal string SolverName { get; }
-    internal float RecipeTime { get; }
     internal double BaseCost { get; }
     /// <summary>
     /// The <see cref="Model.RecipeRow"/> that corresponds to this object, if applicable.
@@ -289,8 +287,8 @@ public interface IRecipeRow {
     RecipeRow? RecipeRow { get; }
 
     // Properties computed (directly or indirectly) by ProductionTable.Solve
-    internal RecipeParameters parameters { get; set; }
-    internal double recipesPerSecond { get; set; }
+    internal RecipeParameters parameters { get; }
+    internal double recipesPerSecond { set; }
     /// <summary>
     /// Storage for the <see cref="ProductionLink"/>s that affect each of this row's ingredients and products (including fuel)
     /// </summary>
@@ -298,7 +296,6 @@ public interface IRecipeRow {
 
     // Helper methods used by ProductionTable.Solve
     internal bool FindLink(IObjectWithQuality<Goods> goods, [MaybeNullWhen(false)] out IProductionLink link);
-    internal void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used);
 }
 
 /// <summary>
@@ -824,7 +821,7 @@ public interface IProductionLink {
     IObjectWithQuality<Goods> goods { get; }
     float amount { get; }
     internal int solverIndex { get; set; }
-    ProductionLink.Flags flags { get; set; }
+    ProductionLink.Flags flags { get; internal set; }
     /// <summary>
     /// The recipes belonging to this production link
     /// </summary>
@@ -832,7 +829,7 @@ public interface IProductionLink {
     internal float notMatchedFlow { get; set; }
     ProductionTable owner { get; }
     IEnumerable<string> LinkWarnings { get; }
-    internal float linkFlow { get; set; }
+    internal float linkFlow { set; }
 
     /// <summary>
     /// The link that should be displayed when the user requests a link summary.
@@ -882,14 +879,13 @@ public class ProductionLink(ProductionTable group, IObjectWithQuality<Goods> goo
     public float notMatchedFlow { get; internal set; }
     /// <inheritdoc/>
     public HashSet<IRecipeRow> capturedRecipes { get; } = [];
-    internal int solverIndex;
 
-    // To avoid leaking these variables/methods (or just the setter, for recipesPerSecond) into public context,
-    // these explicit interface implementations connect to internal members, instead of using implicit implementation via public members
+    // To avoid leaking these properties (or setters) into public context, these explicit interface implementations connect to internal members,
+    // instead of using implicit implementation via public members
     Flags IProductionLink.flags { get => flags; set => flags = value; }
     float IProductionLink.notMatchedFlow { get => notMatchedFlow; set => notMatchedFlow = value; }
-    float IProductionLink.linkFlow { get => linkFlow; set => linkFlow = value; }
-    int IProductionLink.solverIndex { get => solverIndex; set => solverIndex = value; }
+    float IProductionLink.linkFlow { set => linkFlow = value; }
+    int IProductionLink.solverIndex { get; set; }
     ProductionLink IProductionLink.DisplayLink => this;
 
     public IEnumerable<string> LinkWarnings {
