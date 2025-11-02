@@ -21,6 +21,8 @@
 ----------------------------------------------------------------------------------------------------------------------
 Version:
 Date:
+    Features:
+        - Add icons to Page DropDown items
     Fixes:
         - Support craft-fluid and scripted research triggers.
         - Consider quality restrictions when analyzing craft-item or build-item technology triggers.
