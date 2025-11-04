@@ -135,7 +135,7 @@ public static class ImmediateWidgets {
 
         var evt = gui.BuildButton(rect, bgColor, overColor, button: 0, drawTransparent: drawTransparent);
 
-        if (evt == ButtonEvent.MouseOver && obj != null) {
+        if (evt == ButtonEvent.MouseOver && obj != null && !tooltipOptions.Hide) {
             MainScreen.Instance.ShowTooltip(obj, gui, rect, tooltipOptions);
         }
         else if (evt == ButtonEvent.Click) {

@@ -311,6 +311,9 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
     private ModuleTemplate? _modules;
 
     public IObjectWithQuality<RecipeOrTechnology>? recipe { get; }
+    public FactorioObject? icon { get; set; }
+    public string? description { get; set; }
+
     // Variable parameters
     public IObjectWithQuality<EntityCrafter>? entity {
         get => _entity;
