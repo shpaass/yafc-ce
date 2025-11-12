@@ -94,7 +94,7 @@ public sealed partial class ProductionTable : ProjectPageContents, IComparer<Pro
     /// <returns>A tuple containing (1) the normal science packs links for science recipes at this or a deeper level, and (2) the quality science
     /// packs produced at this or a deeper level, but not linked.</returns>
     private (Dictionary<Goods, IProductionLink> linkedConsumption, HashSet<IObjectWithQuality<Goods>> unlinkedProduction)
-        Setup(List<IRecipeRow> allRecipes, List<IProductionLink> allLinks,
+        Setup(List<ISolverRow> allRecipes, List<IProductionLink> allLinks,
             Dictionary<(ProductionTable, IObjectWithQuality<Goods>), IProductionLink> extraLinks) {
 
         containsDesiredProducts = false;
@@ -143,9 +143,8 @@ public sealed partial class ProductionTable : ProjectPageContents, IComparer<Pro
                 }
                 unlinkedProduction.UnionWith(nestedProduction);
             }
-            else {
+            else if (recipe.recipe != null) {
                 // The header recipe for this table, and all recipes that are not part of a nested table.
-                recipe.parameters = RecipeParameters.CalculateParameters(recipe);
                 allRecipes.Add(new GenuineRecipe(recipe, extraLinks));
 
                 if (recipe.recipe.Is<Technology>()) {
@@ -427,8 +426,8 @@ match:
             }
 
             HashSet<RecipeRow> recipes = [.. GetAllRecipes(), parent];
-            foreach (IRecipeRow iRec in link.capturedRecipes) {
-                if (iRec is not RecipeRow recipe || (!recipes.Contains(recipe) && recipe.DetermineFlow(flow.goods) != 0)) {
+            foreach (ISolverRow row in link.capturedRecipes) {
+                if (row.RecipeRow is not RecipeRow recipe || (!recipes.Contains(recipe) && recipe.DetermineFlow(flow.goods) != 0)) {
                     return true;
                 }
             }
@@ -440,12 +439,10 @@ match:
     /// Add/update the variable value for the constraint with the given amount, and store the recipe to the production link.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void AddLinkCoefficient(Constraint cst, Variable var, IProductionLink link, IRecipeRow recipe, float amount) {
+    private static void AddLinkCoefficient(Constraint cst, Variable var, IProductionLink link, ISolverRow recipe, float amount) {
         // GetCoefficient will return 0 when the variable is not available in the constraint
         amount += (float)cst.GetCoefficient(var);
-        // To avoid false negatives when testing "iRecipeRow is RecipeRow" or otherwise inspecting the content of capturedRecipes,
-        // store the underlying RecipeRow if available.
-        _ = link.capturedRecipes.Add(recipe.RecipeRow ?? recipe);
+        _ = link.capturedRecipes.Add(recipe);
         cst.SetCoefficient(var, amount);
     }
 
@@ -453,7 +450,7 @@ match:
         using var productionTableSolver = DataUtils.CreateSolver();
         var objective = productionTableSolver.Objective();
         objective.SetMinimization();
-        List<IRecipeRow> allRecipes = [];
+        List<ISolverRow> allRecipes = [];
         List<IProductionLink> allLinks = [];
         Setup(allRecipes, allLinks, []);
         Variable[] vars = new Variable[allRecipes.Count];
@@ -690,7 +687,9 @@ match:
     /// <returns><see langword="true"/> if the link should be preserved, or <see langword="false"/> if it is ok to delete the link.</returns>
     private bool HasDisabledRecipeReferencing(IObjectWithQuality<Goods> goods)
         => GetAllRecipes().Any(row => !row.hierarchyEnabled
-        && (row.fuel == goods || row.recipe.target.ingredients.Any(i => i.goods == goods) || row.recipe.target.products.Any(p => p.goods == goods)));
+        && (row.fuel == goods
+        || (row.recipe?.target.ingredients.Any(i => i.goods == goods.target) ?? false)
+        || (row.recipe?.target.products.Any(p => p.goods == goods.target) ?? false)));
 
     private bool CheckBuiltCountExceeded() {
         bool builtCountExceeded = false;
@@ -713,7 +712,7 @@ match:
         return builtCountExceeded;
     }
 
-    private static void FindAllRecipeLinks(IRecipeRow recipe, List<IProductionLink> sources, List<IProductionLink> targets) {
+    private static void FindAllRecipeLinks(ISolverRow recipe, List<IProductionLink> sources, List<IProductionLink> targets) {
         sources.Clear();
         targets.Clear();
 
@@ -738,7 +737,7 @@ match:
         }
     }
 
-    private static (List<IProductionLink> merges, List<IProductionLink> splits) GetInfeasibilityCandidates(List<IRecipeRow> recipes) {
+    private static (List<IProductionLink> merges, List<IProductionLink> splits) GetInfeasibilityCandidates(List<ISolverRow> recipes) {
         Graph<IProductionLink> graph = new Graph<IProductionLink>();
         List<IProductionLink> sources = [];
         List<IProductionLink> targets = [];
@@ -828,7 +827,7 @@ match:
         if (owner is RecipeRow { recipe.target: RecipeOrTechnology recipe } && recipe == obj) {
             return true;
         }
-        return recipes.Any(r => r.recipe.target == obj);
+        return recipes.Any(r => r.recipe?.target == obj);
     }
 
     /// <summary>
@@ -840,7 +839,7 @@ match:
     /// Returns <see langword="true"/> if the specified recipe appears at any quality anywhere on this table's <see cref="ProjectPage"/>.
     /// </summary>
     /// <remarks>This is most commonly used for deciding whether to draw a yellow checkmark.</remarks>
-    public bool ContainsAnywhere(RecipeOrTechnology obj) => rootTable.GetAllRecipes().Any(r => r.recipe.target == obj);
+    public bool ContainsAnywhere(RecipeOrTechnology obj) => rootTable.GetAllRecipes().Any(r => r.recipe?.target == obj);
 
     public bool CreateLink(IObjectWithQuality<Goods> goods) {
         if (linkMap.GetValueOrDefault(goods) is ProductionLink || !goods.target.isLinkable) {

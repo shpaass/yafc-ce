@@ -27,13 +27,13 @@ public static class QualityExtensions {
     /// </summary>
     public static string QualityName(this IObjectWithQuality<FactorioObject> obj) => obj.target.name + "@" + obj.quality.name;
 
-    public static IObjectWithQuality<Goods>? mainProduct(this IObjectWithQuality<RecipeOrTechnology> recipe) =>
-        recipe.target.mainProduct.With(recipe.quality);
+    public static IObjectWithQuality<Goods>? mainProduct(this IObjectWithQuality<RecipeOrTechnology>? recipe) =>
+        recipe?.target.mainProduct.With(recipe.quality);
 
-    public static bool CanAcceptModule(this IObjectWithQuality<RecipeOrTechnology> recipe, Module module) =>
-        recipe.target.CanAcceptModule(module);
-    public static bool CanAcceptModule(this IObjectWithQuality<RecipeOrTechnology> recipe, IObjectWithQuality<Module> module) =>
-        recipe.target.CanAcceptModule(module.target);
+    public static bool CanAcceptModule(this IObjectWithQuality<RecipeOrTechnology>? recipe, Module module) =>
+        recipe?.target.CanAcceptModule(module) ?? false;
+    public static bool CanAcceptModule(this IObjectWithQuality<RecipeOrTechnology>? recipe, IObjectWithQuality<Module> module) =>
+        recipe?.target.CanAcceptModule(module.target) ?? false;
 
     public static IObjectWithQuality<Item>? FuelResult(this IObjectWithQuality<Goods>? goods) =>
         (goods?.target as Item)?.fuelResult.With(goods!.quality); // null-forgiving: With is not called if goods is null.
@@ -77,5 +77,5 @@ public static class QualityExtensions {
     /// <typeparam name="T">The desired type parameter for the <see cref="IObjectWithQuality{T}"/> conversion to be tested.</typeparam>
     /// <param name="target">The input <see cref="IObjectWithQuality{T}"/> to be tested.</param>
     /// <returns><see langword="true"/> if the conversion is possible, or <see langword="false"/> if it was not.</returns>
-    public static bool Is<T>(this IObjectWithQuality<FactorioObject>? target) where T : FactorioObject => target?.target is T;
+    public static bool Is<T>([NotNullWhen(true)] this IObjectWithQuality<FactorioObject>? target) where T : FactorioObject => target?.target is T;
 }

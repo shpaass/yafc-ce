@@ -7,7 +7,11 @@ public readonly struct SearchQuery(string query) {
     public readonly string[] tokens = string.IsNullOrWhiteSpace(query) ? [] : query.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     public readonly bool empty => tokens == null || tokens.Length == 0;
 
-    public bool Match(string text) {
+    public bool Match(string? text) {
+        if (text == null) {
+            return false;
+        }
+
         if (empty) {
             return true;
         }

@@ -125,6 +125,8 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
     private void AutoFillModules((float recipeTime, float fuelUsagePerSecondPerBuilding) partialParams, RecipeRow row,
         EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used) {
 
+        if (row.recipe == null) { return; }
+
         Quality quality = Quality.MaxAccessible;
 
         IObjectWithQuality<RecipeOrTechnology> recipe = row.recipe;
@@ -194,6 +196,8 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
     }
 
     internal void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) partialParams, RecipeRow row, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used) {
+        if (row.recipe == null) { return; }
+
         AutoFillBeacons(row.recipe.target, entity, ref effects, ref used);
         AutoFillModules(partialParams, row, entity, ref effects, ref used);
     }

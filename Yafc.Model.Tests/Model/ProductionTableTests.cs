@@ -111,4 +111,27 @@ public class ProductionTableTests {
 
     public static TheoryData<Type> ProjectPageContentTypes => [.. AppDomain.CurrentDomain.GetAssemblies().SelectMany(a => a.GetTypes())
         .Where(t => typeof(ProjectPageContents).IsAssignableFrom(t) && !t.IsAbstract)];
+
+    [Fact]
+    public void ProductionTableTest_CanLoadWithNullRecipe() {
+        Project project = LuaDependentTestHelper.GetProjectForLua("Yafc.Model.Tests.Model.ProductionTableContentTests.lua");
+
+        ProjectPage page = new(project, typeof(ProductionTable));
+        project.pages.Add(page);
+        ProductionTable table = (ProductionTable)page.content;
+        RecipeRow nullRecipe = new RecipeRow(table, null);
+        table.recipes.Add(nullRecipe);
+        nullRecipe.subgroup = new ProductionTable(nullRecipe);
+        nullRecipe.subgroup.AddRecipe(Database.recipes.all.Single(r => r.name == "recipe").With(Quality.Normal), DataUtils.DeterministicComparer);
+
+        ErrorCollector collector = new();
+        using MemoryStream stream = new();
+        project.Save(stream);
+        Project newProject = Project.Read(stream.ToArray(), collector);
+
+        Assert.Equal(ErrorSeverity.None, collector.severity);
+        Assert.Equal(project.pages.Select(s => s.guid), newProject.pages.Select(p => p.guid));
+        Assert.Equal(((ProductionTable)project.pages[0].content).GetAllRecipes().Select(r => r.recipe),
+            ((ProductionTable)newProject.pages[0].content).GetAllRecipes().Select(r => r.recipe));
+    }
 }

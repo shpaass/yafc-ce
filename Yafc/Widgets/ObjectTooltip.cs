@@ -741,6 +741,10 @@ public struct ObjectTooltipOptions {
     /// Gets or sets a value that, if not <see langword="null"/>, will be called after drawing the spoilage information.
     /// </summary>
     public GuiBuilder ExtraSpoilInformation { get; set; }
+    /// <summary>
+    /// If <see langword="true"/>, a tooltip will not be shown for this object.
+    /// </summary>
+    public bool Hide { get; set; }
 
     // Reduce boilerplate by permitting unambiguous and relatively obvious implicit conversions.
     public static implicit operator ObjectTooltipOptions(HintLocations hintLocations) => new() { HintLocations = hintLocations };

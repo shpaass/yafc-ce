@@ -11,7 +11,7 @@ public partial class ProductionTable {
     /// <param name="extraLinks">The <see cref="Dictionary{TKey, TValue}"/> that will eventually the contain extra links this recipe needs to
     /// consider. This may be incomplete at the time of construction, provided it is complete before the first call to <see cref="FindLink"/>.
     /// </param>
-    private class GenuineRecipe(RecipeRow row, Dictionary<(ProductionTable, IObjectWithQuality<Goods>), IProductionLink> extraLinks) : IRecipeRow {
+    private class GenuineRecipe(RecipeRow row, Dictionary<(ProductionTable, IObjectWithQuality<Goods>), IProductionLink> extraLinks) : ISolverRow {
         /// <summary>
         /// Check both <see cref="row"/> and <see cref="extraLinks"/> for a link corresponding to <paramref name="goods"/>.
         /// </summary>
@@ -35,21 +35,17 @@ public partial class ProductionTable {
         }
 
         // Pass all remaining calls through to the underlying RecipeRow.
-        public IObjectWithQuality<EntityCrafter>? entity => row.entity;
         public IObjectWithQuality<Goods>? fuel => row.fuel;
         public float fixedBuildings => row.fixedBuildings;
-        public double recipesPerSecond { get => row.recipesPerSecond; set => row.recipesPerSecond = value; }
-        public float RecipeTime => ((IRecipeRow)row).RecipeTime;
-        public RecipeParameters parameters { get => row.parameters; set => row.parameters = value; }
+        public RecipeParameters parameters => row.parameters;
+        public double recipesPerSecond { set => row.recipesPerSecond = value; }
         public RecipeLinks links => row.links;
-        public IEnumerable<SolverIngredient> IngredientsForSolver => ((IRecipeRow)row).IngredientsForSolver;
-        public IEnumerable<SolverProduct> ProductsForSolver => ((IRecipeRow)row).ProductsForSolver;
-        public string SolverName => ((IRecipeRow)row).SolverName;
-        public double BaseCost => ((IRecipeRow)row).BaseCost;
+        public IEnumerable<SolverIngredient> IngredientsForSolver => row.IngredientsForSolver;
+        public IEnumerable<SolverProduct> ProductsForSolver => row.ProductsForSolver;
+        // null-forgiving: GenuineRecipes aren't constructed from non-recipe rows.
+        public string SolverName => row.recipe!.QualityName();
+        public double BaseCost => (row.recipe!.target as Recipe)?.RecipeBaseCost() ?? 0;
 
-        public void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used)
-            => row.GetModulesInfo(recipeParams, entity, ref effects, ref used);
-
-        RecipeRow? IRecipeRow.RecipeRow => row;
+        RecipeRow? ISolverRow.RecipeRow => row;
     }
 }

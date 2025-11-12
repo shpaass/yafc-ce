@@ -120,10 +120,17 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
     private class RecipeColumn(ProductionTableView view) : ProductionTableDataColumn(view, LSs.ProductionTableHeaderRecipe, 13f, 13f, 30f, widthStorage: nameof(Preferences.recipeColumnWidth)) {
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
             gui.spacing = 0.5f;
-            switch (gui.BuildFactorioObjectButton(recipe.recipe, ButtonDisplayStyle.ProductionTableUnscaled)) {
+            IFactorioObjectWrapper? display = (IFactorioObjectWrapper?)recipe.recipe ?? recipe.icon;
+            ObjectTooltipOptions tooltip = new() { Hide = recipe.recipe == null };
+
+            switch (gui.BuildFactorioObjectButton(display, ButtonDisplayStyle.ProductionTableUnscaled, tooltip)) {
                 case Click.Left:
                     gui.ShowDropDown(delegate (ImGui imgui) {
                         DrawRecipeTagSelect(imgui, recipe);
+
+                        if (recipe.recipe == null && imgui.BuildButton(LSs.EditPageProperties) && imgui.CloseDropdown()) {
+                            HeaderRowSettingsPanel.Show(recipe);
+                        }
 
                         if (recipe.subgroup == null && imgui.BuildButton(LSs.ProductionTableCreateNested) && imgui.CloseDropdown()) {
                             recipe.RecordUndo().subgroup = new ProductionTable(recipe);
@@ -134,7 +141,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                         }
 
                         if (recipe.subgroup != null) {
-                            BuildRecipeButton(imgui, recipe.subgroup);
+                            BuildRecipeButtons(imgui, recipe.subgroup);
                         }
 
                         if (recipe.subgroup != null && imgui.BuildButton(LSs.ProductionTableUnpackNested).WithTooltip(imgui, recipe.subgroup.expanded ? LSs.ProductionTableShortcutRightClick : LSs.ProductionTableShortcutExpandAndRightClick) && imgui.CloseDropdown()) {
@@ -145,7 +152,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                             view.BuildShoppingList(recipe);
                         }
 
-                        if (imgui.BuildCheckBox(LSs.ProductionTableShowTotalIo, recipe.showTotalIO, out bool newShowTotalIO)) {
+                        if (recipe.recipe != null && imgui.BuildCheckBox(LSs.ProductionTableShowTotalIo, recipe.showTotalIO, out bool newShowTotalIO)) {
                             recipe.RecordUndo().showTotalIO = newShowTotalIO;
                         }
 
@@ -153,7 +160,9 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                             recipe.RecordUndo().enabled = newEnabled;
                         }
 
-                        BuildFavorites(imgui, recipe.recipe.target, LSs.AddRecipeToFavorites);
+                        if (recipe.recipe != null) {
+                            BuildFavorites(imgui, recipe.recipe.target, LSs.AddRecipeToFavorites);
+                        }
 
                         if (recipe.subgroup != null && imgui.BuildRedButton(LSs.ProductionTableDeleteNested).WithTooltip(imgui, recipe.subgroup.expanded ? LSs.ProductionTableShortcutCollapseAndRightClick : LSs.ProductionTableShortcutRightClick) && imgui.CloseDropdown()) {
                             _ = recipe.owner.RecordUndo().recipes.Remove(recipe);
@@ -182,7 +191,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                 gui.textColor = recipe.hierarchyEnabled ? SchemeColor.BackgroundText : SchemeColor.BackgroundTextFaint;
             }
 
-            gui.BuildText(recipe.recipe.target.locName, TextBlockDisplayStyle.WrappedText);
+            gui.BuildText(recipe.recipe?.target.locName ?? recipe.description, recipe.recipe != null || recipe.isOverviewMode ? TextBlockDisplayStyle.WrappedText : TextBlockDisplayStyle.Default());
 
             void unpackNestedTable() {
                 var evacuate = recipe.subgroup.recipes;
@@ -209,7 +218,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
         }
 
         public override void BuildMenu(ImGui gui) {
-            BuildRecipeButton(gui, view.model);
+            BuildRecipeButtons(gui, view.model);
 
             gui.BuildText(LSs.ProductionTableExportToBlueprint, TextBlockDisplayStyle.WrappedText);
             using (gui.EnterRow()) {
@@ -263,10 +272,10 @@ goodsHaveNoProduction:;
         }
 
         /// <summary>
-        /// Build the "Add raw recipe" button and handle its clicks.
+        /// Build the "Add raw recipe" and "Add table header" buttons and handle their clicks.
         /// </summary>
         /// <param name="table">The table that will receive the new recipes or technologies, if any are selected</param>
-        private static void BuildRecipeButton(ImGui gui, ProductionTable table) {
+        private static void BuildRecipeButtons(ImGui gui, ProductionTable table) {
             if (gui.BuildButton(LSs.ProductionTableAddRawRecipe).WithTooltip(gui, LSs.ProductionTableAddTechnologyHint) && gui.CloseDropdown()) {
                 if (InputSystem.Instance.control) {
                     SelectMultiObjectPanel.Select(Database.technologies.all, new(LSs.ProductionTableAddTechnology, Multiple: true,
@@ -278,6 +287,17 @@ goodsHaveNoProduction:;
                         Checkmark: table.Contains, YellowMark: table.ContainsAnywhere, SelectedQuality: Quality.Normal),
                         r => table.AddRecipe(r, DefaultVariantOrdering));
                 }
+            }
+
+            if (gui.BuildButton(LSs.ProductionTableAddTableHeader) && gui.CloseDropdown()) {
+                HeaderRowSettingsPanel.Show(null, (description, icon) => {
+                    RecipeRow newRow = new(table, null) {
+                        description = description,
+                        icon = icon,
+                    };
+                    newRow.subgroup = new(newRow);
+                    table.RecordUndo().recipes.Add(newRow);
+                });
             }
         }
 
@@ -309,7 +329,7 @@ goodsHaveNoProduction:;
 
     private class EntityColumn(ProductionTableView view) : ProductionTableDataColumn(view, LSs.ProductionTableHeaderEntity, 8f) {
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
-            if (recipe.isOverviewMode) {
+            if (recipe.isOverviewMode || recipe.recipe is null) {
                 return;
             }
 
@@ -342,7 +362,7 @@ goodsHaveNoProduction:;
                 }
             }
 
-            if (recipe.recipe.target.crafters.Length == 0) {
+            if (recipe.recipe?.target.crafters.Length is null or 0) {
                 // ignore all clicks
             }
             else if (click == Click.Left) {
@@ -472,7 +492,7 @@ goodsHaveNoProduction:;
             }
 
             gui.ShowDropDown(gui => {
-                EntityCrafter? favoriteCrafter = recipe.recipe.target.crafters.AutoSelect(DataUtils.FavoriteCrafter);
+                EntityCrafter? favoriteCrafter = recipe.recipe!.target.crafters.AutoSelect(DataUtils.FavoriteCrafter);
                 if (favoriteCrafter == recipe.entity?.target) { favoriteCrafter = null; }
                 bool willResetFixed = favoriteCrafter == null, willResetBuilt = willResetFixed && recipe.fixedBuildings == 0;
 
@@ -596,7 +616,7 @@ goodsHaveNoProduction:;
                     DataUtils.FavoriteCrafter.AddToFavorite(set, 10);
 
                     foreach (var recipe in view.GetRecipesRecursive()) {
-                        if (recipe.recipe.target.crafters.Contains(set)) {
+                        if (recipe.recipe?.target.crafters.Contains(set) ?? false) {
                             _ = recipe.RecordUndo();
                             recipe.entity = set.With(recipe.entity?.quality ?? Quality.Normal);
 
@@ -650,7 +670,7 @@ goodsHaveNoProduction:;
             if (recipe.isOverviewMode) {
                 view.BuildTableIngredients(gui, recipe.subgroup, recipe.owner, ref grid);
             }
-            else {
+            else if (recipe.recipe != null) {
                 foreach (var (goods, amount, link, variants) in recipe.Ingredients) {
                     grid.Next();
                     view.BuildGoodsIcon(gui, goods, link, amount, ProductDropdownType.Ingredient, recipe, recipe.linkRoot, HintLocations.OnProducingRecipes, variants);
@@ -671,7 +691,7 @@ goodsHaveNoProduction:;
             if (recipe.isOverviewMode) {
                 view.BuildTableProducts(gui, recipe.subgroup, recipe.owner, ref grid, false);
             }
-            else {
+            else if (recipe.recipe != null) {
                 foreach (var (goods, amount, link, percentSpoiled) in recipe.Products) {
                     grid.Next();
                     if (recipe.recipe.target is Recipe { preserveProducts: true }) {
@@ -725,7 +745,7 @@ goodsHaveNoProduction:;
         }
 
         public override void BuildElement(ImGui gui, RecipeRow recipe) {
-            if (recipe.isOverviewMode) {
+            if (recipe.isOverviewMode || recipe.recipe is null) {
                 return;
             }
 
@@ -984,11 +1004,11 @@ goodsHaveNoProduction:;
                             recipe!.RecordUndo().ChangeVariant(goods.target, variant);
 
                             if (recipe!.fixedIngredient == goods) {
-                                // variants are always fluids, so this could also be .With(Quality.Normal).
-                                recipe.fixedIngredient = variant.With(recipe.recipe.quality);
+                                // variants are always fluids, so all recipes take normal quality.
+                                recipe.fixedIngredient = variant.With(Quality.Normal);
                             }
 
-                            goods = variant.With(recipe.recipe.quality);
+                            goods = variant.With(Quality.Normal);
                             comparer = DataUtils.GetRecipeComparerFor(goods.target);
                             if (recipe.FindLink(goods, out iLink) && iLink.flags.HasFlag(ProductionLink.Flags.HasProduction)) {
                                 _ = gui.CloseDropdown();
@@ -1540,7 +1560,7 @@ goodsHaveNoProduction:;
         }
 
         foreach (var row in contents.recipes) {
-            if (row.fixedBuildings != 0 && row.entity != null) {
+            if (row.recipe != null && row.fixedBuildings != 0 && row.entity != null) {
                 using (gui.EnterRow()) {
                     gui.BuildFactorioObjectIcon(row.recipe);
                     using (gui.EnterGroup(default, RectAllocator.LeftAlign, spacing: 0)) {

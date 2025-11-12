@@ -27,7 +27,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
     private void BuildScrollArea(ImGui gui) {
         gui.BuildText(LSs.LinkSummaryProduction.L(DataUtils.FormatAmount(totalInput, link.flowUnitOfMeasure)), Font.subheader);
         BuildFlow(gui, input, totalInput, false);
-        if (link.capturedRecipes.Any(r => r is not RecipeRow)) {
+        if (link.capturedRecipes.Any(r => r.RecipeRow is null)) {
             // captured recipes that are not user-visible RecipeRows imply the existence of implicit links
             using (gui.EnterRow()) {
                 gui.AllocateRect(0, ButtonDisplayStyle.Default.Size);
@@ -120,10 +120,10 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         return table as ProductionTable;
     }
 
-    private bool isNotRelatedToCurrentLink(RecipeRow? row) => (!row.Ingredients.Any(e => e.Goods == link.goods)
+    private bool isNotRelatedToCurrentLink(RecipeRow row) => (!row.Ingredients.Any(e => e.Goods == link.goods)
                         && !row.Products.Any(e => e.Goods == link.goods)
                         && !(row.fuel is not null && row.fuel == link.goods));
-    private bool isPartOfCurrentLink(RecipeRow row) => link.capturedRecipes.Any(e => e == row);
+    private bool isPartOfCurrentLink(RecipeRow row) => link.capturedRecipes.Any(e => e.RecipeRow == row);
     private bool IsLinkParent(RecipeRow row, List<ModelObject> parents) => row.Ingredients.Select(e => e.Link).Concat(row.Products.Select(e => e.Link)).Append(row.FuelInformation.Link)
         .WhereNotNull()
         .Where(e => e.goods == link.goods)
@@ -263,7 +263,7 @@ public class ProductionLinkSummaryScreen : PseudoScreen, IComparer<(RecipeRow ro
         // changeLinkView calls this while iterating over one of these lists. We must create new lists rather than editing the existing ones.
         List<(RecipeRow row, float flow)> input = [], output = [];
         totalInput = totalOutput = 0;
-        foreach (var recipe in link.capturedRecipes.OfType<RecipeRow>()) {
+        foreach (var recipe in link.capturedRecipes.Select(r => r.RecipeRow).WhereNotNull()) {
             float localFlow = recipe.DetermineFlow(link.goods);
             if (localFlow > 0) {
                 input.Add((recipe, localFlow));

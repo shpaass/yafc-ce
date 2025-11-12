@@ -112,13 +112,13 @@ public partial class MainScreen {
                     else if (checkboxValues[(int)PageSearchOption.ExtraProducts] && table.flow.Any(f => f.amount > 0 && isMatch(f.goods.target.name, f.goods.target.locName))) {
                         yield return page;
                     }
-                    else if (checkboxValues[(int)PageSearchOption.Recipes] && table.GetAllRecipes().Any(r => isMatch(r.recipe.target.name, r.recipe.target.locName))) {
+                    else if (checkboxValues[(int)PageSearchOption.Recipes] && table.GetAllRecipes().Any(r => isMatch(r.recipe?.target.name, r.recipe?.target.locName))) {
                         yield return page;
                     }
                 }
             }
 
-            bool isMatch(string internalName, string localizedName)
+            bool isMatch(string? internalName, string? localizedName)
                 => (searchNameMode != SearchNameMode.Internal && query.Match(localizedName)) || (searchNameMode != SearchNameMode.Localized && query.Match(internalName));
         }
     }

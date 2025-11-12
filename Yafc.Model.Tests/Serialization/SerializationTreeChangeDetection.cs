@@ -58,6 +58,8 @@ public class SerializationTreeChangeDetection {
         },
         [typeof(RecipeRow)] = new() {
             [nameof(RecipeRow.recipe)] = typeof(IObjectWithQuality<RecipeOrTechnology>),
+            [nameof(RecipeRow.icon)] = typeof(FactorioObject),
+            [nameof(RecipeRow.description)] = typeof(string),
             [nameof(RecipeRow.entity)] = typeof(IObjectWithQuality<EntityCrafter>),
             [nameof(RecipeRow.fuel)] = typeof(IObjectWithQuality<Goods>),
             [nameof(RecipeRow.fixedBuildings)] = typeof(float),

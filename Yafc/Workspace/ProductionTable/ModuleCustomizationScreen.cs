@@ -157,7 +157,7 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
                 effects.consumption += baseEffect.consumption;
             }
 
-            if (recipe?.recipe.target is Recipe actualRecipe) {
+            if (recipe?.recipe?.target is Recipe actualRecipe) {
                 Dictionary<Technology, int> levels = Project.current.settings.productivityTechnologyLevels;
                 foreach ((Technology productivityTechnology, float changePerLevel) in actualRecipe.technologyProductivity) {
                     if (levels.TryGetValue(productivityTechnology, out int productivityTechLevel)) {
@@ -168,7 +168,7 @@ public class ModuleCustomizationScreen : PseudoScreenWithResult<ModuleTemplateBu
                 effects.productivity = Math.Min(effects.productivity, actualRecipe.maximumProductivity ?? float.MaxValue);
             }
 
-            if (recipe != null) {
+            if (recipe != null && recipe.recipe != null) {
                 float craftingSpeed = (recipe.entity?.GetCraftingSpeed() ?? 1f) * effects.speedMod;
                 gui.BuildText(LSs.ModuleCustomizationCurrentEffects, Font.subheader);
                 gui.BuildText(LSs.ModuleCustomizationProductivityBonus.L(DataUtils.FormatAmount(effects.productivity, UnitOfMeasure.Percent)));

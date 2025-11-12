@@ -112,6 +112,8 @@ public class ModuleTemplate : ModelObject<ModelObject> {
     }
 
     internal void GetModulesInfo(RecipeRow row, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used, ModuleFillerParameters? filler) {
+        if (row.recipe is null) { return; }
+
         List<(IObjectWithQuality<Module> module, int count, bool beacon)> buffer = [];
         int beaconedModules = 0;
         IObjectWithQuality<Module>? nonBeacon = null;
@@ -254,16 +256,15 @@ public interface IGroupedElement<TGroup> {
 
 /// <summary>
 /// Represents an object that can be treated by the solver as one row from a production table.
-/// An <see cref="IRecipeRow"/> may or may not be visible to the user, and may or may not be saved in the project file.
+/// An <see cref="ISolverRow"/> may or may not be visible to the user, and may or may not be saved in the project file.
 /// </summary>
-public interface IRecipeRow {
+public interface ISolverRow {
     // Variable (user-configured, for RecipeRow) properties
-    IObjectWithQuality<EntityCrafter>? entity { get; }
-    IObjectWithQuality<Goods>? fuel { get; }
+    internal IObjectWithQuality<Goods>? fuel { get; }
     /// <summary>
     /// If not zero, the fixed building count to be used by the solver.
     /// </summary>
-    float fixedBuildings { get; }
+    internal float fixedBuildings { get; }
 
     // Fixed properties
     /// <summary>
@@ -281,7 +282,6 @@ public interface IRecipeRow {
     /// A name the solver can use to identify this row
     /// </summary>
     internal string SolverName { get; }
-    internal float RecipeTime { get; }
     internal double BaseCost { get; }
     /// <summary>
     /// The <see cref="Model.RecipeRow"/> that corresponds to this object, if applicable.
@@ -289,8 +289,8 @@ public interface IRecipeRow {
     RecipeRow? RecipeRow { get; }
 
     // Properties computed (directly or indirectly) by ProductionTable.Solve
-    internal RecipeParameters parameters { get; set; }
-    internal double recipesPerSecond { get; set; }
+    internal RecipeParameters parameters { get; }
+    internal double recipesPerSecond { set; }
     /// <summary>
     /// Storage for the <see cref="ProductionLink"/>s that affect each of this row's ingredients and products (including fuel)
     /// </summary>
@@ -298,25 +298,27 @@ public interface IRecipeRow {
 
     // Helper methods used by ProductionTable.Solve
     internal bool FindLink(IObjectWithQuality<Goods> goods, [MaybeNullWhen(false)] out IProductionLink link);
-    internal void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used);
 }
 
 /// <summary>
 /// Represents a row in a production table that can be configured by the user.
 /// </summary>
-public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<ProductionTable>, IRecipeRow {
+public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<ProductionTable> {
     private IObjectWithQuality<EntityCrafter>? _entity;
     private IObjectWithQuality<Goods>? _fuel;
     private float _fixedBuildings;
     private IObjectWithQuality<Goods>? _fixedProduct;
     private ModuleTemplate? _modules;
 
-    public IObjectWithQuality<RecipeOrTechnology> recipe { get; }
+    public IObjectWithQuality<RecipeOrTechnology>? recipe { get; }
+    public FactorioObject? icon { get; set; }
+    public string? description { get; set; }
+
     // Variable parameters
     public IObjectWithQuality<EntityCrafter>? entity {
         get => _entity;
         set {
-            if (_entity == value) {
+            if (_entity == value || recipe is null) {
                 // Nothing to do
                 return;
             }
@@ -415,7 +417,7 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
             if (value == null) {
                 _fixedProduct = null;
             }
-            else {
+            else if (recipe != null) {
                 // This takes advantage of the fact that ObjectWithQuality automatically downgrades high-quality fluids (etc.) to normal.
                 var products = recipe.target.products.AsEnumerable().Select(p => p.goods.With(recipe.quality));
                 if (value != Database.itemOutput && products.All(p => p != value)) {
@@ -466,7 +468,7 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     public ModuleTemplate? modules {
         get => _modules;
         set {
-            if (SerializationMap.IsDeserializing || fixedBuildings == 0 || _modules == value) {
+            if (SerializationMap.IsDeserializing || fixedBuildings == 0 || _modules == value || recipe is null) {
                 _modules = value;
             }
             else {
@@ -484,7 +486,10 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     public RecipeRowIngredient FuelInformation => new(fuel, fuelUsagePerSecond, links.fuel, (fuel?.target as Fluid)?.variants?.ToArray());
     public IEnumerable<RecipeRowIngredient> Ingredients {
         get {
-            if (hierarchyEnabled) {
+            if (recipe is null) {
+                return [];
+            }
+            else if (hierarchyEnabled) {
                 return BuildIngredients(false).Select(RecipeRowIngredient.FromSolver);
             }
             else {
@@ -493,9 +498,13 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
         }
     }
 
-    IEnumerable<SolverIngredient> IRecipeRow.IngredientsForSolver => BuildIngredients(true);
+    internal IEnumerable<SolverIngredient> IngredientsForSolver => BuildIngredients(true);
 
     private IEnumerable<SolverIngredient> BuildIngredients(bool forSolver) {
+        if (recipe is null) {
+            yield break;
+        }
+
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the ingredients for one recipe, to produce recipesPerSecond.
         for (int i = 0; i < recipe.target.ingredients.Length; i++) {
             Ingredient ingredient = recipe.target.ingredients[i];
@@ -506,7 +515,10 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
 
     public IEnumerable<RecipeRowProduct> Products {
         get {
-            if (hierarchyEnabled) {
+            if (recipe is null) {
+                return [];
+            }
+            else if (hierarchyEnabled) {
                 return BuildProducts(false).Select(RecipeRowProduct.FromSolver);
             }
             else {
@@ -516,9 +528,12 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     }
 
     internal IEnumerable<SolverProduct> ProductsForSolver => BuildProducts(true);
-    IEnumerable<SolverProduct> IRecipeRow.ProductsForSolver => ProductsForSolver;
 
     private IEnumerable<SolverProduct> BuildProducts(bool forSolver) {
+        if (recipe is null) {
+            yield break;
+        }
+
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the products for one recipe, to produce recipesPerSecond.
         IObjectWithQuality<Item>? spentFuel = fuel.FuelResult();
         bool handledFuel = spentFuel == null || forSolver; // If we're running the solver or there's no spent fuel, it's already handled.
@@ -630,11 +645,11 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     public float buildingCount => (float)(recipesPerSecond * parameters.recipeTime);
     public bool visible { get; internal set; } = true;
 
-    public RecipeRow(ProductionTable owner, IObjectWithQuality<RecipeOrTechnology> recipe) : base(owner) {
-        this.recipe = recipe ?? throw new ArgumentNullException(nameof(recipe), LSs.LoadErrorRecipeDoesNotExist);
+    public RecipeRow(ProductionTable owner, IObjectWithQuality<RecipeOrTechnology>? recipe = null) : base(owner) {
+        this.recipe = recipe;
 
         links = new RecipeLinks {
-            ingredients = new ProductionLink[recipe.target.ingredients.Length],
+            ingredients = recipe is null ? [] : new ProductionLink[recipe.target.ingredients.Length],
         };
     }
 
@@ -690,7 +705,7 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     /// <returns>If not <see langword="null"/>, an <see cref="Action"/> to perform after the change has completed
     /// that will update <see cref="fixedBuildings"/> to account for the new modules.</returns>
     internal Action? ModuleFillerParametersChanging() {
-        if (fixedFuel || fixedIngredient != null || fixedProduct != null) {
+        if ((fixedFuel || fixedIngredient != null || fixedProduct != null) && recipe is not null) {
             return new ChangeModulesOrEntity(this).Dispose;
         }
         return null;
@@ -705,6 +720,10 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
         private readonly RecipeParameters oldParameters;
 
         public ChangeModulesOrEntity(RecipeRow row) {
+            if (row.recipe is null) {
+                throw new ArgumentException("Cannot change modules or entity for a non-recipe row.", nameof(row));
+            }
+
             this.row = row;
             _ = row.RecordUndo(); // Unnecessary (but not harmful) when called by set_modules or set_entity. Required when called by ModuleFillerParametersChanging.
 
@@ -735,12 +754,13 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
                 row.fixedBuildings *= row.parameters.recipeTime / oldParameters.recipeTime; // step 3, for fixed ingredient consumption
             }
             else if (row.fixedProduct != null) {
+                // null-forgiving: The constructor throws if row.recipe was null.
                 if (row.fixedProduct == Database.itemOutput) {
-                    float oldAmount = row.recipe.target.products.Where(p => p.goods is Item).Sum(p => p.GetAmountPerRecipe(oldParameters.productivity)) / oldParameters.recipeTime;
+                    float oldAmount = row.recipe!.target.products.Where(p => p.goods is Item).Sum(p => p.GetAmountPerRecipe(oldParameters.productivity)) / oldParameters.recipeTime;
                     float newAmount = row.recipe.target.products.Where(p => p.goods is Item).Sum(p => p.GetAmountPerRecipe(row.parameters.productivity)) / row.parameters.recipeTime;
                     row.fixedBuildings *= oldAmount / newAmount; // step 3, for fixed combined production amount
                 }
-                else if (row.recipe.target.products.SingleOrDefault(p => p.goods == row.fixedProduct.target, false) is not Product product) {
+                else if (row.recipe!.target.products.SingleOrDefault(p => p.goods == row.fixedProduct.target, false) is not Product product) {
                     row.fixedBuildings = 0; // We couldn't find the Product corresponding to fixedProduct. Just clear the fixed amount.
                 }
                 else {
@@ -772,6 +792,10 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
     }
 
     public float DetermineFlow(IObjectWithQuality<Goods> goods) {
+        if (recipe is null) {
+            throw new InvalidOperationException("Cannot determine flow when no recipe is selected.");
+        }
+
         float production = getProduction(goods);
         float consumption = getConsumption(goods);
         float fuelUsage = fuel == goods ? FuelInformation.Amount : 0;
@@ -800,24 +824,6 @@ public class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Productio
             return amount;
         }
     }
-
-    // To avoid leaking these variables/methods (or just the setter, for recipesPerSecond) into public context,
-    // these explicit interface implementations connect to internal members, instead of using implicit implementation via public members
-    RecipeParameters IRecipeRow.parameters { get => parameters; set => parameters = value; }
-    double IRecipeRow.recipesPerSecond { get => recipesPerSecond; set => recipesPerSecond = value; }
-    RecipeLinks IRecipeRow.links => links;
-    float IRecipeRow.RecipeTime => recipe.target.time;
-    string IRecipeRow.SolverName => recipe.QualityName();
-    double IRecipeRow.BaseCost => (recipe.target as Recipe)?.RecipeBaseCost() ?? 0;
-    RecipeRow? IRecipeRow.RecipeRow => this;
-
-    void IRecipeRow.GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used)
-        => GetModulesInfo(recipeParams, entity, ref effects, ref used);
-    bool IRecipeRow.FindLink(IObjectWithQuality<Goods> goods, [MaybeNullWhen(false)] out IProductionLink link) {
-        bool result = linkRoot.FindLink(goods, out var concreteLink);
-        link = concreteLink;
-        return result;
-    }
 }
 
 public enum RowHighlighting {
@@ -843,15 +849,15 @@ public interface IProductionLink {
     IObjectWithQuality<Goods> goods { get; }
     float amount { get; }
     internal int solverIndex { get; set; }
-    ProductionLink.Flags flags { get; set; }
+    ProductionLink.Flags flags { get; internal set; }
     /// <summary>
     /// The recipes belonging to this production link
     /// </summary>
-    internal HashSet<IRecipeRow> capturedRecipes { get; }
+    internal HashSet<ISolverRow> capturedRecipes { get; }
     internal float notMatchedFlow { get; set; }
     ProductionTable owner { get; }
     IEnumerable<string> LinkWarnings { get; }
-    internal float linkFlow { get; set; }
+    internal float linkFlow { set; }
 
     /// <summary>
     /// The link that should be displayed when the user requests a link summary.
@@ -900,15 +906,14 @@ public class ProductionLink(ProductionTable group, IObjectWithQuality<Goods> goo
     public float linkFlow { get; internal set; }
     public float notMatchedFlow { get; internal set; }
     /// <inheritdoc/>
-    public HashSet<IRecipeRow> capturedRecipes { get; } = [];
-    internal int solverIndex;
+    public HashSet<ISolverRow> capturedRecipes { get; } = [];
 
-    // To avoid leaking these variables/methods (or just the setter, for recipesPerSecond) into public context,
-    // these explicit interface implementations connect to internal members, instead of using implicit implementation via public members
+    // To avoid leaking these properties (or setters) into public context, these explicit interface implementations connect to internal members,
+    // instead of using implicit implementation via public members
     Flags IProductionLink.flags { get => flags; set => flags = value; }
     float IProductionLink.notMatchedFlow { get => notMatchedFlow; set => notMatchedFlow = value; }
-    float IProductionLink.linkFlow { get => linkFlow; set => linkFlow = value; }
-    int IProductionLink.solverIndex { get => solverIndex; set => solverIndex = value; }
+    float IProductionLink.linkFlow { set => linkFlow = value; }
+    int IProductionLink.solverIndex { get; set; }
     ProductionLink IProductionLink.DisplayLink => this;
 
     public IEnumerable<string> LinkWarnings {
