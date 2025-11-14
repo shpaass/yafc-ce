@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using Serilog;
 using Yafc.I18n;
 using Yafc.Model;
@@ -141,7 +142,7 @@ internal partial class LuaContext : IDisposable {
     private readonly Dictionary<(string mod, string name), byte[]> modFixes = [];
 
     private static readonly ILogger logger = Logging.GetLogger<LuaContext>();
-    private string currentfile;
+
     public LuaContext(Version gameVersion) {
         L = luaL_newstate();
         _ = luaL_openlibs(L);
@@ -152,10 +153,10 @@ internal partial class LuaContext : IDisposable {
 
         RegisterApi(Log, "raw_log");
         RegisterApi(Require, "require");
+        RegisterApi(SourceFixups, "yafc_sourcefixups");
         RegisterApi(DebugTraceback, "debug", "traceback");
         RegisterApi(CompareVersions, "helpers", "compare_versions");
         RegisterApi(EvaluateExpression, "helpers", "evaluate_expression");
-        currentfile = "__no__/file";
         _ = lua_pushstring(L, Project.currentYafcVersion.ToString());
         lua_setglobal(L, "yafc_version");
         var mods = NewTable();
@@ -238,6 +239,18 @@ internal partial class LuaContext : IDisposable {
         string traceback = ReplaceChunkIdsInTraceback(rawTraceback);
         _ = lua_pushstring(L, traceback);
         return 1;
+    }
+
+    private int SourceFixups(IntPtr lua) {
+        if (GetString(2) is string name && int.TryParse(FindChunkId().Match(name).ToString(), out int chunkId)) {
+            // Replace the chunk-id-based names with 'real' names
+            (string mod, name) = fullChunkNames[chunkId];
+            name = $"__{mod}__/{name}";
+            PushManagedObject(name);
+            PushManagedObject('@' + name);
+            return 2; // Return the fixed names
+        }
+        return 2; // This didn't look like one of our names; just return the input values
     }
 
     private int CompareVersions(IntPtr lua) {
@@ -498,7 +511,6 @@ internal partial class LuaContext : IDisposable {
         }
 
         logger.Information("Require {RequiredFile}", requiredFile.mod + "/" + requiredFile.path);
-        currentfile = "__" + requiredFile.mod + "__/" + requiredFile.path;
         byte[] bytes = FactorioDataSource.ReadModFile(requiredFile.mod, requiredFile.path);
 
         if (bytes != null) {
@@ -568,7 +580,6 @@ internal partial class LuaContext : IDisposable {
         name = fullChunkNames.Count - 1 + " " + name;
         GetReg(tracebackReg);
         chunk = chunk.CleanupBom();
-        SetGlobal("current_file", currentfile);
 
         var result = luaL_loadbufferx(L, in chunk.GetPinnableReference(), chunk.Length, name, null);
 
@@ -614,7 +625,6 @@ internal partial class LuaContext : IDisposable {
             }
 
             logger.Information("Executing file {Filename}", mod + "/" + fileName);
-            currentfile = "__" + mod + "__/" + fileName;
             _ = Exec(bytes, mod, fileName);
             RunModFix(mod, fileName);
         }
@@ -622,6 +632,9 @@ internal partial class LuaContext : IDisposable {
 
     public LuaTable data => (LuaTable)GetGlobal("data")!;
     public LuaTable defines => (LuaTable)GetGlobal("defines")!;
+
+    [GeneratedRegex("^[0-9]+ ")]
+    private static partial Regex FindChunkId();
 }
 
 internal class LuaTable : ILocalizable {
