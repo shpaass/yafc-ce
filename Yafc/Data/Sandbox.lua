@@ -20,6 +20,7 @@ for defineType,typeTable in pairs(defines.prototypes) do
 end	
 
 require("__core__/lualib/dataloader.lua")
+serpent = require("Serpent")
 
 local raw_log = _G.raw_log;
 _G.raw_log = nil;
@@ -29,14 +30,46 @@ function log(s)
 end
 
 local raw_getinfo = debug.getinfo
-function debug.getinfo(thread, f, what)
-    local result = raw_getinfo(thread, f, what)
-    if result.short_src then result.short_src = current_file end
-    if result.source then result.source = current_file end
-    return result
-end
+-- Tests:
+-- 1: Ensure all of the following have the same result both before and after this function declaration:
+--log(debug.getinfo(0))
+--log(debug.getinfo(1))
+--log(debug.getinfo(debug.getinfo))
+--
+-- 2: Ensure mod logs using source and/or short_src (e.g. the error messages in K2 2.0.13) are identical in factorio-current.log and yafc*.log.
+--
+-- 3: Ensure this method fixes source and short_src for this call, and leaves the rest of the result unchanged.
+--log(debug.getinfo(log))
+--
+-- Consider this to display the output of the two most recent log(debug.getinfo(...)) calls:
+-- watch -w "grep -h currentline yafc*.log | tail -n2 | sed -e s/RenderedMessage.*// -e s/\\\\\\\\n/\\\\n/g -e \"s/\\\\\\\\\\\\(.\\\\)/\\\\1/g\""
+--
+function debug.getinfo(thread_or_f, f_or_what, what)
+	-- If the caller wants info about getinfo (by setting f to either 0 or debug.getinfo), return that information.
+	if thread_or_f == debug.getinfo then
+		return raw_getinfo(raw_getinfo, f_or_what)
+	elseif f_or_what == debug.getinfo then
+		return raw_getinfo(thread_or_f, raw_getinfo, what)
+	elseif thread_or_f == 0 or f_or_what == 0 then
+		-- raw_getinfo(1) will return the name info for this call. (name info isn't available when f is a function.)
+		-- Combine that with the method info for the real debug.getinfo method (from passing f == 0):
+		local result, name = raw_getinfo(thread_or_f, f_or_what, what), raw_getinfo(1)
+		result.name = name.name
+		result.namewhat = name.namewhat
+		return result
+	end
 
-serpent = require("Serpent")
+	-- Otherwise, add 1 to f if it's a number, to hide this method from the stack.
+	if type(thread_or_f) == "number" then thread_or_f = thread_or_f + 1
+	elseif type(f_or_what) == "number" then f_or_what = f_or_what + 1 end
+
+	local result = raw_getinfo(thread_or_f, f_or_what, what)
+	-- Do the actual source fixups we're here for
+	if result then
+		result.short_src, result.source = yafc_sourcefixups(result.short_src, result.source)
+	end
+	return result
+end
 
 table_size = function(t)
 	local count = 0
