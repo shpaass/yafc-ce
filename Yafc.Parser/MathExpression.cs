@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -159,7 +160,7 @@ internal sealed partial class MathExpression {
                     break;
 
                 case float f:
-                    cSharp.Append(f);
+                    cSharp.Append(f.ToString(CultureInfo.InvariantCulture));
                     break;
 
                 case Token.Caret:
@@ -208,7 +209,7 @@ internal sealed partial class MathExpression {
                     yield return (float)Convert.ToInt32(number[2..], 16);
                 }
                 else {
-                    yield return float.Parse(number);
+                    yield return float.Parse(number, CultureInfo.InvariantCulture);
                 }
             }
 
