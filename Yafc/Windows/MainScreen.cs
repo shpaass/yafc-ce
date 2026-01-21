@@ -90,10 +90,9 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
             project.displayPages.Add(project.pages[0].guid);
         }
 
-        // Hack to activate all page solvers for the summary view
+        // Activate all page solvers for the summary view
         foreach (var page in project.pages) {
-            page.SetActive(true);
-            page.SetActive(false);
+            _ = page.SolvePage();
         }
 
         SetActivePage(project.FindPage(project.displayPages[0]));
@@ -156,14 +155,19 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
 
     private void ChangePage(ref ProjectPage? activePage, ProjectPage? newPage, ref ProjectPageView? activePageView, ProjectPageView? newPageView) {
         activePageView?.SetModel(null);
-        activePage?.SetActive(false);
+        activePage?.SetInactive();
+        if (activePage != null) {
+            activePage.scroll = activePageView?.scrollY;
+        }
         activePage = newPage;
+        float? scroll = null;
         if (newPage != null) {
             if (!project.displayPages.Contains(newPage.guid)) {
                 _ = project.RecordUndo(true);
                 project.displayPages.Insert(0, newPage.guid);
             }
-            newPage.SetActive(true);
+            scroll = newPage.scroll ?? 0f;
+            newPage.SetActive();
             newPageView ??= registeredPageViews[newPage.content.GetType()];
             activePageView = newPageView;
             activePageView.SetModel(newPage);
@@ -178,6 +182,11 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         // reset focus the dropdown from the old page will still get rendered on the new page.
         InputSystem.Instance.SetMouseFocus(null);
         Rebuild();
+        if (activePageView?.bodyContent?.parent != null) {
+            // Need to draw the page so we can scroll properly
+            activePageView.Build(activePageView.bodyContent.parent, size / (secondaryPage != null ? 2 : 1));
+            activePageView.scrollY = scroll!.Value;
+        }
     }
 
     public void SetActivePage(ProjectPage? page) {

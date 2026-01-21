@@ -13,6 +13,7 @@ public class ProjectPage : ModelObject<Project> {
     public ProjectPageContents content { get; }
     public bool active { get; private set; }
     public bool visible { get; internal set; }
+    public float? scroll { get; set; }
     [SkipSerialization] public string? modelError { get; set; }
     public bool deleted { get; private set; }
     [SkipSerialization]
@@ -40,11 +41,13 @@ public class ProjectPage : ModelObject<Project> {
 
     public void GenerateNewGuid() => guid = Guid.NewGuid();
 
-    public void SetActive(bool active) {
-        this.active = active;
-        if (active) {
-            _ = CheckSolve();
-        }
+    public void SetActive() {
+        this.active = true;
+        _ = CheckSolve();
+    }
+
+    public void SetInactive() {
+        this.active = false;
     }
 
     public void SetToRecalculate() {
@@ -63,6 +66,13 @@ public class ProjectPage : ModelObject<Project> {
             _ = CheckSolve();
         }
         contentChanged?.Invoke(visualOnly);
+    }
+
+    public Task SolvePage() {
+        if (IsSolutionStale()) {
+            return RunSolveJob();
+        }
+        return Task.CompletedTask;
     }
 
     private Task CheckSolve() {

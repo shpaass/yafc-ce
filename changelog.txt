@@ -23,6 +23,7 @@ Version:
 Date:
     Features:
         - Support tables without a header recipe.
+        - Retain scroll when switching tabs.
     Fixes:
         - Support craft-fluid and scripted research triggers.
         - Consider quality restrictions when analyzing craft-item or build-item technology triggers.

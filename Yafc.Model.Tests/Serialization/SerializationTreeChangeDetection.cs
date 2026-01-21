@@ -125,6 +125,7 @@ public class SerializationTreeChangeDetection {
             [nameof(ProjectPage.icon)] = typeof(FactorioObject),
             [nameof(ProjectPage.name)] = typeof(string),
             [nameof(ProjectPage.guid)] = typeof(Guid),
+            [nameof(ProjectPage.scroll)] = typeof(float?),
             [nameof(ProjectPage.contentType)] = typeof(Type),
             [nameof(ProjectPage.content)] = typeof(ProjectPageContents),
         },
