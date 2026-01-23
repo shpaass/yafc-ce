@@ -706,7 +706,8 @@ public class EntityCrafter : EntityWithModules {
         get => _craftingSpeed * (1 + (factorioType == "lab" ? Project.current.settings.researchSpeedBonus : 0));
         internal set => _craftingSpeed = value;
     }
-    public virtual float CraftingSpeed(Quality quality) => factorioType is "agricultural-tower" or "electric-energy-interface" ? baseCraftingSpeed : quality.ApplyStandardBonus(baseCraftingSpeed);
+    public virtual float CraftingSpeed(Quality quality) => factorioType is "agricultural-tower" or "electric-energy-interface" or "mining-drill"
+        ? baseCraftingSpeed : quality.ApplyStandardBonus(baseCraftingSpeed);
     public EffectReceiver effectReceiver { get; internal set; } = null!;
 
     public override int BlueprintModuleInventory => factorioType switch {

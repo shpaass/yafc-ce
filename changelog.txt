@@ -28,6 +28,7 @@ Date:
         - Support craft-fluid and scripted research triggers.
         - Consider quality restrictions when analyzing craft-item or build-item technology triggers.
         - Fix loading recent versions of K2.
+        - Remove incorrect speed bonus for quality mining drills.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.16.0
 Date: October 24th 2025
