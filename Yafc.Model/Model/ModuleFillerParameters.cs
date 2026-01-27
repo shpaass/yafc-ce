@@ -119,6 +119,7 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
             effects.AddModules(beaconsToUse.beaconModule, beaconsToUse.beaconCount * beaconsToUse.beacon.GetBeaconEfficiency() * beacon.GetProfile(beaconsToUse.beaconCount) * beacon.moduleSlots, entity.allowedEffects);
             used.beacon = beaconsToUse.beacon;
             used.beaconCount = beaconsToUse.beaconCount;
+            used.modules = [(beaconsToUse.beaconModule, used.beaconCount * beacon.moduleSlots, true)];
         }
     }
 
@@ -183,7 +184,7 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
 
                 if (count > 0) {
                     effects.AddModules(usedModule, count);
-                    used.modules = [(usedModule, count, false)];
+                    used.modules = [(usedModule, count, false), .. used.modules];
 
                     return;
                 }
@@ -205,7 +206,7 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
     private static void AddModuleSimple(IObjectWithQuality<Module> module, ref ModuleEffects effects, EntityCrafter entity, UsedModule used) {
         int fillerLimit = effects.GetModuleSoftLimit(module, entity.moduleSlots);
         effects.AddModules(module, fillerLimit);
-        used.modules = [(module, fillerLimit, false)];
+        used.modules = [(module, fillerLimit, false), .. used.modules];
     }
 }
 

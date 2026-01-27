@@ -117,7 +117,6 @@ public class ModuleTemplate : ModelObject<ModelObject> {
         List<(IObjectWithQuality<Module> module, int count, bool beacon)> buffer = [];
         int beaconedModules = 0;
         IObjectWithQuality<Module>? nonBeacon = null;
-        used.modules = [];
         int remaining = entity.moduleSlots;
 
         foreach (var module in list) {
@@ -154,7 +153,7 @@ public class ModuleTemplate : ModelObject<ModelObject> {
             filler?.AutoFillBeacons(row.recipe.target, entity, ref effects, used);
         }
 
-        used.modules = [.. buffer];
+        used.modules = [.. buffer, .. used.modules];
     }
 
     public int CalculateBeaconCount() {
@@ -166,6 +165,11 @@ public class ModuleTemplate : ModelObject<ModelObject> {
 
         foreach (var element in beaconList) {
             moduleCount += element.fixedCount;
+        }
+
+        if (moduleCount == 0) {
+            // C# division rounds to zero, causing the round-up math below to return 1 in most cases, instead of 0.
+            return 0;
         }
 
         return ((moduleCount - 1) / beacon.target.moduleSlots) + 1;

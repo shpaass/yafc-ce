@@ -29,6 +29,7 @@ Date:
         - Consider quality restrictions when analyzing craft-item or build-item technology triggers.
         - Fix loading recent versions of K2.
         - Remove incorrect speed bonus for quality mining drills.
+        - Show beacons added by the per-page settings on each row they affect.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.16.0
 Date: October 24th 2025
