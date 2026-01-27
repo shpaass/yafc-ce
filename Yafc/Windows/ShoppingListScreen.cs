@@ -71,12 +71,10 @@ public class ShoppingListScreen : PseudoScreen {
                 };
                 totalHeat += recipe.entity.target.heatingPower * displayCount;
                 counts[shopItem] = prev + displayCount;
-                if (recipe.usedModules.modules != null) {
-                    foreach ((IObjectWithQuality<Module> module, int moduleCount, bool beacon) in recipe.usedModules.modules) {
-                        if (!beacon) {
-                            _ = counts.TryGetValue(module, out prev);
-                            counts[module] = prev + displayCount * moduleCount;
-                        }
+                foreach ((IObjectWithQuality<Module> module, int moduleCount, bool beacon) in recipe.usedModules.modules) {
+                    if (!beacon) {
+                        _ = counts.TryGetValue(module, out prev);
+                        counts[module] = prev + displayCount * moduleCount;
                     }
                 }
             }

@@ -111,13 +111,13 @@ public class ModuleTemplate : ModelObject<ModelObject> {
         return (!hasFloodfillModules || hasCompatibleFloodfill) && row.entity.target.moduleSlots >= totalModules;
     }
 
-    internal void GetModulesInfo(RecipeRow row, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used, ModuleFillerParameters? filler) {
+    internal void GetModulesInfo(RecipeRow row, EntityCrafter entity, ref ModuleEffects effects, UsedModule used, ModuleFillerParameters? filler) {
         if (row.recipe is null) { return; }
 
         List<(IObjectWithQuality<Module> module, int count, bool beacon)> buffer = [];
         int beaconedModules = 0;
         IObjectWithQuality<Module>? nonBeacon = null;
-        used.modules = null;
+        used.modules = [];
         int remaining = entity.moduleSlots;
 
         foreach (var module in list) {
@@ -151,7 +151,7 @@ public class ModuleTemplate : ModelObject<ModelObject> {
             }
         }
         else {
-            filler?.AutoFillBeacons(row.recipe.target, entity, ref effects, ref used);
+            filler?.AutoFillBeacons(row.recipe.target, entity, ref effects, used);
         }
 
         used.modules = [.. buffer];
@@ -684,7 +684,7 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
         return null;
     }
 
-    internal void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used) {
+    internal void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) recipeParams, EntityCrafter entity, ref ModuleEffects effects, UsedModule used) {
         ModuleFillerParameters? filler = null;
         var useModules = modules;
         if (useModules == null || useModules.beacon == null) {
@@ -692,10 +692,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
         }
 
         if (useModules == null) {
-            filler?.GetModulesInfo(recipeParams, this, entity, ref effects, ref used);
+            filler?.GetModulesInfo(recipeParams, this, entity, ref effects, used);
         }
         else {
-            useModules.GetModulesInfo(this, entity, ref effects, ref used, filler);
+            useModules.GetModulesInfo(this, entity, ref effects, used, filler);
         }
     }
 

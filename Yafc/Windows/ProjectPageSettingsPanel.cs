@@ -175,7 +175,7 @@ public class ProjectPageSettingsPanel : PseudoScreen {
             Beacon = ObjectWithQuality.Get(row.usedModules.beacon);
             BeaconCount = row.usedModules.beaconCount;
 
-            if (row.usedModules.modules is null) {
+            if (row.usedModules.modules is []) {
                 Modules = BeaconModules = [];
             }
             else {

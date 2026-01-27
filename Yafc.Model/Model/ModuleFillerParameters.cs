@@ -112,7 +112,7 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
         return new(beacon, beaconsPerBuilding, beaconModule);
     }
 
-    internal void AutoFillBeacons(RecipeOrTechnology recipe, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used) {
+    internal void AutoFillBeacons(RecipeOrTechnology recipe, EntityCrafter entity, ref ModuleEffects effects, UsedModule used) {
         BeaconConfiguration beaconsToUse = GetBeaconsForCrafter(entity);
         if (!recipe.flags.HasFlags(RecipeFlags.UsesMiningProductivity) && beaconsToUse.beacon != null && beaconsToUse.beaconModule != null) {
             EntityBeacon beacon = beaconsToUse.beacon.target;
@@ -123,7 +123,7 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
     }
 
     private void AutoFillModules((float recipeTime, float fuelUsagePerSecondPerBuilding) partialParams, RecipeRow row,
-        EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used) {
+        EntityCrafter entity, ref ModuleEffects effects, UsedModule used) {
 
         if (row.recipe == null) { return; }
 
@@ -191,18 +191,18 @@ public class ModuleFillerParameters : ModelObject<ModelObject> {
         }
 
         if (fillerModule != null && entity.CanAcceptModule(fillerModule) && recipe.CanAcceptModule(fillerModule)) {
-            AddModuleSimple(fillerModule, ref effects, entity, ref used);
+            AddModuleSimple(fillerModule, ref effects, entity, used);
         }
     }
 
-    internal void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) partialParams, RecipeRow row, EntityCrafter entity, ref ModuleEffects effects, ref UsedModule used) {
+    internal void GetModulesInfo((float recipeTime, float fuelUsagePerSecondPerBuilding) partialParams, RecipeRow row, EntityCrafter entity, ref ModuleEffects effects, UsedModule used) {
         if (row.recipe == null) { return; }
 
-        AutoFillBeacons(row.recipe.target, entity, ref effects, ref used);
-        AutoFillModules(partialParams, row, entity, ref effects, ref used);
+        AutoFillBeacons(row.recipe.target, entity, ref effects, used);
+        AutoFillModules(partialParams, row, entity, ref effects, used);
     }
 
-    private static void AddModuleSimple(IObjectWithQuality<Module> module, ref ModuleEffects effects, EntityCrafter entity, ref UsedModule used) {
+    private static void AddModuleSimple(IObjectWithQuality<Module> module, ref ModuleEffects effects, EntityCrafter entity, UsedModule used) {
         int fillerLimit = effects.GetModuleSoftLimit(module, entity.moduleSlots);
         effects.AddModules(module, fillerLimit);
         used.modules = [(module, fillerLimit, false)];

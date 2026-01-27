@@ -578,19 +578,17 @@ goodsHaveNoProduction:;
 
                             var modules = recipe.usedModules.modules;
 
-                            if (modules != null) {
-                                int idx = 0;
-                                foreach (var (module, count, beacon) in modules) {
-                                    if (!beacon) {
-                                        BlueprintItem item = new BlueprintItem {
-                                            item = module.target.name,
-                                            count = count,
-                                            id = { name = module.target.name, quality = module.quality.name }
-                                        };
-                                        item.items.inInventory.AddRange(Enumerable.Range(idx, count).Select(i => new BlueprintInventoryItem { inventory = recipe.entity.target.BlueprintModuleInventory, stack = i }));
-                                        entity.items.Add(item);
-                                        idx += count;
-                                    }
+                            int idx = 0;
+                            foreach (var (module, count, beacon) in modules) {
+                                if (!beacon) {
+                                    BlueprintItem item = new BlueprintItem {
+                                        item = module.target.name,
+                                        count = count,
+                                        id = { name = module.target.name, quality = module.quality.name }
+                                    };
+                                    item.items.inInventory.AddRange(Enumerable.Range(idx, count).Select(i => new BlueprintInventoryItem { inventory = recipe.entity.target.BlueprintModuleInventory, stack = i }));
+                                    entity.items.Add(item);
+                                    idx += count;
                                 }
                             }
 
@@ -754,7 +752,7 @@ goodsHaveNoProduction:;
             }
 
             using var grid = gui.EnterInlineGrid(3f);
-            if (recipe.usedModules.modules == null || recipe.usedModules.modules.Length == 0) {
+            if (recipe.usedModules.modules is []) {
                 drawItem(gui, null, 0);
             }
             else {
