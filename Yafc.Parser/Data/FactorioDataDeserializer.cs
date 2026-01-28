@@ -113,10 +113,17 @@ internal partial class FactorioDataDeserializer {
 
     private static void AddTemperatureToFluidIcon(Fluid fluid) {
         string iconStr = fluid.temperature + "d";
+
+        // Calculate the size/position of the overlay digits to correspond to the size of the first icon layer.
+        int size = fluid.iconSpec?.FirstOrDefault()?.size ?? 64;
+        int shift = 7 * size / 32;
+        int xoffset = 12 * size / 32;
+        int yoffset = size / -2;
+
         fluid.iconSpec =
         [
             .. fluid.iconSpec ?? [],
-            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { size = 64, y = -32, x = (n * 14) - 24, scale = 0.28f }),
+            .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { size = size, y = yoffset, x = (n * shift) - xoffset, scale = 0.28f }),
         ];
     }
 
