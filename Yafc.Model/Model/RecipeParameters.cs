@@ -31,10 +31,10 @@ public enum WarningFlags {
     TemperatureForIngredientNotMatch = 1 << 24,
 }
 
-public struct UsedModule {
-    public (IObjectWithQuality<Module> module, int count, bool beacon)[]? modules;
-    public IObjectWithQuality<EntityBeacon>? beacon;
-    public int beaconCount;
+public class UsedModule {
+    public (IObjectWithQuality<Module> module, int count, bool beacon)[] modules { get; internal set; } = [];
+    public IObjectWithQuality<EntityBeacon>? beacon { get; internal set; }
+    public int beaconCount { get; internal set; }
 }
 
 internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBuilding, WarningFlags warningFlags, ModuleEffects activeEffects, UsedModule modules) {
@@ -45,7 +45,7 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
     public ModuleEffects activeEffects { get; } = activeEffects;
     public UsedModule modules { get; } = modules;
 
-    public static RecipeParameters Empty = new(0, 0, 0, default, default);
+    public static RecipeParameters Empty = new(0, 0, 0, default, new());
 
     public float fuelUsagePerSecondPerRecipe => recipeTime * fuelUsagePerSecondPerBuilding;
 
@@ -56,7 +56,7 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
         IObjectWithQuality<Goods>? fuel = row.fuel;
         float recipeTime, fuelUsagePerSecondPerBuilding = 0, productivity, speed, consumption;
         ModuleEffects activeEffects = default;
-        UsedModule modules = default;
+        UsedModule modules = new();
 
         if (recipe == null) {
             recipeTime = 1;
@@ -160,10 +160,8 @@ internal class RecipeParameters(float recipeTime, float fuelUsagePerSecondPerBui
                 warningFlags |= WarningFlags.AsteroidCollectionNotModelled;
             }
 
-            modules = default;
-
             if (entity.target.allowedEffects != AllowedEffects.None && entity.target.allowedModuleCategories is not []) {
-                row.GetModulesInfo((recipeTime, fuelUsagePerSecondPerBuilding), entity.target, ref activeEffects, ref modules);
+                row.GetModulesInfo((recipeTime, fuelUsagePerSecondPerBuilding), entity.target, ref activeEffects, modules);
             }
 
             if (activeEffects.qualityMod > 0) {
