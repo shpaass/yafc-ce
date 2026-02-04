@@ -143,15 +143,12 @@ doneDrawing:;
         }
     }
 
-    private static void BuildItem(ImGui gui, IFactorioObjectWrapper item, string? extraText = null, bool showCosts = false) {
+    private static void BuildItem(ImGui gui, IFactorioObjectWrapper item, string? extraText = null, bool showCosts = false, bool atMilestones = false) {
         using (gui.EnterRow()) {
             gui.BuildFactorioObjectIcon(item);
             string costSuffix = "";
             if (showCosts && item.target is Goods goods) {
-                float costPerItem = goods.Cost(true);
-                if (float.IsPositiveInfinity(costPerItem)) {
-                    costPerItem = goods.Cost();
-                }
+                float costPerItem = goods.Cost(atMilestones);
                 if (!float.IsPositiveInfinity(costPerItem)) {
                     costSuffix = LSs.RecipeItemCostSuffix.L(DataUtils.FormatAmount(costPerItem * item.amount, UnitOfMeasure.None));
                 }
@@ -479,39 +476,37 @@ doneDrawing:;
         }
     }
 
-    private static void BuildRecipeCostBreakdown(Recipe recipe, ImGui gui) {
-        // Calculate ingredient cost using milestone-aware costs with fallback
+    private static void BuildRecipeCostBreakdown(Recipe recipe, ImGui gui, bool atMilestones) {
+        bool isAutomatable = atMilestones ? recipe.IsAutomatableWithCurrentMilestones() : recipe.IsAutomatable();
+
+        // Calculate ingredient cost
         float ingredientCost = 0f;
+        bool hasInfiniteIngredient = false;
         foreach (var ingredient in recipe.ingredients) {
-            float itemCost = ingredient.goods.Cost(true);
+            float itemCost = ingredient.goods.Cost(atMilestones);
             if (float.IsPositiveInfinity(itemCost)) {
-                itemCost = ingredient.goods.Cost();
+                hasInfiniteIngredient = true;
             }
-            if (!float.IsPositiveInfinity(itemCost)) {
+            else {
                 ingredientCost += itemCost * ingredient.amount;
             }
         }
 
-        float productValue = recipe.ProductCost(true);
-        if (float.IsPositiveInfinity(productValue)) {
-            productValue = recipe.ProductCost();
-        }
-        float logisticsCost = recipe.RecipeBaseCost(true);
-        if (float.IsPositiveInfinity(logisticsCost)) {
-            logisticsCost = recipe.RecipeBaseCost();
-        }
-
-        BuildSubHeader(gui, LSs.RecipeCostHeader);
+        BuildSubHeader(gui, atMilestones ? LSs.RecipeCostHeaderAtMilestones : LSs.RecipeCostHeader);
         using (gui.EnterGroup(contentPadding)) {
-            gui.BuildText(LSs.RecipeCostIngredients.L(DataUtils.FormatAmount(ingredientCost, UnitOfMeasure.None)));
-            gui.BuildText(LSs.RecipeCostLogistics.L(DataUtils.FormatAmount(logisticsCost, UnitOfMeasure.None)));
+            if (!atMilestones) {
+                gui.BuildText(LSs.RecipeCostShiftCtrlHint, TextBlockDisplayStyle.HintText);
+            }
+            gui.BuildText(LSs.RecipeCostIngredients.L(hasInfiniteIngredient ? "N/A" : DataUtils.FormatAmount(ingredientCost, UnitOfMeasure.None)));
+            gui.BuildText(LSs.RecipeCostLogistics.L(isAutomatable ? DataUtils.FormatAmount(recipe.RecipeBaseCost(atMilestones), UnitOfMeasure.None) : "N/A"));
             gui.AllocateSpacing(0.1f);
-            gui.BuildText(LSs.RecipeCostProducts.L(DataUtils.FormatAmount(productValue, UnitOfMeasure.None)));
+            gui.BuildText(LSs.RecipeCostProducts.L(isAutomatable ? DataUtils.FormatAmount(recipe.ProductCost(atMilestones), UnitOfMeasure.None) : "N/A"));
             gui.AllocateSpacing(0.5f);
 
             // Logistics breakdown
             gui.BuildText(LSs.RecipeLogisticsHeader, Font.subheader);
-            var breakdown = CostAnalysis.ComputeLogisticsBreakdown(recipe);
+            var breakdown = CostAnalysis.ComputeLogisticsBreakdown(Project.current, recipe);
+
             gui.BuildText(LSs.RecipeLogisticsTimeSize.L(DataUtils.FormatAmount(breakdown.TimeSizeCost, UnitOfMeasure.None)));
             if (breakdown.PowerCost > 0f) {
                 gui.BuildText(LSs.RecipeLogisticsPower.L(DataUtils.FormatAmount(breakdown.PowerCost, UnitOfMeasure.None)));
@@ -533,6 +528,7 @@ doneDrawing:;
 
     private static void BuildRecipe(RecipeOrTechnology recipe, ImGui gui) {
         bool showCosts = InputSystem.Instance.control;
+        bool atMilestones = InputSystem.Instance.shift;
 
         using (gui.EnterGroup(contentPadding, RectAllocator.LeftRow)) {
             gui.BuildIcon(Icon.Time, 2f, SchemeColor.BackgroundText);
@@ -545,7 +541,7 @@ doneDrawing:;
             }
             else {
                 foreach (Ingredient ingredient in recipe.ingredients) {
-                    BuildItem(gui, ingredient, showCosts: showCosts);
+                    BuildItem(gui, ingredient, showCosts: showCosts, atMilestones: atMilestones);
                 }
             }
 
@@ -580,7 +576,7 @@ doneDrawing:;
 
         // Cost breakdown section for recipes (not technologies)
         if (showCosts && recipe is Recipe costRecipe && costRecipe.IsAutomatable()) {
-            BuildRecipeCostBreakdown(costRecipe, gui);
+            BuildRecipeCostBreakdown(costRecipe, gui, atMilestones);
         }
 
         if (recipe is Recipe { products.Length: > 0 } && !(recipe.products.Length == 1 && recipe.products[0].IsSimple)) {
@@ -588,7 +584,7 @@ doneDrawing:;
             using (gui.EnterGroup(contentPadding)) {
                 string? extraText = recipe is Recipe { preserveProducts: true } ? LSs.ProductSuffixPreserved : null;
                 foreach (var product in recipe.products) {
-                    BuildItem(gui, product, extraText, showCosts);
+                    BuildItem(gui, product, extraText, showCosts, atMilestones);
                 }
             }
         }
