@@ -440,6 +440,7 @@ internal partial class FactorioDataDeserializer {
         // Because actual recipe availability may be different than just "all recipes from that category" because of item slot limit and fluid usage restriction, calculate it here
         DataBucket<RecipeOrTechnology, EntityCrafter> actualRecipeCrafters = new DataBucket<RecipeOrTechnology, EntityCrafter>();
         DataBucket<Goods, Entity> usageAsFuel = new DataBucket<Goods, Entity>();
+        DataBucket<Item, Item> fuelResults = new DataBucket<Item, Item>();
         List<Recipe> allRecipes = [];
         List<Mechanics> allMechanics = [];
 
@@ -506,6 +507,7 @@ internal partial class FactorioDataDeserializer {
                         entityPlacers.Add(GetObject<Entity>(plantResultName), item, true);
                     }
                     if (item.fuelResult != null) {
+                        fuelResults.Add(item.fuelResult, item);
                         miscSources.Add(item.fuelResult, item);
                     }
 
@@ -582,6 +584,7 @@ internal partial class FactorioDataDeserializer {
                         if (item.placeResult != null) {
                             item.FallbackLocalization(item.placeResult, LSs.LocalizationFallbackDescriptionItemToBuild);
                         }
+                        item.fuelResultOf = fuelResults.GetArray(item);
                     }
                     else if (o is Fluid fluid && fluid.variants != null) {
                         if (fluid.locDescr == null) {
