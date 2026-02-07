@@ -497,10 +497,10 @@ doneDrawing:;
             if (!atMilestones) {
                 gui.BuildText(LSs.RecipeCostShiftCtrlHint, TextBlockDisplayStyle.HintText);
             }
-            gui.BuildText(LSs.RecipeCostIngredients.L(hasInfiniteIngredient ? "N/A" : DataUtils.FormatAmount(ingredientCost, UnitOfMeasure.None)));
-            gui.BuildText(LSs.RecipeCostLogistics.L(isAutomatable ? DataUtils.FormatAmount(recipe.RecipeBaseCost(atMilestones), UnitOfMeasure.None) : "N/A"));
+            gui.BuildText(LSs.RecipeCostIngredients.L(hasInfiniteIngredient ? LSs.NotAvailable.L() : DataUtils.FormatAmount(ingredientCost, UnitOfMeasure.None)));
+            gui.BuildText(LSs.RecipeCostLogistics.L(isAutomatable ? DataUtils.FormatAmount(recipe.RecipeBaseCost(atMilestones), UnitOfMeasure.None) : LSs.NotAvailable.L()));
             gui.AllocateSpacing(0.1f);
-            gui.BuildText(LSs.RecipeCostProducts.L(isAutomatable ? DataUtils.FormatAmount(recipe.ProductCost(atMilestones), UnitOfMeasure.None) : "N/A"));
+            gui.BuildText(LSs.RecipeCostProducts.L(isAutomatable ? DataUtils.FormatAmount(recipe.ProductCost(atMilestones), UnitOfMeasure.None) : LSs.NotAvailable.L()));
             gui.AllocateSpacing(0.5f);
 
             // Logistics breakdown
