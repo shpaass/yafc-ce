@@ -204,13 +204,19 @@ public class ShoppingListScreen : PseudoScreen {
         gui.BuildText(LSs.ShoppingListExportBlueprintHint, TextBlockDisplayStyle.WrappedText);
         if (Database.objectsByTypeName.TryGetValue("Entity.constant-combinator", out var combinator)
             && gui.BuildFactorioObjectButtonWithText(combinator) == Click.Left && gui.CloseDropdown()) {
-
-            _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportConstantCombinators(LSs.ShoppingList, ExportGoods<Goods>()));
+            _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportConstantCombinators(
+                LSs.ShoppingList,
+                ExportGoods<Goods>(),
+                format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
         }
 
         foreach (var container in Database.allContainers) {
             if (container.logisticMode == "requester" && gui.BuildFactorioObjectButtonWithText(container) == Click.Left && gui.CloseDropdown()) {
-                _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportRequesterChests(LSs.ShoppingList, ExportGoods<Item>(), container));
+                _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportRequesterChests(
+                    LSs.ShoppingList,
+                    ExportGoods<Item>(),
+                    container,
+                    format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
             }
         }
     }

@@ -1,11 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using Yafc.UI;
 
 namespace Yafc.Model;
 
 public class UndoSystem {
+    /// <summary>
+    /// Gets or sets the fallback scheduler used when <see cref="UndoSystem()" /> is called without
+    /// an explicit scheduler argument. Set this to a UI-aware implementation (e.g.
+    /// <c>GestureFinishUndoBatchScheduler</c>) before creating any <see cref="Project"/> instances
+    /// in an interactive session. Defaults to <see cref="ImmediateUndoBatchScheduler"/>.
+    /// </summary>
+    public static IUndoBatchScheduler DefaultScheduler { get; set; } = new ImmediateUndoBatchScheduler();
+
+    private readonly IUndoBatchScheduler _scheduler;
+
+    /// <summary>Initialises a new <see cref="UndoSystem"/> using <see cref="DefaultScheduler"/>.</summary>
+    public UndoSystem() : this(DefaultScheduler) { }
+
+    /// <summary>Initialises a new <see cref="UndoSystem"/> with an explicit <paramref name="scheduler"/>.</summary>
+    public UndoSystem(IUndoBatchScheduler scheduler) {
+        _scheduler = scheduler;
+    }
+
     public uint version { get; private set; } = 2;
     private bool undoBatchVisualOnly = true;
     private readonly List<UndoSnapshot> currentUndoBatch = [];
@@ -67,7 +84,7 @@ public class UndoSystem {
     }
 
     private void Schedule() {
-        InputSystem.Instance.DispatchOnGestureFinish(MakeUndoBatch, this);
+        _scheduler.ScheduleOnGestureFinish(MakeUndoBatch, this);
         scheduled = true;
     }
 

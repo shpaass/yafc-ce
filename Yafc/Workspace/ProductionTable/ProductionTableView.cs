@@ -322,8 +322,10 @@ goodsHaveNoProduction:;
 
                 goods.Add((flow.goods, rounded));
             }
-
-            _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportConstantCombinators(view.projectPage!.name, goods)); // null-forgiving: An active view always has an active page.
+            _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportConstantCombinators(
+                view.projectPage!.name, // null-forgiving: An active view always has an active page.
+                goods,
+                format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
         }
     }
 
@@ -597,7 +599,8 @@ goodsHaveNoProduction:;
                             }
 
                             BlueprintString bp = new BlueprintString(recipe.recipe.target.locName) { blueprint = { entities = { entity } } };
-                            _ = SDL.SDL_SetClipboardText(bp.ToBpString());
+                            BlueprintFormat bpFormat = InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64;
+                            _ = SDL.SDL_SetClipboardText(bp.ToBpString(bpFormat));
                         }
                     }
 
@@ -656,7 +659,11 @@ goodsHaveNoProduction:;
                     .GetRecipesRecursive()
                     .DistinctBy(row => (row.entity, row.recipe, includeFuel ? row.fuel : null));
 
-                _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportRecipiesAsBlueprint(view.projectPage!.name, uniqueEntites, includeFuel));
+                _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportRecipiesAsBlueprint(
+                    view.projectPage!.name, // null-forgiving: An active view always has an active page.
+                    uniqueEntites,
+                    includeFuel,
+                    format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
             }
         }
     }
