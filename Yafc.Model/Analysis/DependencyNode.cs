@@ -114,10 +114,13 @@ public abstract class DependencyNode {
     /// <summary>
     /// A <see cref="DependencyNode"/> that requires all of its children.
     /// </summary>
-    private sealed class AndNode : DependencyNode {
+    public sealed class AndNode : DependencyNode {
         private readonly DependencyNode[] dependencies;
 
-        private AndNode(DependencyNode[] dependencies) => this.dependencies = dependencies; // Use Create
+        /// <summary>Gets the child nodes that must all be satisfied.</summary>
+        public IReadOnlyList<DependencyNode> Children => dependencies;
+
+        internal AndNode(DependencyNode[] dependencies) => this.dependencies = dependencies; // Use Create
 
         /// <summary>
         /// Returns a <see cref="DependencyNode"/> that requires all of the children specified in <paramref name="dependencies"/>.
@@ -184,10 +187,13 @@ public abstract class DependencyNode {
     /// <summary>
     /// A <see cref="DependencyNode"/> that requires at least one of its children.
     /// </summary>
-    private sealed class OrNode : DependencyNode {
+    public sealed class OrNode : DependencyNode {
         private readonly DependencyNode[] dependencies;
 
-        private OrNode(DependencyNode[] dependencies) => this.dependencies = dependencies; // Use Create
+        /// <summary>Gets the child nodes of which at least one must be satisfied.</summary>
+        public IReadOnlyList<DependencyNode> Children => dependencies;
+
+        internal OrNode(DependencyNode[] dependencies) => this.dependencies = dependencies; // Use Create
 
         /// <summary>
         /// Returns a <see cref="DependencyNode"/> that requires at least one of the children specified in <paramref name="dependencies"/>.
@@ -246,9 +252,20 @@ public abstract class DependencyNode {
     /// <summary>
     /// A <see cref="DependencyNode"/> that matches the behavior of a legacy <see cref="DependencyList"/>.
     /// </summary>
-    /// <param name="dependencies">The <see cref="DependencyList"/> whose behavior should be matched by this <see cref="ListNode"/>.</param>
-    private sealed class ListNode(IEnumerable<FactorioObject> elements, Flags flags) : DependencyNode {
-        private readonly ReadOnlyCollection<FactorioId> elements = elements.Select(e => e.id).Distinct().ToList().AsReadOnly();
+    public sealed class ListNode : DependencyNode {
+        private readonly ReadOnlyCollection<FactorioId> elements;
+        private readonly Flags flags;
+
+        /// <summary>Gets the <see cref="FactorioId"/>s of the dependency objects in this list.</summary>
+        public IReadOnlyList<FactorioId> Elements => elements;
+
+        /// <summary>Gets the <see cref="Flags"/> that describe the require-any/-all behavior and how to describe the dependencies.</summary>
+        public Flags NodeFlags => flags;
+
+        internal ListNode(IEnumerable<FactorioObject> elements, Flags flags) {
+            this.elements = elements.Select(e => e.id).Distinct().ToList().AsReadOnly();
+            this.flags = flags;
+        }
 
         internal override IEnumerable<FactorioId> Flatten() => elements;
 
