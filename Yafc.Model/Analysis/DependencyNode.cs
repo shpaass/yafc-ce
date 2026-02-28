@@ -2,9 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using System.Numerics;
-using Yafc.I18n;
-using Yafc.UI;
 
 namespace Yafc.Model;
 
@@ -105,13 +102,6 @@ public abstract class DependencyNode {
     internal abstract AutomationStatus IsAutomatable(Func<FactorioId, AutomationStatus> isAutomatable, AutomationStatus automationState);
 
     /// <summary>
-    /// Instructs this dependency tree to draw itself on the specified <see cref="ImGui"/>.
-    /// </summary>
-    /// <param name="gui">The drawing destination.</param>
-    /// <param name="builder">A delegate that will draw the passed dependency information onto the passed <see cref="ImGui"/>.</param>
-    public abstract void Draw(ImGui gui, Action<ImGui, IReadOnlyList<FactorioId>, Flags> builder);
-
-    /// <summary>
     /// A <see cref="DependencyNode"/> that requires all of its children.
     /// </summary>
     public sealed class AndNode : DependencyNode {
@@ -171,17 +161,6 @@ public abstract class DependencyNode {
         }
         internal override AutomationStatus IsAutomatable(Func<FactorioId, AutomationStatus> isAutomatable, AutomationStatus automationState)
             => dependencies.Min(d => d.IsAutomatable(isAutomatable, automationState));
-
-        public override void Draw(ImGui gui, Action<ImGui, IReadOnlyList<FactorioId>, Flags> builder) {
-            bool previousChildWasOr = false;
-            foreach (DependencyNode dependency in dependencies) {
-                if (dependency is OrNode && previousChildWasOr) {
-                    gui.AllocateSpacing(.5f);
-                }
-                dependency.Draw(gui, builder);
-                previousChildWasOr = dependency is OrNode;
-            }
-        }
     }
 
     /// <summary>
@@ -229,24 +208,6 @@ public abstract class DependencyNode {
         internal override Bits AggregateBits(Func<FactorioId, Bits> getBits) => dependencies.Min(d => d.AggregateBits(getBits));
         internal override AutomationStatus IsAutomatable(Func<FactorioId, AutomationStatus> isAutomatable, AutomationStatus automationState)
             => dependencies.Max(d => d.IsAutomatable(isAutomatable, automationState));
-
-        public override void Draw(ImGui gui, Action<ImGui, IReadOnlyList<FactorioId>, Flags> builder) {
-            Vector2 offset = new(.4f, 0);
-            using (gui.EnterGroup(new(1f, 0, 0, 0))) {
-                bool isFirst = true;
-                foreach (var dependency in dependencies) {
-                    if (!isFirst) {
-                        using (gui.EnterGroup(new(1, .25f))) {
-                            gui.BuildText(LSs.DependencyOrBar, Font.productionTableHeader);
-                        }
-                        gui.DrawRectangle(gui.lastRect - offset, SchemeColor.GreyAlt);
-                    }
-                    isFirst = false;
-                    dependency.Draw(gui, builder);
-                }
-            }
-            gui.DrawRectangle(gui.lastRect.LeftPart(.2f) + offset, SchemeColor.GreyAlt);
-        }
     }
 
     /// <summary>
@@ -344,7 +305,6 @@ public abstract class DependencyNode {
             return automationState;
         }
 
-        public override void Draw(ImGui gui, Action<ImGui, IReadOnlyList<FactorioId>, Flags> builder) => builder(gui, elements, flags);
     }
 
     public static implicit operator DependencyNode((IEnumerable<FactorioObject> elements, Flags flags) value)
