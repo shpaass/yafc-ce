@@ -31,13 +31,13 @@ public abstract class DependencyNode {
         Location = 11 | OneTimeInvestment,
     }
 
-    private DependencyNode() { } // All derived classes should be nested classes
+    private DependencyNode() { } // Enforces that all concrete subtypes must be nested classes in this file.
 
     /// <summary>
     /// Creates a <see cref="DependencyNode"/> from a list of dependencies. <paramref name="flags"/> contains the require-any/-all
     /// behavior and information about how the dependencies should be described. (e.g. "Crafter", "Ingredient", etc.)
     /// </summary>
-    public static DependencyNode Create(IEnumerable<FactorioObject> elements, Flags flags) => new ListNode(elements, flags);
+    public static DependencyNode Create(IEnumerable<FactorioObject> elements, Flags flags) => ListNode.CreateFromObjects(elements, flags);
 
     /// <summary>
     /// Creates a <see cref="DependencyNode"/> that is satisfied if all of its child nodes are satisfied.
@@ -107,10 +107,16 @@ public abstract class DependencyNode {
     public sealed class AndNode : DependencyNode {
         private readonly DependencyNode[] dependencies;
 
-        /// <summary>Gets the child nodes that must all be satisfied.</summary>
+        /// <summary>Gets the child nodes that must all be satisfied.
+        /// Always contains at least two elements; single-element inputs are normalized to the child itself by the factory method.</summary>
         public IReadOnlyList<DependencyNode> Children => dependencies;
 
-        internal AndNode(DependencyNode[] dependencies) => this.dependencies = dependencies; // Use Create
+        // Do not call directly; use AndNode.Create(IEnumerable<DependencyNode>) to ensure
+        // nested AndNodes are flattened and duplicates are removed.
+        private AndNode(DependencyNode[] dependencies) {
+            System.Diagnostics.Debug.Assert(dependencies.Length >= 2, "AndNode must have at least two children; use Create() which enforces this invariant.");
+            this.dependencies = dependencies;
+        }
 
         /// <summary>
         /// Returns a <see cref="DependencyNode"/> that requires all of the children specified in <paramref name="dependencies"/>.
@@ -126,13 +132,16 @@ public abstract class DependencyNode {
                     realDependencies.Add(item);
                 }
             }
+            // Distinct() uses reference equality; structural equality is not implemented, so only
+            // the exact same DependencyNode instance will be deduplicated here.
             realDependencies = [.. realDependencies.Distinct()];
 
             if (realDependencies.Count == 0) {
-                throw new ArgumentException($"Must not join zero nodes with an 'and'. Instead, create an empty DependencyList to explain what expected dependencies are missing.");
+                throw new ArgumentException("Must not join zero nodes with an 'and'. Instead, create an empty DependencyList to explain what expected dependencies are missing.", nameof(dependencies));
             }
 
-            // Prevent single-child nodes, so the drawing and preceding unpacking code doesn't have to handle that.
+            // A single-child And node is semantically equivalent to the child itself;
+            // return it directly to keep the tree normalized and avoid redundant nesting.
             if (realDependencies.Count == 1) {
                 return realDependencies[0];
             }
@@ -169,10 +178,16 @@ public abstract class DependencyNode {
     public sealed class OrNode : DependencyNode {
         private readonly DependencyNode[] dependencies;
 
-        /// <summary>Gets the child nodes of which at least one must be satisfied.</summary>
+        /// <summary>Gets the child nodes of which at least one must be satisfied.
+        /// Always contains at least two elements; single-element inputs are normalized to the child itself by the factory method.</summary>
         public IReadOnlyList<DependencyNode> Children => dependencies;
 
-        internal OrNode(DependencyNode[] dependencies) => this.dependencies = dependencies; // Use Create
+        // Do not call directly; use OrNode.Create(IEnumerable<DependencyNode>) to ensure
+        // nested OrNodes are flattened and duplicates are removed.
+        private OrNode(DependencyNode[] dependencies) {
+            System.Diagnostics.Debug.Assert(dependencies.Length >= 2, "OrNode must have at least two children; use Create() which enforces this invariant.");
+            this.dependencies = dependencies;
+        }
 
         /// <summary>
         /// Returns a <see cref="DependencyNode"/> that requires at least one of the children specified in <paramref name="dependencies"/>.
@@ -188,13 +203,16 @@ public abstract class DependencyNode {
                     realDependencies.Add(item);
                 }
             }
+            // Distinct() uses reference equality; structural equality is not implemented, so only
+            // the exact same DependencyNode instance will be deduplicated here.
             realDependencies = [.. realDependencies.Distinct()];
 
             if (realDependencies.Count == 0) {
-                throw new ArgumentException($"Must not join zero nodes with an 'or'. Instead, create an empty DependencyList to explain what expected dependencies are missing.");
+                throw new ArgumentException("Must not join zero nodes with an 'or'. Instead, create an empty DependencyList to explain what expected dependencies are missing.", nameof(dependencies));
             }
 
-            // Prevent single-child nodes, so the drawing and preceding unpacking code doesn't have to handle that.
+            // A single-child Or node is semantically equivalent to the child itself;
+            // return it directly to keep the tree normalized and avoid redundant nesting.
             if (realDependencies.Count == 1) {
                 return realDependencies[0];
             }
@@ -217,13 +235,20 @@ public abstract class DependencyNode {
         private readonly ReadOnlyCollection<FactorioId> elements;
         private readonly Flags flags;
 
-        /// <summary>Gets the <see cref="FactorioId"/>s of the dependency objects in this list.</summary>
+        /// <summary>Gets the <see cref="FactorioId"/>s of the dependency objects in this list.
+        /// Duplicate IDs are guaranteed to have been removed.</summary>
         public IReadOnlyList<FactorioId> Elements => elements;
 
         /// <summary>Gets the <see cref="Flags"/> that describe the require-any/-all behavior and how to describe the dependencies.</summary>
         public Flags NodeFlags => flags;
 
-        internal ListNode(IEnumerable<FactorioObject> elements, Flags flags) {
+        // Do not call directly; use DependencyNode.Create() or the implicit conversion operator.
+        // This internal factory delegates instantiation so the constructor can remain private
+        // (consistent with AndNode/OrNode, enforcing that creation occurs via factory methods),
+        // since C# outer classes cannot directly access private constructors of nested types.
+        internal static ListNode CreateFromObjects(IEnumerable<FactorioObject> elements, Flags flags) => new ListNode(elements, flags);
+
+        private ListNode(IEnumerable<FactorioObject> elements, Flags flags) {
             this.elements = elements.Select(e => e.id).Distinct().ToList().AsReadOnly();
             this.flags = flags;
         }
@@ -268,8 +293,9 @@ public abstract class DependencyNode {
             if (!flags.HasFlags(Flags.OneTimeInvestment)) {
                 if (flags.HasFlags(Flags.RequireEverything)) {
                     foreach (FactorioId element in elements) {
-                        if (getAutomation(element) < automationState) {
-                            automationState = getAutomation(element);
+                        AutomationStatus status = getAutomation(element);
+                        if (status < automationState) {
+                            automationState = status;
                         }
                     }
                 }
@@ -277,8 +303,9 @@ public abstract class DependencyNode {
                     AutomationStatus localHighest = AutomationStatus.NotAutomatable;
 
                     foreach (FactorioId element in elements) {
-                        if (getAutomation(element) > localHighest) {
-                            localHighest = getAutomation(element);
+                        AutomationStatus status = getAutomation(element);
+                        if (status > localHighest) {
+                            localHighest = status;
                         }
                     }
 
