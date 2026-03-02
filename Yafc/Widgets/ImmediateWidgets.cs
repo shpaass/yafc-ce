@@ -86,7 +86,7 @@ public static class ImmediateWidgets {
                 Vector2 size = new Vector2(displayStyle.Size / 2f);
                 var delta = contain ? size : size / 2f;
                 Rect milestoneIcon = new Rect(gui.lastRect.BottomRight - delta, size);
-                var icon = milestone == Database.voidEnergy.target ? DataUtils.HandIcon : milestone.icon;
+                var icon = milestone == Database.voidEnergy.target ? SystemIcons.HandIcon : milestone.icon;
                 gui.DrawIcon(milestoneIcon, icon, color);
             }
         }

@@ -230,9 +230,10 @@ internal partial class FactorioDataDeserializer {
                 cache[(".", digit.ToString())] = SDL_image.IMG_Load("Data/Digits/" + digit + ".png");
             }
 
-            DataUtils.NoFuelIcon = CreateSimpleIcon(cache, "fuel-icon-red");
-            DataUtils.WarningIcon = CreateSimpleIcon(cache, "warning-icon");
-            DataUtils.HandIcon = CreateSimpleIcon(cache, "hand");
+            SystemIcons.Initialize(
+                noFuelIcon: CreateSimpleIcon(cache, "fuel-icon-red"),
+                warningIcon: CreateSimpleIcon(cache, "warning-icon"),
+                handIcon: CreateSimpleIcon(cache, "hand"));
 
             Dictionary<string, Icon> simpleSpritesCache = [];
             int rendered = 0;
@@ -258,7 +259,7 @@ internal partial class FactorioDataDeserializer {
                         }
                     }
                     catch (Exception ex) {
-                        Console.Error.WriteException(ex);
+                        logger.Error(ex, "Could not render icon {type} {name}", o.type, o.name);
                     }
                 }
                 else if (o is Recipe recipe && recipe.mainProduct != null) {
