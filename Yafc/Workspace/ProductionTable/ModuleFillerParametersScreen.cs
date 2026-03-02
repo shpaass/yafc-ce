@@ -41,8 +41,8 @@ public class ModuleFillerParametersScreen : PseudoScreen {
                     }
                 }
             });
-        gui.DrawIcon(new(gui.lastRect.X, gui.lastRect.Y, 1.25f, 1.25f), config.beacon.target.icon, SchemeColor.Source);
-        gui.DrawIcon(new(gui.lastRect.TopRight - new Vector2(1.25f, 0), new Vector2(1.25f, 1.25f)), config.beaconModule.target.icon, SchemeColor.Source);
+        gui.DrawIcon(new(gui.lastRect.X, gui.lastRect.Y, 1.25f, 1.25f), config.beacon.target.GetIcon(), SchemeColor.Source);
+        gui.DrawIcon(new(gui.lastRect.TopRight - new Vector2(1.25f, 0), new Vector2(1.25f, 1.25f)), config.beaconModule.target.GetIcon(), SchemeColor.Source);
         switch (click) {
             case GoodsWithAmountEvent.LeftButtonClick:
                 SelectSingleObjectPanel.SelectQualityWithNone(Database.usableBeacons,

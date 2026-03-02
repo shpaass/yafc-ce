@@ -119,7 +119,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
     private void BuildPage(ImGui gui, ProjectPage element, int index) {
         using (gui.EnterGroup(new Padding(1f, 0.25f), RectAllocator.LeftRow)) {
             if (element.icon != null) {
-                gui.BuildIcon(element.icon.icon);
+                gui.BuildIcon(element.icon.GetIcon());
             }
 
             gui.RemainingRow().BuildText(element.name, TextBlockDisplayStyle.Default(element.visible ? SchemeColor.BackgroundText : SchemeColor.BackgroundTextFaint));
@@ -301,7 +301,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         else {
             if (gui.isBuilding && Database.objectsByTypeName.TryGetValue("Entity.compilatron", out var compilatron)) {
                 gui.AllocateSpacing((pageVisibleSize.Y - 3f) / 2);
-                gui.BuildIcon(compilatron.icon, 3f);
+                gui.BuildIcon(compilatron.GetIcon(), 3f);
             }
         }
     }

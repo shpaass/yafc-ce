@@ -247,23 +247,23 @@ internal partial class FactorioDataDeserializer {
                     bool simpleSprite = o.iconSpec.Length == 1 && o.iconSpec[0].IsSimple();
 
                     if (simpleSprite && simpleSpritesCache.TryGetValue(o.iconSpec[0].path, out var icon)) {
-                        o.icon = icon;
+                        o.iconId = (int)icon;
                         continue;
                     }
 
                     try {
-                        o.icon = CreateIconFromSpec(cache, o.iconSpec);
+                        o.iconId = (int)CreateIconFromSpec(cache, o.iconSpec);
 
                         if (simpleSprite) {
-                            simpleSpritesCache[o.iconSpec[0].path] = o.icon;
+                            simpleSpritesCache[o.iconSpec[0].path] = (Icon)o.iconId;
                         }
                     }
                     catch (Exception ex) {
-                        logger.Error(ex, "Could not render icon {type} {name}", o.type, o.name);
+                        Console.Error.WriteException(ex);
                     }
                 }
                 else if (o is Recipe recipe && recipe.mainProduct != null) {
-                    o.icon = recipe.mainProduct.icon;
+                    o.iconId = recipe.mainProduct.iconId;
                 }
             }
         }

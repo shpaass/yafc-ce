@@ -5,7 +5,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Yafc.I18n;
-using Yafc.UI;
 [assembly: InternalsVisibleTo("Yafc.Parser")]
 
 namespace Yafc.Model;
@@ -39,7 +38,12 @@ public abstract class FactorioObject : IFactorioObjectWrapper, IComparable<Facto
     public string locName { get; internal set; } = null!; // null-forgiving: Copied from name if still null at the end of CalculateMaps
     public string? locDescr { get; internal set; }
     internal FactorioIconPart[]? iconSpec { get; set; }
-    public Icon icon { get; internal set; }
+    /// <summary>
+    /// Integer icon handle assigned during data loading.
+    /// This value matches the numeric value of <c>Yafc.UI.Icon</c>
+    /// and should only be interpreted in the UI layer via <c>GetIcon()</c>.
+    /// </summary>
+    public int iconId { get; internal set; }
     public FactorioId id { get; internal set; }
     internal abstract FactorioObjectSortOrder sortingOrder { get; }
     public FactorioObjectSpecialType specialType { get; internal set; }

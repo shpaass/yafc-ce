@@ -72,10 +72,10 @@ public static class ImmediateWidgets {
         SchemeColor color = (obj.target.IsAccessible() || displayStyle.AlwaysAccessible) ? SchemeColor.Source : SchemeColor.SourceFaint;
         if (displayStyle.UseScaleSetting) {
             Rect rect = gui.AllocateRect(displayStyle.Size, displayStyle.Size, RectAlignment.Middle);
-            gui.DrawIcon(rect.Expand(displayStyle.Size * (Project.current.preferences.iconScale - 1) / 2), obj.target.icon, color);
+            gui.DrawIcon(rect.Expand(displayStyle.Size * (Project.current.preferences.iconScale - 1) / 2), obj.target.GetIcon(), color);
         }
         else {
-            gui.BuildIcon(obj.target.icon, displayStyle.Size, color);
+            gui.BuildIcon(obj.target.GetIcon(), displayStyle.Size, color);
         }
         if (gui.isBuilding && displayStyle.MilestoneDisplay != MilestoneDisplay.None
             && (obj.target.IsAccessible() || Project.current.preferences.showMilestoneOnInaccessible)) {
@@ -86,7 +86,7 @@ public static class ImmediateWidgets {
                 Vector2 size = new Vector2(displayStyle.Size / 2f);
                 var delta = contain ? size : size / 2f;
                 Rect milestoneIcon = new Rect(gui.lastRect.BottomRight - delta, size);
-                var icon = milestone == Database.voidEnergy.target ? SystemIcons.HandIcon : milestone.icon;
+                var icon = milestone == Database.voidEnergy.target ? SystemIcons.HandIcon : milestone.GetIcon();
                 gui.DrawIcon(milestoneIcon, icon, color);
             }
         }
@@ -97,7 +97,7 @@ public static class ImmediateWidgets {
             Vector2 delta = new(0, size.Y);
             Rect qualityRect = new Rect(gui.lastRect.BottomLeft - delta, size);
 
-            gui.DrawIcon(qualityRect, quality.icon, SchemeColor.Source);
+            gui.DrawIcon(qualityRect, quality.GetIcon(), SchemeColor.Source);
         }
         if (gui.isBuilding && obj.target is Item { baseSpoilTime: > 0 } or Entity { baseSpoilTime: > 0 }) {
             Vector2 size = new Vector2(displayStyle.Size / 2.5f);

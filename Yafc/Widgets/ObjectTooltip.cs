@@ -72,7 +72,7 @@ public class ObjectTooltip : Tooltip {
                                 goto doneDrawing;
                             }
                             if (milestoneMask[maskBit]) {
-                                gui.BuildIcon(milestones.Current.icon, 1f, SchemeColor.Source);
+                                gui.BuildIcon(milestones.Current.GetIcon(), 1f, SchemeColor.Source);
                                 j++;
                             }
 
