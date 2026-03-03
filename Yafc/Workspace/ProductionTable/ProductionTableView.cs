@@ -325,7 +325,7 @@ goodsHaveNoProduction:;
             _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportConstantCombinators(
                 view.projectPage!.name, // null-forgiving: An active view always has an active page.
                 goods,
-                format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
+                format: BlueprintClipboardContext.RequestedFormat));
         }
     }
 
@@ -599,7 +599,7 @@ goodsHaveNoProduction:;
                             }
 
                             BlueprintString bp = new BlueprintString(recipe.recipe.target.locName) { blueprint = { entities = { entity } } };
-                            BlueprintFormat bpFormat = InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64;
+                            BlueprintFormat bpFormat = BlueprintClipboardContext.RequestedFormat;
                             _ = SDL.SDL_SetClipboardText(bp.ToBpString(bpFormat));
                         }
                     }
@@ -663,7 +663,7 @@ goodsHaveNoProduction:;
                     view.projectPage!.name, // null-forgiving: An active view always has an active page.
                     uniqueEntites,
                     includeFuel,
-                    format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
+                    format: BlueprintClipboardContext.RequestedFormat));
             }
         }
     }

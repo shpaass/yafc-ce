@@ -207,7 +207,7 @@ public class ShoppingListScreen : PseudoScreen {
             _ = SDL.SDL_SetClipboardText(BlueprintUtilities.ExportConstantCombinators(
                 LSs.ShoppingList,
                 ExportGoods<Goods>(),
-                format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
+                format: BlueprintClipboardContext.RequestedFormat));
         }
 
         foreach (var container in Database.allContainers) {
@@ -216,7 +216,7 @@ public class ShoppingListScreen : PseudoScreen {
                     LSs.ShoppingList,
                     ExportGoods<Item>(),
                     container,
-                    format: InputSystem.Instance.control ? BlueprintFormat.RawJson : BlueprintFormat.CompressedBase64));
+                    format: BlueprintClipboardContext.RequestedFormat));
             }
         }
     }
