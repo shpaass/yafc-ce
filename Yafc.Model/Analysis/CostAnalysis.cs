@@ -10,6 +10,19 @@ using Yafc.UI;
 
 namespace Yafc.Model;
 
+/// <summary>
+/// Breakdown of logistics cost components for a recipe.
+/// </summary>
+public record RecipeLogisticsBreakdown(
+    float TimeSizeCost,
+    float PowerCost,
+    float ItemTransportCost,
+    float FluidTransportCost,
+    float PollutionCost,
+    float MiningPenalty,
+    float TotalCost
+);
+
 public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
     private readonly ILogger logger = Logging.GetLogger<CostAnalysis>();
 
@@ -29,6 +42,100 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
     private const float MiningPenalty = 1f; // Penalty for any mining
     private const float MiningMaxDensityForPenalty = 2000; // Mining things with less density than this gets extra penalty
     private const float MiningMaxExtraPenaltyForRarity = 10f;
+
+    /// <summary>
+    /// Computes the logistics cost breakdown for a recipe.
+    /// </summary>
+    public static RecipeLogisticsBreakdown ComputeLogisticsBreakdown(Project project, Recipe recipe) {
+        // Find minimum crafter stats
+        float minEmissions = 100f;
+        int minSize = 15;
+        float minPower = 1000f;
+
+        foreach (var crafter in recipe.crafters) {
+            foreach ((_, float e) in crafter.energy.emissions) {
+                minEmissions = MathF.Min(e, minEmissions);
+            }
+
+            if (crafter.energy.type == EntityEnergyType.Heat) {
+                break;
+            }
+
+            if (crafter.size < minSize) {
+                minSize = crafter.size;
+            }
+
+            float power = crafter.energy.type == EntityEnergyType.Void ? 0f : recipe.time * crafter.basePower / (crafter.baseCraftingSpeed * crafter.energy.effectivity);
+
+            if (power < minPower) {
+                minPower = power;
+            }
+        }
+
+        if (minPower < 0f) {
+            minPower = 0f;
+        }
+
+        // Calculate components
+        int size = Math.Max(minSize, (recipe.ingredients.Length + recipe.products.Length) / 2);
+        float sizeUsage = CostPerSecond * recipe.time * size;
+        float timeSizeCost = sizeUsage * (1f + (CostPerIngredientPerSize * recipe.ingredients.Length) + (CostPerProductPerSize * recipe.products.Length));
+        float powerCost = CostPerMj * minPower;
+
+        float itemTransportCost = 0f;
+        float fluidTransportCost = 0f;
+
+        foreach (var product in recipe.products) {
+            if (product.goods is Item) {
+                itemTransportCost += product.amount * CostPerItem;
+            }
+            else if (product.goods is Fluid) {
+                fluidTransportCost += product.amount * CostPerFluid;
+            }
+        }
+
+        foreach (var ingredient in recipe.ingredients) {
+            if (ingredient.goods is Item) {
+                itemTransportCost += ingredient.amount * CostPerItem;
+            }
+            else if (ingredient.goods is Fluid) {
+                fluidTransportCost += ingredient.amount * CostPerFluid;
+            }
+        }
+
+        float pollutionCost = 0f;
+        if (minEmissions >= 0f) {
+            pollutionCost = minEmissions * CostPerPollution * recipe.time * project.settings.PollutionCostModifier;
+        }
+
+        float miningPenalty = 1f;
+        if (recipe.sourceEntity != null && recipe.sourceEntity.mapGenerated) {
+            float totalMining = 0f;
+            foreach (var product in recipe.products) {
+                totalMining += product.amount;
+            }
+
+            miningPenalty = MiningPenalty;
+            float totalDensity = recipe.sourceEntity.mapGenDensity / totalMining;
+
+            if (totalDensity < MiningMaxDensityForPenalty) {
+                float extraPenalty = MathF.Log(MiningMaxDensityForPenalty / totalDensity);
+                miningPenalty += Math.Min(extraPenalty, MiningMaxExtraPenaltyForRarity);
+            }
+        }
+
+        float totalCost = ((timeSizeCost + powerCost + itemTransportCost + fluidTransportCost) * miningPenalty) + pollutionCost;
+
+        return new RecipeLogisticsBreakdown(
+            TimeSizeCost: timeSizeCost,
+            PowerCost: powerCost,
+            ItemTransportCost: itemTransportCost,
+            FluidTransportCost: fluidTransportCost,
+            PollutionCost: pollutionCost,
+            MiningPenalty: miningPenalty,
+            TotalCost: totalCost
+        );
+    }
 
     public Mapping<FactorioObject, float> cost;
     public Mapping<Recipe, float> recipeCost;
@@ -121,28 +228,13 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
             // TODO incorporate fuel selection. Now just select fuel if it only uses 1 fuel
             Goods? singleUsedFuel = null;
             float singleUsedFuelAmount = 0f;
-            float minEmissions = 100f;
-            int minSize = 15;
-            float minPower = 1000f;
 
             foreach (var crafter in recipe.crafters) {
-                foreach ((_, float e) in crafter.energy.emissions) {
-                    minEmissions = MathF.Min(e, minEmissions);
-                }
-
                 if (crafter.energy.type == EntityEnergyType.Heat) {
                     break;
                 }
 
-                if (crafter.size < minSize) {
-                    minSize = crafter.size;
-                }
-
                 float power = crafter.energy.type == EntityEnergyType.Void ? 0f : recipe.time * crafter.basePower / (crafter.baseCraftingSpeed * crafter.energy.effectivity);
-
-                if (power < minPower) {
-                    minPower = power;
-                }
 
                 foreach (var fuel in crafter.energy.fuels) {
                     if (!ShouldInclude(fuel)) {
@@ -173,71 +265,25 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
                 }
             }
 
-            if (minPower < 0f) {
-                minPower = 0f;
-            }
-
-            int size = Math.Max(minSize, (recipe.ingredients.Length + recipe.products.Length) / 2);
-            float sizeUsage = CostPerSecond * recipe.time * size;
-            float logisticsCost = (sizeUsage * (1f + (CostPerIngredientPerSize * recipe.ingredients.Length) + (CostPerProductPerSize * recipe.products.Length))) + (CostPerMj * minPower);
-
             if (singleUsedFuel == Database.electricity.target || singleUsedFuel == Database.voidEnergy.target || singleUsedFuel == Database.heat.target) {
                 singleUsedFuel = null;
             }
+
+            float logisticsCost = ComputeLogisticsBreakdown(project, recipe).TotalCost;
 
             var constraint = workspaceSolver.MakeConstraint(double.NegativeInfinity, 0, recipe.name);
             constraints[recipe] = constraint;
 
             foreach (var product in recipe.products) {
-                var var = variables[product.goods];
-                float amount = product.amount;
-                constraint.SetCoefficientCheck(var, amount, ref lastVariable[product.goods]);
-
-                if (product.goods is Item) {
-                    logisticsCost += amount * CostPerItem;
-                }
-                else if (product.goods is Fluid) {
-                    logisticsCost += amount * CostPerFluid;
-                }
+                constraint.SetCoefficientCheck(variables[product.goods], product.amount, ref lastVariable[product.goods]);
             }
 
             if (singleUsedFuel != null) {
-                var var = variables[singleUsedFuel];
-                constraint.SetCoefficientCheck(var, -singleUsedFuelAmount, ref lastVariable[singleUsedFuel]);
+                constraint.SetCoefficientCheck(variables[singleUsedFuel], -singleUsedFuelAmount, ref lastVariable[singleUsedFuel]);
             }
 
             foreach (var ingredient in recipe.ingredients) {
-                var var = variables[ingredient.goods]; // TODO split cost analysis
-                constraint.SetCoefficientCheck(var, -ingredient.amount, ref lastVariable[ingredient.goods]);
-
-                if (ingredient.goods is Item) {
-                    logisticsCost += ingredient.amount * CostPerItem;
-                }
-                else if (ingredient.goods is Fluid) {
-                    logisticsCost += ingredient.amount * CostPerFluid;
-                }
-            }
-
-            if (recipe.sourceEntity != null && recipe.sourceEntity.mapGenerated) {
-                float totalMining = 0f;
-
-                foreach (var product in recipe.products) {
-                    totalMining += product.amount;
-                }
-
-                float miningPenalty = MiningPenalty;
-                float totalDensity = recipe.sourceEntity.mapGenDensity / totalMining;
-
-                if (totalDensity < MiningMaxDensityForPenalty) {
-                    float extraPenalty = MathF.Log(MiningMaxDensityForPenalty / totalDensity);
-                    miningPenalty += Math.Min(extraPenalty, MiningMaxExtraPenaltyForRarity);
-                }
-
-                logisticsCost *= miningPenalty;
-            }
-
-            if (minEmissions >= 0f) {
-                logisticsCost += minEmissions * CostPerPollution * recipe.time * project.settings.PollutionCostModifier;
+                constraint.SetCoefficientCheck(variables[ingredient.goods], -ingredient.amount, ref lastVariable[ingredient.goods]);
             }
 
             constraint.SetUb(logisticsCost);
