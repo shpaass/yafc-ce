@@ -1,12 +1,23 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using Yafc.UI;
 
 namespace Yafc.Model;
 
 public class UndoSystem {
-    public uint version { get; private set; } = 2;
+
+    public uint version {
+        get => _version;
+        private set {
+            if (_version != value) {
+                _version = value;
+                versionChanged?.Invoke();
+            }
+        }
+    }
+    public event Action? versionChanged;
     private bool undoBatchVisualOnly = true;
     private readonly List<UndoSnapshot> currentUndoBatch = [];
     private readonly List<ModelObject> changedList = [];
@@ -14,6 +25,8 @@ public class UndoSystem {
     private readonly Stack<UndoBatch> redo = new Stack<UndoBatch>();
     private bool suspended;
     private bool scheduled;
+    private uint _version = 2;
+
     internal void CreateUndoSnapshot(ModelObject target, bool visualOnly) {
         if (SerializationMap.IsDeserializing) {
             throw new InvalidOperationException("Do not record an undo event while deserializing.");
@@ -82,12 +95,12 @@ public class UndoSystem {
     }
 
     public void PerformUndo() {
-        if (undo.Count == 0 || changedList.Count > 0) {
-            return;
+        if (CanUndo) {
+            redo.Push(undo.Pop().Restore(++version));
         }
-
-        redo.Push(undo.Pop().Restore(++version));
     }
+
+    public bool CanUndo => !(undo.Count == 0 || changedList.Count > 0);
 
     public void PerformRedo() {
         if (redo.Count == 0 || changedList.Count > 0) {

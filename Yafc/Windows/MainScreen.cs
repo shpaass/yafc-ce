@@ -72,6 +72,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
     private void SetProject(Project project) {
         if (this.project != null) {
             this.project.metaInfoChanged -= ProjectOnMetaInfoChanged;
+            this.project.saveStateChanged -= ProjectSaveStateChanged;
             this.project.settings.changed -= ProjectSettingsChanged;
         }
         Project.current = project;
@@ -90,7 +91,10 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         SetActivePage(project.FindPage(project.displayPages[0]));
         project.metaInfoChanged += ProjectOnMetaInfoChanged;
         project.settings.changed += ProjectSettingsChanged;
+        project.saveStateChanged += ProjectSaveStateChanged;
+
         _ = InputSystem.Instance.SetDefaultKeyboardFocus(this);
+        UpdateWindowTitle(false);
     }
 
     private void ProjectSettingsChanged(bool visualOnly) {
@@ -143,6 +147,10 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         if (_activePage != null && project.FindPage(_activePage.guid) != _activePage) {
             SetActivePage(null);
         }
+    }
+
+    private void ProjectSaveStateChanged(bool unsavedChanges) {
+        UpdateWindowTitle(unsavedChanges);
     }
 
     private void ChangePage(ref ProjectPage? activePage, ProjectPage? newPage, ref ProjectPageView? activePageView, ProjectPageView? newPageView) {
@@ -247,7 +255,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         using (gui.EnterRow()) {
             gui.spacing = 0f;
             if (gui.BuildButton(Icon.Menu)) {
-                gui.ShowDropDown(gui.lastRect, SettingsDropdown, new Padding(0f, 0f, 0f, 0.5f));
+                gui.ShowDropDown(gui.lastRect, MainDropdown, new Padding(0f, 0f, 0f, 0.5f));
             }
 
             if (gui.BuildButton(Icon.Plus).WithTooltip(gui, LSs.CreateProductionSheet.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_T)))) {
@@ -365,13 +373,13 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         searchBoxRect = gui.lastRect;
     }
 
-    private void SettingsDropdown(ImGui gui) {
+    private void MainDropdown(ImGui gui) {
         gui.boxColor = SchemeColor.Background;
-        if (gui.BuildContextMenuButton(LSs.Undo, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_Z))) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.Undo, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_Z)), disabled: !project.undo.CanUndo ) && gui.CloseDropdown()) {
             project.undo.PerformUndo();
         }
 
-        if (gui.BuildContextMenuButton(LSs.Save, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_S))) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.Save, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_S)), disabled: project.unsavedChangesCount == 0) && gui.CloseDropdown()) {
             SaveProject().CaptureException();
         }
 
@@ -388,7 +396,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
 
         if (gui.BuildContextMenuButton(LSs.ReturnToWelcomeScreen) && gui.CloseDropdown()) {
-            LoadProjectHeavy();
+            ReturnToWelcomeScreen();
         }
 
         BuildSubHeader(gui, LSs.MenuHeaderTools);
@@ -477,6 +485,14 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
     public void ForceClose() {
         Preferences.Instance.Save();
         base.Close();
+    }
+
+    private void UpdateWindowTitle(bool unsavedChanges) {
+        var projectName = string.IsNullOrEmpty(project.attachedFileName)
+            ? LSs.UntitledProject
+            : (unsavedChanges ? "*" : string.Empty) + Path.GetFileNameWithoutExtension(project.attachedFileName);
+        var title = $"{LSs.FullNameWithVersion.L(YafcLib.version.ToString(3))} - {projectName}";
+        SetWindowTitle(title);
     }
 
     private async Task<bool> ConfirmUnsavedChanges() {
@@ -648,6 +664,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
             FilesystemScreen.Mode.SelectOrCreateFile, LSs.DefaultFileName, this, null, "yafc", "Enter Project Name");
         if (projectPath != null) {
             project.Save(projectPath);
+            UpdateWindowTitle(false);
             Preferences.Instance.AddProject(DataUtils.dataPath, DataUtils.modsPath, projectPath, DataUtils.expensiveRecipes, DataUtils.netProduction);
             return true;
         }
@@ -694,7 +711,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         }
     }
 
-    private async void LoadProjectHeavy() {
+    private async void ReturnToWelcomeScreen() {
         if (project.unsavedChangesCount > 0 && !await ConfirmUnsavedChanges()) {
             return;
         }
@@ -741,6 +758,8 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
 
         public void Render(DrawingSurface surface, SDL.SDL_Rect position, SDL.SDL_Color color) {
             if (blurredFade.valid) {
+                // _ = SDL.SDL_SetTextureBlendMode(blurredFade.handle, SDL.SDL_BlendMode.SDL_BLENDMODE_BLEND);
+                // _ = SDL.SDL_SetTextureAlphaMod(blurredFade.handle, 160);
                 _ = SDL.SDL_RenderCopy(surface.renderer, blurredFade.handle, ref srcRect, ref position);
             }
         }

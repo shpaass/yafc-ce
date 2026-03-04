@@ -22,7 +22,13 @@
 Version:
 Date:
     Features:
+        - Extended main window title - append current project name (with * indicator for unsaved changes).
+        - Main dropdown - disable Save when there are no unsaved changes.
+        - Main dropdown - disable Undo when there is nothing to undo.
     Fixes:
+    Internal changes:
+        - Rename SettingsDropdown to MainDropdown.
+        - Rename LoadProjectHeavy to ReturnToWelcomeScreen.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.17.0
 Date: March 4th 2026
