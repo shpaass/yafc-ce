@@ -391,6 +391,7 @@ public class Item : Goods {
     }
 
     public Item? fuelResult { get; internal set; }
+    public Item[] fuelResultOf { get; internal set; } = [];
     public int stackSize { get; internal set; }
     public Entity? placeResult { get; internal set; }
     public Entity? plantResult { get; internal set; }

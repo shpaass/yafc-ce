@@ -267,6 +267,19 @@ public class NeverEnoughItemsPanel : PseudoScreen, IComparer<NeverEnoughItemsPan
                 gui.DrawRectangle(gui.lastRect, SchemeColor.Primary);
             }
         }
+        if (production && current is Item item && item.fuelResultOf.Length > 0) {
+            using (gui.EnterGroup(new Padding(0.5f), RectAllocator.LeftAlign)) {
+                gui.BuildText(LSs.ResultOfSpendingFuel);
+                using var grid = gui.EnterInlineGrid(3f);
+                foreach (var fuelResult in item.fuelResultOf) {
+                    grid.Next();
+                    _ = gui.BuildFactorioObjectButton(fuelResult, ButtonDisplayStyle.NeieSmall);
+                }
+            }
+            if (gui.isBuilding) {
+                gui.DrawRectangle(gui.lastRect, SchemeColor.Primary);
+            }
+        }
     }
 
     private void ChangeShowStatus(EntryStatus status) {
