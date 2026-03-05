@@ -35,7 +35,7 @@ public class Project : ModelObject {
 
     public event Action<bool>? saveStateChanged;
 
-    public Project() : base(new UndoSystem() ) {
+    public Project() : base(new UndoSystem()) {
         settings = new ProjectSettings(this);
         preferences = new ProjectPreferences(this);
         base.undo.versionChanged += () => saveStateChanged?.Invoke(unsavedChangesCount > 0);

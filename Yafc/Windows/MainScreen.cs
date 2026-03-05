@@ -375,7 +375,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
 
     private void MainDropdown(ImGui gui) {
         gui.boxColor = SchemeColor.Background;
-        if (gui.BuildContextMenuButton(LSs.Undo, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_Z)), disabled: !project.undo.CanUndo ) && gui.CloseDropdown()) {
+        if (gui.BuildContextMenuButton(LSs.Undo, LSs.ShortcutCtrlX.L(ImGuiUtils.ScanToString(SDL.SDL_Scancode.SDL_SCANCODE_Z)), disabled: !project.undo.CanUndo) && gui.CloseDropdown()) {
             project.undo.PerformUndo();
         }
 
