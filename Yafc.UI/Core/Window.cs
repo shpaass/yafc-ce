@@ -90,6 +90,8 @@ public abstract class Window : IDisposable {
         return desiredUnitsToPixels;
     }
 
+    protected internal void SetWindowTitle(string value) => SDL.SDL_SetWindowTitle(window, value);
+
     protected internal virtual void WindowResize() {
         rootGui.MarkEverythingForRebuild();
         rootGui.Rebuild();
