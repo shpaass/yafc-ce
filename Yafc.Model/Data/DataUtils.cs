@@ -128,9 +128,6 @@ public static partial class DataUtils {
     /// but will appear as only producing U-235 and consuming U-238 when <see langword="true"/>.
     /// </summary>
     public static bool netProduction { get; internal set; }
-    public static Icon NoFuelIcon { get; internal set; }
-    public static Icon WarningIcon { get; internal set; }
-    public static Icon HandIcon { get; internal set; }
 
     public static readonly Random random = new Random();
 

@@ -41,7 +41,7 @@ public class MainScreenTabBar {
             using (gui.EnterGroup(new Padding(0.5f, 0.2f, 0.2f, 0.5f))) {
                 gui.spacing = 0.2f;
                 if (page.icon != null) {
-                    gui.BuildIcon(page.icon.icon);
+                    gui.BuildIcon(page.icon.GetIcon());
                 }
                 else {
                     _ = gui.AllocateRect(0f, 1.5f);
