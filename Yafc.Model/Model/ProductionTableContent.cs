@@ -592,35 +592,6 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
         }
     }
 
-    private SetKeyboardFocus _focusBuiltCount, _focusFixedCount;
-
-    /// <summary>
-    /// Returns <see cref="SetKeyboardFocus.Always"/> exactly once after each call to <see cref="FocusBuiltCountOnNextDraw"/>, to focus the newly created edit box on that draw cycle.
-    /// </summary>
-    public SetKeyboardFocus ShouldFocusBuiltCountThisTime() {
-        SetKeyboardFocus result = _focusBuiltCount;
-        _focusBuiltCount = SetKeyboardFocus.No;
-        return result;
-    }
-    /// <summary>
-    /// Call when preparing to add a built building count edit box, so the new box will be focused as part of the next draw loop.
-    /// </summary>
-    public void FocusBuiltCountOnNextDraw() => _focusBuiltCount = SetKeyboardFocus.Always;
-
-    /// <summary>
-    /// Returns <see cref="SetKeyboardFocus.Always"/> exactly once after each call to <see cref="FocusFixedCountOnNextDraw"/>, to focus the newly created edit box on that draw cycle.
-    /// </summary>
-    public SetKeyboardFocus ShouldFocusFixedCountThisTime() {
-        SetKeyboardFocus result = _focusFixedCount;
-        _focusFixedCount = SetKeyboardFocus.No;
-        return result;
-    }
-    /// <summary>
-    /// Call when preparing to add or move a fixed count edit box (building, fuel, ingredient, or product), so the new box will be focused as part of the next draw loop.
-    /// </summary>
-    public void FocusFixedCountOnNextDraw() => _focusFixedCount = SetKeyboardFocus.Always;
-
-
     // Computed variables
     internal RecipeParameters parameters { get; set; } = RecipeParameters.Empty;
     public double recipesPerSecond { get; internal set; }
