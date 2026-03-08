@@ -5,9 +5,16 @@ using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Yafc.Model;
-using Yafc.UI;
 
 namespace Yafc.Blueprints;
+
+/// <summary>Specifies the serialisation format used when exporting a blueprint string.</summary>
+public enum BlueprintFormat {
+    /// <summary>Produces a compressed, Base64-encoded Factorio blueprint string (the default game format).</summary>
+    CompressedBase64,
+    /// <summary>Produces raw JSON without compression, useful for debugging or tooling.</summary>
+    RawJson,
+}
 
 [Serializable]
 public class BlueprintString(string blueprintName) {
@@ -15,8 +22,8 @@ public class BlueprintString(string blueprintName) {
     private static readonly byte[] header = [0x78, 0xDA];
     private static readonly JsonSerializerOptions jsonSerializerOptions = new() { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull };
 
-    public string ToBpString() {
-        if (InputSystem.Instance.control) {
+    public string ToBpString(BlueprintFormat format = BlueprintFormat.CompressedBase64) {
+        if (format == BlueprintFormat.RawJson) {
             return ToJson();
         }
 
