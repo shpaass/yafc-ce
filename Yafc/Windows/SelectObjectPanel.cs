@@ -126,8 +126,9 @@ public abstract class SelectObjectPanel<TResult, TDisplay> : PseudoScreenWithRes
             gui.AllocateSpacing();
         }
 
-        if (gui.BuildSearchBox(list.filter, out var newFilter, LSs.TypeForSearchHint, setKeyboardFocus: SetKeyboardFocus.OnFirstPanelDraw)) {
-            list.filter = newFilter;
+        string filterText = list.filter.query;
+        if (gui.BuildSearchBox(filterText, out string newFilterText, LSs.TypeForSearchHint, setKeyboardFocus: SetKeyboardFocus.OnFirstPanelDraw)) {
+            list.filter = new SearchQuery(newFilterText);
         }
 
         searchBox = gui.lastRect;

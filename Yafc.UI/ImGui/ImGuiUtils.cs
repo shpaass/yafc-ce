@@ -445,12 +445,12 @@ public static class ImGuiUtils {
         return true;
     }
 
-    public static bool BuildSearchBox(this ImGui gui, SearchQuery searchQuery, out SearchQuery newQuery, string? placeholder = null, SetKeyboardFocus setKeyboardFocus = SetKeyboardFocus.No) {
-        newQuery = searchQuery;
+    public static bool BuildSearchBox(this ImGui gui, string? searchText, out string newText, string? placeholder = null, SetKeyboardFocus setKeyboardFocus = SetKeyboardFocus.No) {
+        newText = searchText ?? string.Empty;
 
         placeholder ??= LSs.SearchHint;
-        if (gui.BuildTextInput(searchQuery.query, out string newText, placeholder, Icon.Search, setKeyboardFocus: setKeyboardFocus)) {
-            newQuery = new SearchQuery(newText);
+        if (gui.BuildTextInput(newText, out string result, placeholder, Icon.Search, setKeyboardFocus: setKeyboardFocus)) {
+            newText = result;
             return true;
         }
 

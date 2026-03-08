@@ -65,7 +65,9 @@ public class ProductionSummaryView : ProjectPageView<ProductionSummary> {
 
         private GuiBuilder AddProductionTableDropdown(SearchableList<ProjectPage> pagesDropdown) => gui => {
             using (gui.EnterGroup(new Padding(1f))) {
-                if (gui.BuildSearchBox(productionTableSearchQuery, out productionTableSearchQuery)) {
+                string searchText = productionTableSearchQuery.query;
+                if (gui.BuildSearchBox(searchText, out string newSearchText)) {
+                    productionTableSearchQuery = new SearchQuery(newSearchText);
                     pagesDropdown.filter = productionTableSearchQuery;
                 }
             }
