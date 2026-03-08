@@ -1,0 +1,48 @@
+# ------------------------------------------------------------
+# YAFC-CE: line ending and binary-file policy
+# ------------------------------------------------------------
+
+# Normalize all text files in the repository to LF.
+# This removes platform ambiguity (Windows/Linux/macOS) at the Git layer.
+* text=auto eol=lf
+
+# Keep shell and config-like files explicitly LF.
+*.sh            text eol=lf
+*.yml           text eol=lf
+*.yaml          text eol=lf
+*.md            text eol=lf
+*.txt           text eol=lf
+*.lua           text eol=lf
+*.cfg           text eol=lf
+*.patch         text eol=lf
+
+# Tracked files without extension.
+.githooks/*         text eol=lf
+.github/CODEOWNERS text eol=lf
+LICENSE             text eol=lf
+
+# .NET / C# source and project files.
+*.cs            text eol=lf
+*.csproj        text eol=lf
+*.sln           text eol=lf
+*.props         text eol=lf
+*.editorconfig  text eol=lf
+
+# Mark known binary assets.
+*.png           binary
+*.gif           binary
+*.ico           binary
+*.ttf           binary
+
+# Mark prebuilt native libraries as binary.
+*.dll           binary
+*.dylib         binary
+*.so            binary
+*.a             binary
+
+# Entire prebuilt library payload folder should be treated as binary.
+Yafc/lib/**     binary
+
+# Windows command scripts are usually CRLF if added in the future.
+*.bat           text eol=crlf
+*.cmd           text eol=crlf
