@@ -47,6 +47,18 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
         objective.SetMaximization();
         Stopwatch time = Stopwatch.StartNew();
 
+        // Find the best accessible container for spoilage cost calculation
+        float bestContainerSlotsPerTile = 1f;
+        foreach (var container in Database.allContainers) {
+            float area = container.width * container.height;
+            if (ShouldInclude(container) && area > 0) {
+                float slotsPerTile = container.inventorySize / area;
+                if (slotsPerTile > bestContainerSlotsPerTile) {
+                    bestContainerSlotsPerTile = slotsPerTile;
+                }
+            }
+        }
+
         var variables = Database.goods.CreateMapping<Variable>();
         var constraints = Database.recipes.CreateMapping<Constraint>();
 
@@ -181,7 +193,16 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
             float sizeUsage = CostPerSecond * recipe.time * size;
             float logisticsCost = (sizeUsage * (1f + (CostPerIngredientPerSize * recipe.ingredients.Length) + (CostPerProductPerSize * recipe.products.Length))) + (CostPerMj * minPower);
 
-            if (singleUsedFuel == Database.electricity.target || singleUsedFuel == Database.voidEnergy.target || singleUsedFuel == Database.heat.target) {
+            // Special handling for spoilage recipes: cost depends on container efficiency and stack size
+            // Spoilage happens in storage containers where many stacks spoil in parallel
+            if (recipe is Mechanics && recipe.name.StartsWith("spoil.") && recipe.ingredients.Length == 1 && recipe.ingredients[0].goods is Item spoilingItem) {
+                int stackSize = spoilingItem.stackSize;
+                // Cost is based on storage space needed: time / (stackSize * slotsPerTile)
+                // This reflects that larger stacks and better containers reduce infrastructure cost
+                logisticsCost = CostPerSecond * recipe.time / (stackSize * bestContainerSlotsPerTile);
+            }
+
+            if (singleUsedFuel?.isPower == true) {
                 singleUsedFuel = null;
             }
 
@@ -265,6 +286,18 @@ public class CostAnalysis(bool onlyCurrentMilestones) : Analysis {
             for (int i = 1; i < fluids.Count; i++) {
                 var cur = fluids[i];
                 var constraint = workspaceSolver.MakeConstraint(double.NegativeInfinity, 0, "fluid-" + name + "-" + prev.temperature);
+                constraint.SetCoefficient(variables[prev], 1);
+                constraint.SetCoefficient(variables[cur], -1);
+                prev = cur;
+            }
+        }
+
+        if (Database.heatVariants != null) {
+            var prev = Database.heatVariants[0];
+
+            for (int i = 1; i < Database.heatVariants.Count; i++) {
+                var cur = Database.heatVariants[i];
+                var constraint = workspaceSolver.MakeConstraint(double.NegativeInfinity, 0, "heat-" + prev.temperature);
                 constraint.SetCoefficient(variables[prev], 1);
                 constraint.SetCoefficient(variables[cur], -1);
                 prev = cur;

@@ -25,7 +25,11 @@ Date:
         - Extended main window title - append current project name (with * indicator for unsaved changes).
         - Main dropdown - disable Save when there are no unsaved changes.
         - Main dropdown - disable Undo when there is nothing to undo.
+        - Pressing Ctrl + LeftClick on the Close icon of the page now deletes it instead of closing. LeftClick wihout Ctrl closes it as usual.
+        - Track heat temperature variants from different reactor types.
+        - Support RecipePrototype.additional_categories  (added in 2.0.49)
     Fixes:
+        - Improve spoilage recipe handling: dedicated spoilage entity with clock icon, better cost calculation, and marked as automatable.
     Internal changes:
         - Rename SettingsDropdown to MainDropdown.
         - Rename LoadProjectHeavy to ReturnToWelcomeScreen.

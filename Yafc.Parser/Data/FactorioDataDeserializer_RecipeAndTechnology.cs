@@ -36,6 +36,14 @@ internal partial class FactorioDataDeserializer {
             recipe.specialType = FactorioObjectSpecialType.Recycling;
         }
         recipeCategories.Add(recipeCategory, recipe);
+        if (table.Get("additional_categories", out LuaTable? additional_categories)) {
+            foreach (var category in additional_categories.ArrayElements<string>()) {
+                recipeCategories.Add(category, recipe);
+                if (recipeCategory == "recycling") {
+                    recipe.specialType = FactorioObjectSpecialType.Recycling;
+                }
+            }
+        }
         AllowedEffects allowedEffects = AllowedEffects.None;
         if (table.Get("allow_consumption", true)) {
             allowedEffects |= AllowedEffects.Consumption;

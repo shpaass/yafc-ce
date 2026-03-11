@@ -105,26 +105,90 @@ internal partial class FactorioDataDeserializer {
             fluidVariants[fluid.typeDotName] = fluid.variants;
 
             foreach (var variant in fluid.variants) {
-                AddTemperatureToFluidIcon(variant);
+                AddTemperatureToIcon(variant, variant.temperature);
                 variant.name += "@" + variant.temperature;
             }
         }
     }
 
-    private static void AddTemperatureToFluidIcon(Fluid fluid) {
-        string iconStr = fluid.temperature + "d";
+    private static void AddTemperatureToIcon(FactorioObject obj, int temperature) {
+        string iconStr = temperature + "d";
 
         // Calculate the size/position of the overlay digits to correspond to the size of the first icon layer.
-        int size = fluid.iconSpec?.FirstOrDefault()?.size ?? 64;
+        int size = obj.iconSpec?.FirstOrDefault()?.size ?? 64;
         int shift = 7 * size / 32;
         int xoffset = 12 * size / 32;
         int yoffset = size / -2;
 
-        fluid.iconSpec =
+        obj.iconSpec =
         [
-            .. fluid.iconSpec ?? [],
+            .. obj.iconSpec ?? [],
             .. iconStr.Take(4).Select((x, n) => new FactorioIconPart("__.__/" + x) { size = size, y = yoffset, x = (n * shift) - xoffset, scale = 0.28f }),
         ];
+    }
+
+    /// <summary>
+    /// Gets or creates a heat <see cref="Special"/> for the given temperature. On the first call, assigns the
+    /// temperature to the existing base heat object. On subsequent calls with a different temperature, splits
+    /// heat into separate variant objects (via <see cref="SplitHeat"/>), similar to how
+    /// <see cref="GetFluidFixedTemp"/> handles fluid temperature variants.
+    /// </summary>
+    /// <param name="temperature">The max temperature from a reactor's heat_buffer.</param>
+    /// <returns>The heat variant for this temperature, either existing or newly created.</returns>
+    private Special GetHeatFixedTemp(int temperature) {
+        if (heat.temperature == temperature) {
+            return heat;
+        }
+
+        string idWithTemp = SpecialNames.Heat + "@" + temperature;
+
+        if (heat.temperature == 0) {
+            // First reactor parsed: assign its temperature to the base heat object.
+            heat.temperature = temperature;
+            registeredObjects[(typeof(Special), idWithTemp)] = heat;
+            return heat;
+        }
+
+        if (registeredObjects.TryGetValue((typeof(Special), idWithTemp), out var existing)) {
+            return (Special)existing;
+        }
+
+        // A different temperature than what we've seen before: create a new variant.
+        var split = SplitHeat(heat, temperature);
+        allObjects.Add(split);
+        registeredObjects[(typeof(Special), idWithTemp)] = split;
+        return split;
+    }
+
+    /// <summary>
+    /// Creates a new heat variant by cloning the base heat object with a different temperature.
+    /// Adds the clone to the shared variants list and registers it as a heat fuel.
+    /// </summary>
+    private Special SplitHeat(Special basic, int temperature) {
+        basic.variants ??= [basic];
+        var copy = basic.Clone();
+        copy.temperature = temperature;
+        copy.variants!.Add(copy); // null-forgiving: Clone copies the non-null variants list.
+        fuels.Add(SpecialNames.Heat, copy);
+        return copy;
+    }
+
+    /// <summary>
+    /// Finalizes heat variants after all reactors have been parsed. Sorts variants by temperature,
+    /// appends temperature suffixes to their names, and overlays temperature digits on their icons.
+    /// Does nothing if only a single heat temperature exists (no splitting occurred).
+    /// </summary>
+    private void UpdateSplitHeats() {
+        if (heat.temperature == 0 || heat.variants == null) {
+            return;
+        }
+
+        heat.variants.Sort((a, b) => a.temperature.CompareTo(b.temperature));
+
+        foreach (var variant in heat.variants) {
+            AddTemperatureToIcon(variant, variant.temperature);
+            variant.name += "@" + variant.temperature;
+        }
     }
 
     /// <summary>
@@ -198,6 +262,7 @@ internal partial class FactorioDataDeserializer {
         rocketCapacity = raw.Get<LuaTable>("utility-constants").Get<LuaTable>("default").Get("rocket_lift_weight", 1000000);
         defaultItemWeight = raw.Get<LuaTable>("utility-constants").Get<LuaTable>("default").Get("default_item_weight", 100);
         UpdateSplitFluids();
+        UpdateSplitHeats();
         UpdateRecipeIngredientFluids(errorCollector);
         CalculateMaps(netProduction);
         var iconRenderTask = renderIcons ? Task.Run(RenderIcons) : Task.CompletedTask;
@@ -539,10 +604,11 @@ internal partial class FactorioDataDeserializer {
         }
 
         if (GetRef(table, "spoil_result", out Item? spoiled)) {
+            EnsureSpoilageEntityExists();
             var recipe = CreateSpecialRecipe(item, SpecialNames.SpoilRecipe, LSs.SpecialRecipeSpoiling);
             recipe.ingredients = [new Ingredient(item, 1)];
             recipe.products = [new Product(spoiled, 1)];
-            recipe.time = table.Get("spoil_ticks", 0) / 60f;
+            recipe.time = table.Get("spoil_ticks", 0L) / 60f;
         }
         // Read spoil-into-entity triggers
         else if (table["spoil_to_trigger_result"] is LuaTable spoil && spoil["trigger"] is LuaTable triggers) {
@@ -560,7 +626,7 @@ internal partial class FactorioDataDeserializer {
             }
             void readEffect(LuaTable effect) {
                 if (effect.Get<string>("type") == "create-entity") {
-                    float spoilTime = table.Get("spoil_ticks", 0) / 60f;
+                    float spoilTime = table.Get("spoil_ticks", 0L) / 60f;
                     string entityName = "Entity." + effect.Get<string>("entity_name");
                     item.getBaseSpoilTime = new(() => spoilTime);
                     item.getSpoilResult = new(() => {

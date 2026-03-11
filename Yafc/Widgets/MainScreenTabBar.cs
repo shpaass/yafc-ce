@@ -53,7 +53,14 @@ public class MainScreenTabBar {
                         changePageTo = prevPage;
                         changePage = isActive ? 1 : 2;
                     }
-                    screen.ClosePage(pageGuid);
+
+                    if (InputSystem.Instance.control && page.canDelete) {
+                        project.RemovePage(page);
+                    }
+                    else {
+                        screen.ClosePage(pageGuid);
+                    }
+
                     i--;
                 }
             }

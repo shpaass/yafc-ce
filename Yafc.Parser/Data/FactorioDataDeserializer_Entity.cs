@@ -323,7 +323,6 @@ internal partial class FactorioDataDeserializer {
                 }
 
                 recipeCrafters.Add(character, SpecialNames.TechnologyTrigger);
-                recipeCrafters.Add(character, SpecialNames.SpoilRecipe);
 
                 character.energy = laborEntityEnergy;
                 if (character.name == "character") {
@@ -523,7 +522,20 @@ internal partial class FactorioDataDeserializer {
                 _ = table.Get("consumption", out usesPower);
                 reactor.basePower = ParseEnergy(usesPower);
                 reactor.baseCraftingSpeed = reactor.basePower;
-                recipeCrafters.Add(reactor, SpecialNames.ReactorRecipe);
+
+                int maxTemp = table.Get<LuaTable>("heat_buffer").Get("max_temperature", 1000);
+                var heatVariant = GetHeatFixedTemp(maxTemp);
+
+                string reactorCategory = SpecialNames.ReactorRecipe + "@" + maxTemp;
+                var reactorRecipe = CreateSpecialRecipe(heatVariant, reactorCategory, LSs.SpecialRecipeGenerating);
+                if (reactorRecipe.products == null) {
+                    reactorRecipe.products = [new Product(heatVariant, 1f)];
+                    reactorRecipe.flags |= RecipeFlags.ScaleProductionWithPower;
+                    reactorRecipe.ingredients = [];
+                }
+                recipeCrafters.Add(reactor, reactorCategory);
+
+                formerAliases.TryAdd("Mechanics." + SpecialNames.ReactorRecipe + "." + SpecialNames.Heat, reactorRecipe);
                 break;
             case "rocket-silo":
                 goto case "furnace";

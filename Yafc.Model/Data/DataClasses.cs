@@ -486,6 +486,9 @@ public class Special : Goods {
     internal string? virtualSignal { get; set; }
     internal bool power;
     internal bool isVoid;
+    public int temperature { get; internal set; }
+    internal List<Special>? variants { get; set; }
+    internal Special Clone() => (Special)MemberwiseClone();
     public override bool isPower => power;
     public override string type => isPower ? "Power" : "Special";
     public override UnitOfMeasure flowUnitOfMeasure => isVoid ? UnitOfMeasure.None : isPower ? UnitOfMeasure.Megawatt : UnitOfMeasure.PerSecond;

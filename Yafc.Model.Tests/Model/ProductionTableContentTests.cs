@@ -189,11 +189,11 @@ public class ProductionTableContentTests {
         }
 
         // Ignoring quality, we have:
-        // 2 recipes, 2 mechanics, 3 electric crafters and 3 burner crafters (with 3 fuels), and 9 modules (plus no modules)
+        // 2 recipes, 1 mechanic, 3 electric crafters and 3 burner crafters (with 3 fuels), and 9 modules (plus no modules)
         // Considering quality, we have:
-        // 4 recipes, 2 mechanics, 6 electric crafters and 6 burner crafters (with 6 fuels), and 18 modules (plus no modules)
+        // 4 recipes, 1 mechanic, 6 electric crafters and 6 burner crafters (with 6 fuels), and 18 modules (plus no modules)
         // All combinations should be tested
-        Assert.Equal((4 + 2) * (6 + 6 * 6) * (18 + 1), testCount);
+        Assert.Equal((4 + 1) * (6 + 6 * 6) * (18 + 1), testCount);
     }
 
     /// <summary>

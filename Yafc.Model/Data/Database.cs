@@ -12,6 +12,7 @@ public static class Database {
     public static Item[] allSciencePacks { get; internal set; } = null!;
     public static Dictionary<string, FactorioObject> objectsByTypeName { get; internal set; } = null!;
     public static Dictionary<string, List<Fluid>> fluidVariants { get; internal set; } = null!;
+    public static List<Special>? heatVariants { get; internal set; }
     public static IObjectWithQuality<Goods> voidEnergy { get; internal set; } = null!;
     public static IObjectWithQuality<Item> science { get; internal set; } = null!;
     public static IObjectWithQuality<Item> itemInput { get; internal set; } = null!;
@@ -80,6 +81,19 @@ public static class Database {
             var prev = variants[0];
             for (int i = 1; i < variants.Count; i++) {
                 var cur = variants[i];
+                if (cur.temperature >= temperature) {
+                    return cur.temperature - temperature > temperature - prev.temperature ? prev : cur;
+                }
+
+                prev = cur;
+            }
+            return prev;
+        }
+
+        if (heatVariants != null && heatVariants[0].typeDotName.StartsWith(baseId + "@", StringComparison.Ordinal)) {
+            var prev = heatVariants[0];
+            for (int i = 1; i < heatVariants.Count; i++) {
+                var cur = heatVariants[i];
                 if (cur.temperature >= temperature) {
                     return cur.temperature - temperature > temperature - prev.temperature ? prev : cur;
                 }

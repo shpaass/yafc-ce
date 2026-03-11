@@ -16,3 +16,4 @@ Tip: You can enable the dark mode by clicking on the light-bulb icon on the welc
 Tip: You can switch between tabs using Ctrl+PgUp or Down and reorder them using Ctrl+Shift+PgUp or Down.
 Tip: You can make Yafc load faster by copying the mods folder and disabling the mods that don't affect calculations in mod-list.json.
 Tip: You can Control+Shift+Click on an ingredient to add the most cost-effective accessible recipe to the production tab.
+Tip: You can Control+Click on tab close button to delete the page instead of close.

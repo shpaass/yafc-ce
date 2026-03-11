@@ -24,7 +24,6 @@ internal partial class FactorioDataDeserializer {
     private readonly Dictionary<string, FactorioObject> formerAliases = [];
 
     private readonly Recipe generatorProduction;
-    private readonly Recipe reactorProduction;
     private readonly Special voidEnergy;
     private readonly Special heat;
     private readonly Special electricity;
@@ -35,6 +34,7 @@ internal partial class FactorioDataDeserializer {
     private readonly EntityEnergy voidEntityEnergy;
     private readonly EntityEnergy laborEntityEnergy;
     private Entity? character;
+    private EntityCrafter? spoilageEntity;
     private readonly Version factorioVersion;
     private int rocketCapacity;
     private int defaultItemWeight;
@@ -108,11 +108,6 @@ internal partial class FactorioDataDeserializer {
         generatorProduction.products = [new Product(electricity, 1f)];
         generatorProduction.flags |= RecipeFlags.ScaleProductionWithPower;
         generatorProduction.ingredients = [];
-
-        reactorProduction = CreateSpecialRecipe(heat, SpecialNames.ReactorRecipe, LSs.SpecialRecipeGenerating);
-        reactorProduction.products = [new Product(heat, 1f)];
-        reactorProduction.flags |= RecipeFlags.ScaleProductionWithPower;
-        reactorProduction.ingredients = [];
 
         voidEntityEnergy = new EntityEnergy { type = EntityEnergyType.Void, effectivity = float.PositiveInfinity };
         laborEntityEnergy = new EntityEnergy { type = EntityEnergyType.Labor, effectivity = float.PositiveInfinity };
@@ -321,6 +316,7 @@ internal partial class FactorioDataDeserializer {
         Database.qualities = new FactorioIdRange<Quality>(firstQuality, firstLocation, allObjects);
         Database.locations = new FactorioIdRange<Location>(firstLocation, firstTrigger, allObjects);
         Database.fluidVariants = fluidVariants;
+        Database.heatVariants = heat.variants;
 
         Database.allModules = [.. allModules];
         Database.allBeacons = [.. Database.entities.all.OfType<EntityBeacon>()];
@@ -528,6 +524,11 @@ internal partial class FactorioDataDeserializer {
 
                         if (entity.energy.type == EntityEnergyType.FluidHeat) {
                             fuelList = fuelList.Where(x => x is Fluid f && entity.energy.acceptedTemperature.Contains(f.temperature) && f.temperature > entity.energy.workingTemperature.min);
+                        }
+
+                        if (entity.energy.type == EntityEnergyType.Heat && heat.variants != null) {
+                            fuelList = fuelList.Where(x => x is Special s
+                                && s.temperature >= entity.energy.workingTemperature.min);
                         }
 
                         var fuelListArr = fuelList.ToArray();
@@ -742,6 +743,12 @@ internal partial class FactorioDataDeserializer {
             }
         }
 
+        if (heat.variants != null) {
+            foreach (var heatVariant in heat.variants) {
+                heatVariant.locName = LSs.FluidNameWithTemperature.L(heatVariant.locName, heatVariant.temperature);
+            }
+        }
+
         // The recipes added by deadlock_stacked_recipes (with CompressedFluids, if present) need to be filtered out to get decent results.
         // Also exclude recycling and voiding recipes: "I can recycle water barrels" does not count as "used in other recipes". (up ~25 lines)
         static int countNonDsrRecipes(IEnumerable<Recipe> recipes)
@@ -768,6 +775,36 @@ internal partial class FactorioDataDeserializer {
         recipeCategories.Add(category, recipe);
 
         return recipe;
+    }
+
+    /// <summary>
+    /// Creates the spoilage entity if it doesn't exist yet. Called when the first spoil recipe is created.
+    /// </summary>
+    private void EnsureSpoilageEntityExists() {
+        if (spoilageEntity != null) {
+            return;
+        }
+
+        spoilageEntity = new EntityCrafter {
+            name = "spoilage",
+            locName = LSs.SpecialEntitySpoilage,
+            locDescr = LSs.SpecialEntitySpoilageDescription,
+            factorioType = "spoilage",
+            iconSpec = [new FactorioIconPart("__core__/graphics/clock-icon.png")],
+            energy = voidEntityEnergy,
+            mapGenerated = true,
+            itemInputs = 1,
+            effectReceiver = new EffectReceiver {
+                baseEffect = new Effect(),
+                usesModuleEffects = false,
+                usesBeaconEffects = false,
+                usesSurfaceEffects = false,
+            },
+        };
+        allObjects.Add(spoilageEntity);
+        registeredObjects[(typeof(Entity), "spoilage")] = spoilageEntity;
+        rootAccessible.Add(spoilageEntity);
+        recipeCrafters.Add(spoilageEntity, SpecialNames.SpoilRecipe);
     }
 
     private void ParseCaptureEffects() {
