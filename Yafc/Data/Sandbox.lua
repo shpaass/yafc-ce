@@ -101,4 +101,8 @@ if data then
 	end
 end
 
+-- Lua 5.2.2 no longer defines _G.unpack, but some mods require it.
+-- This is a no-op in Lua 5.2.1.
+_G.unpack = table.unpack
+
 size=32;

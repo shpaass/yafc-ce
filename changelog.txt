@@ -28,6 +28,7 @@ Date:
     Fixes:
         - Improve spoilage recipe handling: dedicated spoilage entity with clock icon, better cost calculation, and marked as automatable.
         - Fix fluid result for Angel's seafloor pump and other pumps that don't pump the tile-defined fluid.
+        - Fix loading Nonstandard Beacons on Windows.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.17.0
 Date: March 4th 2026
