@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.5.11612.153
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "lua52", "lua52.vcxproj", "{60255FCB-CF5D-40B3-A338-14669CF3AEA2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D6A715CB-5C17-4DD7-9ADA-5D7F44FADFCF}"
+	ProjectSection(SolutionItems) = preProject
+		.editorconfig = .editorconfig
+		Directory.Build.props = Directory.Build.props
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{60255FCB-CF5D-40B3-A338-14669CF3AEA2}.Debug|x64.ActiveCfg = Debug|x64
+		{60255FCB-CF5D-40B3-A338-14669CF3AEA2}.Debug|x64.Build.0 = Debug|x64
+		{60255FCB-CF5D-40B3-A338-14669CF3AEA2}.Release|x64.ActiveCfg = Release|x64
+		{60255FCB-CF5D-40B3-A338-14669CF3AEA2}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {4345BBBB-0FFA-4ACA-859B-51F8B0F61D84}
+	EndGlobalSection
+EndGlobal

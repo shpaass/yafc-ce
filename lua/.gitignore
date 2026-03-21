@@ -1,5 +1,11 @@
 # Extracted source
 lua-5.2.1
+lua-5.2.2
 
 # Downloaded archive
 lua-5.2.1.tar.gz
+lua-5.2.2.tar.gz
+
+# MSBuild folders
+lua52
+x64
