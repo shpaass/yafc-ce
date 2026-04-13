@@ -47,13 +47,9 @@ public readonly struct EnterThreadPoolAwaitable : INotifyCompletion {
 
     public void GetResult() { }
     public bool IsCompleted => !Ui.IsMainThread();
-    public void OnCompleted(Action continuation) {
-        Logging.GetLogger<EnterThreadPoolAwaitable>().Debug("Exiting UI thread for action {id}.", continuation.GetHashCode()); // Stack trace enricher will add the stack trace here.
-        _ = ThreadPool.QueueUserWorkItem(ThreadPoolPost!, () => { // null-forgiving: this action is not null, so ThreadPoolPost doesn't need to accept a null.
-            Logging.GetLogger<EnterThreadPoolAwaitable>().Debug("Resuming action {id} on a thread-pool thread.", continuation.GetHashCode());
-            continuation();
-        });
-    }
+    public void OnCompleted(Action continuation)
+        // null-forgiving: continuation is not null, so ThreadPoolPost doesn't need to accept a null.
+        => _ = ThreadPool.QueueUserWorkItem(ThreadPoolPost!, continuation);
 
     private static void ThreadPoolPost(object state) => ((Action)state)();
 }
@@ -63,13 +59,9 @@ public readonly struct EnterMainThreadAwaitable : INotifyCompletion {
 
     public void GetResult() { }
     public bool IsCompleted => Ui.IsMainThread();
-    public void OnCompleted(Action continuation) {
-        Logging.GetLogger<EnterMainThreadAwaitable>().Debug("Entering UI thread for action {id}.", continuation.GetHashCode()); // Stack trace enricher will add the stack trace here.
-        Ui.DispatchInMainThread(MainThreadPost!, () => { // null-forgiving: this action is not null, so MainThreadPost doesn't need to accept a null.
-            Logging.GetLogger<EnterMainThreadAwaitable>().Debug("Resuming action {id} on the UI thread.", continuation.GetHashCode());
-            continuation();
-        });
-    }
+    public void OnCompleted(Action continuation)
+        // null-forgiving: continuation is not null, so MainThreadPost doesn't need to accept a null.
+        => Ui.DispatchInMainThread(MainThreadPost!, continuation);
 
     private static void MainThreadPost(object state) => ((Action)state)();
 }
