@@ -31,7 +31,10 @@ public static partial class Ui {
             }
         }
 
-        _ = SDL.SDL_Init(SDL.SDL_INIT_VIDEO);
+        int sdlInitResult = SDL.SDL_Init(SDL.SDL_INIT_VIDEO);
+        if (sdlInitResult != 0) {
+            logger.Error("SDL_Init failed ({Result}): {Error}", sdlInitResult, SDL.SDL_GetError());
+        }
         _ = SDL.SDL_SetHint(SDL.SDL_HINT_RENDER_SCALE_QUALITY, "linear");
         SDL.SDL_EnableScreenSaver();
         _ = SDL_ttf.TTF_Init();
