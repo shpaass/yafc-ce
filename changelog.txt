@@ -25,6 +25,7 @@ Date:
     Fixes:
         - Fixed production amounts will stay fixed on the "Total Output" object.
         - Fix intermittent crashes when unloading Lua.
+        - Burner entities with no space for burnt results now correctly delete the burnt result.
 ----------------------------------------------------------------------------------------------------------------------
 Version: 2.18.0
 Date: April 7th 2026

@@ -115,6 +115,8 @@ internal partial class FactorioDataDeserializer {
                     fuelUsers.Add(entity, energySource.Get("fuel_category", "chemical"));
                 }
 
+                entity.hasBurntInventory = energySource.Get("burnt_inventory_size", 0) != 0;
+
                 break;
             case "heat":
                 energy.type = EntityEnergyType.Heat;

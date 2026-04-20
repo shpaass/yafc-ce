@@ -549,7 +549,11 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
         }
 
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the products for one recipe, to produce recipesPerSecond.
-        IObjectWithQuality<Item>? spentFuel = fuel.FuelResult();
+        IObjectWithQuality<Item>? spentFuel = null;
+        if (entity?.target.hasBurntInventory ?? true) {
+            // Only generate spent fuels if there's an inventory slot to put them in. If the entity is not set, assume there's a slot.
+            spentFuel = fuel.FuelResult();
+        }
 
         List<float> upgradeProbabilities = [1];
         if (parameters.activeEffects.qualityMod > 0) {

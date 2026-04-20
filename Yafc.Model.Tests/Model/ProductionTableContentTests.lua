@@ -46,6 +46,7 @@ data = {
         energy_source = {
           type = "burner",
           fuel_categories = { "chemical" },
+          burnt_result_inventory = 1,
         },
         energy_usage = "75kW",
         crafting_categories = { "crafting" },
@@ -63,6 +64,7 @@ data = {
         energy_source = {
           type = "burner",
           fuel_categories = { "chemical" },
+          burnt_result_inventory = 1,
         },
         energy_usage = "150kW",
         module_specification = {
@@ -83,6 +85,7 @@ data = {
         energy_source = {
           type = "burner",
           fuel_categories = { "chemical" },
+          burnt_result_inventory = 0, -- Test with burnt-result deletion too
         },
         energy_usage = "250kW",
         module_specification = {
