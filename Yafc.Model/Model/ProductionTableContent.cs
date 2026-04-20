@@ -227,12 +227,12 @@ internal class RecipeLinks {
     public required ProductionLink?[] ingredients;
     public ProductionQualityLink products = new();
     public ProductionLink? fuel;
-    public ProductionLink? spentFuel;
 }
 
 /// <summary>
 /// Stores the production links for each pair of (a) index into <see cref="RecipeOrTechnology.products"/> and (b) quality level.
 /// The index is the same value as the index into the old <c><see cref="ProductionLink"/>?[]</c> field.
+/// If the recipe row has a linked spent fuel, that link is after all recipe-declared products.
 /// </summary>
 internal sealed class ProductionQualityLink {
     private readonly Dictionary<(int, Quality), IProductionLink?> _links = [];
@@ -550,7 +550,6 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
 
         float factor = forSolver ? 1 : (float)recipesPerSecond; // The solver needs the products for one recipe, to produce recipesPerSecond.
         IObjectWithQuality<Item>? spentFuel = fuel.FuelResult();
-        bool handledFuel = spentFuel == null || forSolver; // If we're running the solver or there's no spent fuel, it's already handled.
 
         List<float> upgradeProbabilities = [1];
         if (parameters.activeEffects.qualityMod > 0) {
@@ -568,7 +567,8 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
             }
         }
 
-        for (int i = 0; i < recipe.target.products.Length; i++) {
+        int i = 0;
+        for (; i < recipe.target.products.Length; i++) {
             Product product = recipe.target.products[i];
 
             Quality quality = recipe.quality;
@@ -581,10 +581,10 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
                 for (int j = 0; j < upgradeProbabilities.Count; j++) {
                     // The result amount for this quality is the normal output amount times the probability of this quality,
                     float amount = baseAmount * upgradeProbabilities[j];
-                    if (!handledFuel && product.goods.With(quality) == spentFuel) {
+                    if (product.goods.With(quality) == spentFuel) {
                         // ... plus the spent fuel, if applicable.
                         amount += parameters.fuelUsagePerSecondPerRecipe;
-                        handledFuel = true;
+                        spentFuel = null; // Done thinking about spent fuel
                     }
 
                     if (amount > 0) {
@@ -595,10 +595,9 @@ public sealed class RecipeRow : ModelObject<ProductionTable>, IGroupedElement<Pr
             }
         }
 
-        if (!handledFuel) {
-            // null-forgiving (both): handledFuel is always false when running the solver.
-            // equivalently: We do not enter this block when a non-null Goods is required.
-            yield return (spentFuel!, parameters.fuelUsagePerSecondPerRecipe * factor, links.spentFuel, 0, null);
+        if (spentFuel != null) {
+            var link = links.products[i, spentFuel.quality];
+            yield return (spentFuel, parameters.fuelUsagePerSecondPerRecipe * factor, link, i, null);
         }
     }
 

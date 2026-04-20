@@ -512,7 +512,7 @@ match:
                 links.ingredients[ingredient.LinkIndex] = link as ProductionLink;
             }
 
-            links.fuel = links.spentFuel = null;
+            links.fuel = null;
 
             if (recipe.fuel != null) {
                 float fuelAmount = recipe.parameters.fuelUsagePerSecondPerRecipe;
@@ -521,16 +521,6 @@ match:
                     links.fuel = link as ProductionLink;
                     link.flags |= ProductionLink.Flags.HasConsumption;
                     AddLinkCoefficient(constraints[link.solverIndex], recipeVar, link, recipe, -fuelAmount);
-                }
-
-                if (recipe.fuel.FuelResult() is IObjectWithQuality<Item> spentFuel && recipe.FindLink(spentFuel, out link)) {
-                    links.spentFuel = link as ProductionLink;
-                    link.flags |= ProductionLink.Flags.HasProduction;
-                    AddLinkCoefficient(constraints[link.solverIndex], recipeVar, link, recipe, fuelAmount);
-
-                    if (spentFuel.target.Cost() > 0f) {
-                        objCoefficients[i] += fuelAmount * spentFuel.target.Cost();
-                    }
                 }
             }
         }
@@ -730,10 +720,6 @@ match:
 
         if (recipe.links.fuel != null) {
             sources.Add(recipe.links.fuel);
-        }
-
-        if (recipe.links.spentFuel != null) {
-            targets.Add(recipe.links.spentFuel);
         }
     }
 
