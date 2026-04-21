@@ -546,6 +546,12 @@ public class Entity : FactorioObject {
     internal List<Entity> sourceEntities { get; set; } = null!;
     internal string? autoplaceControl { get; set; }
     public float heatingPower { get; internal set; }
+    /// <summary>
+    /// If <see langword="false"/>, this entity does not produce burnt results when burning item fuels.<br/>
+    /// This is initialized to <see langword="true"/> if <c>entity.burner.burnt_result_inventory</c> (burner generators) or
+    /// <c>entity.energy_source.burnt_result_inventory</c> (everything else) is present and non-zero.
+    /// </summary>
+    public bool hasBurntInventory { get; internal set; }
     public int width { get; internal set; }
     public int height { get; internal set; }
     public int size { get; internal set; }

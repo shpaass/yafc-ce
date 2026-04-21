@@ -155,20 +155,9 @@ public class ProductionTableContentTests {
                             }
                         }
 
-                        foreach (var (display, solver) in row.Products.Zip(row.ProductsForSolver
-                            // ProductsForSolver doesn't include the spent fuel. Append an entry for the spent fuel, in the case that the spent
-                            // fuel is not a recipe product.
-                            // If the spent fuel is also a recipe product, this value will ignored in favor of the recipe-product value.
-                            .Append(new(row.fuel.FuelResult(), 0, null, 0, null)))) {
-
+                        foreach (var (display, solver) in row.Products.Zip(row.ProductsForSolver)) {
                             var (solverGoods, solverAmount, _, _, _) = solver;
                             var (displayGoods, displayAmount, _, _) = display;
-
-                            if (solverGoods == row.fuel.FuelResult()) {
-                                // ProductsForSolver doesn't include the spent fuel (in either the real or test-specific result)
-                                // Add the spent fuel amount to the value given to the solver.
-                                solverAmount += row.parameters.fuelUsagePerSecondPerRecipe;
-                            }
 
                             try {
                                 // If this fails, something weird went wrong
