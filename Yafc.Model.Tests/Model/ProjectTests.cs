@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using Xunit;
 
 namespace Yafc.Model.Tests;
@@ -23,4 +24,14 @@ public class ProjectTests {
     public void PerformAutoSave_NoThrowWhenLoadedWithEmptyString()
         // No Assert in this test; the test passes if PerformAutoSave does not throw.
         => Project.ReadFromFile("", new(), false).PerformAutoSave();
+
+    [Fact]
+    public void AutosaveInDotYafcDirectory_DoesNotModifyDirectory()
+        // Use Path.Combine to generate host-native path separators. (GenerateAutosavePath coincidentally converts separators.)
+        => Assert.Equal(Path.Combine("home", ".yafc", "ProjectName-autosave-1.yafc"), Project.GenerateAutosavePath("home/.yafc/ProjectName.yafc", 1));
+
+    [Fact]
+    public void AutosaveInDotYafcDirectoryWithNoExtension_DoesNotModifyDirectory()
+        // Use Path.Combine to generate host-native path separators. (GenerateAutosavePath coincidentally converts separators.)
+        => Assert.Equal(Path.Combine("home", ".yafc", "ProjectName-autosave-4.yafc"), Project.GenerateAutosavePath("home/.yafc/ProjectName", 4));
 }
