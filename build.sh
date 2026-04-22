@@ -13,6 +13,7 @@ dotnet publish Yafc/Yafc.csproj -r win-x64 --self-contained -c Release -o Build/
 dotnet publish Yafc/Yafc.csproj -r osx-x64 -c Release -o Build/OSX
 dotnet publish Yafc/Yafc.csproj -r osx-arm64 -c Release -o Build/OSX-arm64
 dotnet publish Yafc/Yafc.csproj -r linux-x64 -c Release -o Build/Linux
+dotnet publish Yafc/Yafc.csproj -r linux-x64 --self-contained -c Release -o Build/Linux-self-contained
 
 find Build -name "Yafc.I18n.Generator*" -print0 | xargs -0 rm
 
@@ -21,6 +22,7 @@ echo "If you want to help with the checksums, please navigate to https://github.
 
 pushd Build
 tar czf Yafc-CE-Linux-$VERSION.tar.gz Linux
+tar czf Yafc-CE-Linux-self-contained-$VERSION.tar.gz Linux-self-contained
 tar czf Yafc-CE-OSX-intel-$VERSION.tar.gz OSX
 tar czf Yafc-CE-OSX-arm64-$VERSION.tar.gz OSX-arm64
 zip -r Yafc-CE-Windows-$VERSION.zip Windows
