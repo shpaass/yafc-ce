@@ -107,7 +107,7 @@ public class Preferences {
 /// Contains the location of the project, Factorio data, mods, and so on.
 /// </summary>
 public class ProjectDefinition {
-    // TODO (shpaass/yafc-ce/issues/253): the existing list of recent projects
+    // TODO (Yafc-CE/yafc-ce/issues/253): the existing list of recent projects
     // will break if you rename any of the variables below, due to deserialization.
     // That eventually will need to be fixed.
     public ProjectDefinition() {

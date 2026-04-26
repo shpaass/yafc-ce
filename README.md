@@ -31,7 +31,7 @@ YAFC also has its own Never Enough Items, which is FNEI on steroids. In addition
 YAFC is a desktop app. The Windows build is the most tested, but OSX and Linux are supported too. See [Linux and OSX installation instructions](/Docs/LinuxOsxInstall.md).
 
 1. Make sure that you have [VC Redist](https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170) installed. It's needed for Google OrTools.
-1. Navigate to the [Yafc Releases](https://github.com/have-fun-was-taken/yafc-ce/releases),
+1. Navigate to the [Yafc Releases](https://github.com/Yafc-CE/yafc-ce/releases),
 1. Download the zip file for your given OS,
 1. Extract the zip file to your preferred location,
 1. Run either `./Yafc` or `./Yafc.exe` (OS-dependent),
@@ -39,7 +39,7 @@ YAFC is a desktop app. The Windows build is the most tested, but OSX and Linux a
 
 We also have the following materials to improve your Yafc experience:
 * [Gifs](/Docs/Gifs.md) for the examples of different use cases, but beware that Gifs are traffic-heavy.  
-* [Tips and Tricks](/Docs/TipsAndTricks.md) and the [in-built tips](https://github.com/shpaass/yafc-ce/blob/master/Yafc/Data/Tips.txt) for useful info.
+* [Tips and Tricks](/Docs/TipsAndTricks.md) and the [in-built tips](https://github.com/Yafc-CE/yafc-ce/blob/master/Yafc/Data/Tips.txt) for useful info.
 * [Shortcuts](/Docs/Shortcuts.md) for quality of life.
 
 If you want to build Yafc from source, you need to install [.NET 8](https://dotnet.microsoft.com/en-us/download/dotnet/8.0).  
@@ -71,7 +71,7 @@ You can run `build.sh` with [Git Bash](https://git-scm.com/downloads) to build f
 
 For mod authors: You can add a mod-specific fix to Yafc. Here is a [guide](/Yafc/Data/Mod-fixes/README.md) about it. You can also detect YAFC by checking the `data.data_crawler` variable during the data stage. It will be equal to `yafc a.b.c.d` where `a.b.c.d` is yafc version. For instance, `yafc 2.5.6.0`.
 
-YAFC loads mods in environment that is not completely compatible with Factorio. If you notice any bugs, please report them in the [issues](https://github.com/have-fun-was-taken/yafc-ce/issues).
+YAFC loads mods in environment that is not completely compatible with Factorio. If you notice any bugs, please report them in the [issues](https://github.com/Yafc-CE/yafc-ce/issues).
 
 
 ## Contributing

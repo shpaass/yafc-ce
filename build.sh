@@ -18,7 +18,7 @@ dotnet publish Yafc/Yafc.csproj -r linux-x64 --self-contained -c Release -o Buil
 find Build -name "Yafc.I18n.Generator*" -print0 | xargs -0 rm
 
 echo "The libraries of this release were scanned on Virustotal, but we could not reproduce the checksums." > Build/OSX-arm64/_WARNING.TXT
-echo "If you want to help with the checksums, please navigate to https://github.com/shpaass/yafc-ce/issues/274" >> Build/OSX-arm64/_WARNING.TXT
+echo "If you want to help with the checksums, please navigate to https://github.com/Yafc-CE/yafc-ce/issues/274" >> Build/OSX-arm64/_WARNING.TXT
 
 pushd Build
 tar czf Yafc-CE-Linux-$VERSION.tar.gz Linux

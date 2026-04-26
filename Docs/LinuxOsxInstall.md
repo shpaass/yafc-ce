@@ -19,7 +19,7 @@ Once the package is installed, it can be run with `factorio-yafc`. Note that dot
 - For Intel Macs, you can skip to the step of getting SDL libraries with `brew`.
 - If you want to build Lua from source, here's how you can do that:
 - Download and extract the [lua 5.2.1 source code](https://www.lua.org/ftp/lua-5.2.1.tar.gz)
-- Apply the [.patch](https://github.com/shpaass/yafc-ce/blob/master/lua-5.2.1.patch) file to the extracted lua source code.
+- Apply the [.patch](https://github.com/Yafc-CE/yafc-ce/blob/master/lua-5.2.1.patch) file to the extracted lua source code.
 - Modify the `src/Makefile` to include the following two lines. Note that the second line must start with a tab:
 ```
 liblua.dylib: $(CORE_O) $(LIB_O)

@@ -513,7 +513,7 @@ public partial class MainScreen : WindowMain, IKeyboardFocus, IProgress<(string,
         try {
             HttpClient client = new HttpClient();
             client.DefaultRequestHeaders.Add("User-Agent", "YAFC-CE (check for updates)");
-            string result = await client.GetStringAsync(new Uri("https://api.github.com/repos/have-fun-was-taken/yafc-ce/releases/latest"));
+            string result = await client.GetStringAsync(new Uri("https://api.github.com/repos/Yafc-CE/yafc-ce/releases/latest"));
             var release = JsonSerializer.Deserialize<GithubReleaseInfo>(result)!;
             string version = release.tag_name.StartsWith('v') ? release.tag_name[1..] : release.tag_name;
             if (new Version(version) > YafcLib.version) {

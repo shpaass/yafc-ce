@@ -315,7 +315,7 @@ public class SummaryView : ProjectPageView<Summary> {
 
                 if (oldExcess - Math.Abs(excess) <= Epsilon) {
                     // TODO: The negative feedback detection sometimes gets triggered, but sometimes the `updateOrder.Count == 0` check gets triggered instead.
-                    // This probably needs to be revisited when fixing https://github.com/shpaass/yafc-ce/issues/169
+                    // This probably needs to be revisited when fixing https://github.com/Yafc-CE/yafc-ce/issues/169
                     // The previous positive difference for this product is less than the current (supposedly better) positive difference.
                     if (++negativeFeedbackCount > 3) {
                         return; // Too many negative feedbacks detected; give up.
@@ -337,7 +337,7 @@ public class SummaryView : ProjectPageView<Summary> {
         finally {
             // HACK: Nothing left to change, but force a recalculate anyway, so the user doesn't have to view all the tabs before clicking Auto balance again.
             // Sometimes this will cause updates that require an additional button click.
-            // This is probably related to https://github.com/shpaass/yafc-ce/issues/169
+            // This is probably related to https://github.com/Yafc-CE/yafc-ce/issues/169
             foreach (ProjectPage page in DisplayPages) {
                 await page.RunSolveJob();
             }

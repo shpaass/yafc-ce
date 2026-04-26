@@ -551,7 +551,7 @@ public class WelcomeScreen : WindowUtility, IProgress<(string, string)>, IKeyboa
 
     private async void LoadProject() {
         try {
-            // TODO (shpaass/yafc-ce/issues/249): Why does WelcomeScreen.cs need the internals of ProjectDefinition?
+            // TODO (Yafc-CE/yafc-ce/issues/249): Why does WelcomeScreen.cs need the internals of ProjectDefinition?
             // Why not take or copy the whole object? The parts are used only in WelcomeScreen.cs, so I see no reason
             // to disassemble ProjectDefinition and drag it piece by piece.
             var (dataPath, modsPath, projectPath) = (this.dataPath, this.modsPath, path);

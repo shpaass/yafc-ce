@@ -130,8 +130,8 @@ public class FlatHierarchy<TRow, TGroup>(DataGrid<TRow> grid, Action<ImGui, TGro
 
             nextRowIsHighlighted = (typeof(TRow) == typeof(RecipeRow)) && (rowHighlighting[i] != RowHighlighting.None);
 
-            // TODO: See https://github.com/have-fun-was-taken/yafc-ce/issues/91
-            //       and https://github.com/have-fun-was-taken/yafc-ce/pull/86#discussion_r1550369353
+            // TODO: See https://github.com/Yafc-CE/yafc-ce/issues/91
+            //       and https://github.com/Yafc-CE/yafc-ce/pull/86#discussion_r1550369353
             if (nextRowIsHighlighted) {
                 nextRowBackgroundColor = GetHighlightingBackgroundColor(rowHighlighting[i], recipe is RecipeRow { enabled: true });
                 nextRowTextColor = GetHighlightingTextColor(rowHighlighting[i]);

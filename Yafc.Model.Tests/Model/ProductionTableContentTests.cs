@@ -145,7 +145,7 @@ public class ProductionTableContentTests {
                             try {
                                 // If this fails, something weird went wrong
                                 Assert.Equal(solverGoods, displayGoods);
-                                // This tests for a failure related to https://github.com/shpaass/yafc-ce/issues/441, but for ingredients instead
+                                // This tests for a failure related to https://github.com/Yafc-CE/yafc-ce/issues/441, but for ingredients instead
                                 Assert.Equal(solverAmount * row.recipesPerSecond, displayAmount, solverAmount * .0001);
                             }
                             catch {
@@ -162,7 +162,7 @@ public class ProductionTableContentTests {
                             try {
                                 // If this fails, something weird went wrong
                                 Assert.Equal(solverGoods, displayGoods);
-                                // This tests for actual failure observed in https://github.com/shpaass/yafc-ce/issues/441
+                                // This tests for actual failure observed in https://github.com/Yafc-CE/yafc-ce/issues/441
                                 Assert.Equal(solverAmount * row.recipesPerSecond, displayAmount, solverAmount * .0001);
                             }
                             catch {

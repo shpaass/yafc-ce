@@ -4,7 +4,7 @@ using Yafc.UI;
 namespace Yafc;
 
 public class AboutScreen : WindowUtility {
-    public const string Github = "https://github.com/have-fun-was-taken/yafc-ce";
+    public const string Github = "https://github.com/Yafc-CE/yafc-ce";
 
     public AboutScreen(Window parent) : base(ImGuiUtils.DefaultScreenPadding) => Create(LSs.AboutYafc, 50, parent);
 

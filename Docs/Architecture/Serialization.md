@@ -104,7 +104,7 @@ but the undo system and the json serializer will ignore the old property.
 You may (should?) remove the getter from an obsolete writable property.
 
 Sometimes obsoleting a property is not reasonable, as was the case for the changes from `FactorioObject` to `ObjectWithQuality<>`.
-Depending on the requirements, you can either implement `ICustomJsonDeserializer<T>` (as used by `ObjectWithQuality<T>` in [081e9c0f](https://github.com/shpaass/yafc-ce/tree/081e9c0f6b47e155fbc82763590a70d90a64c83c/Yafc.Model/Data/DataClasses.cs#L819) and earlier),
+Depending on the requirements, you can either implement `ICustomJsonDeserializer<T>` (as used by `ObjectWithQuality<T>` in [081e9c0f](https://github.com/Yafc-CE/yafc-ce/tree/081e9c0f6b47e155fbc82763590a70d90a64c83c/Yafc.Model/Data/DataClasses.cs#L819) and earlier),
 or create a new `ValueSerializer<T>` (as seen in the current `QualityObjectSerializer<T>` implementation).
 
 ## Adding new supported types

@@ -75,7 +75,7 @@ public abstract class Window : IDisposable {
         _ = SDL.SDL_GetDisplayBounds(display, out var rect);
         // 82x60 is the minimum screen size in units, plus some for borders
         // DPI bellow 96 is more likely to be incorrectly reported value than desired,
-        //     see discussion in https://github.com/shpaass/yafc-ce/issues/255#issuecomment-2508884418
+        //     see discussion in https://github.com/Yafc-CE/yafc-ce/issues/255#issuecomment-2508884418
         //     => we treat is as "unknown" and revert to default 100% scaling
         int desiredUnitsToPixels = dpi < 96 ? 13 : MathUtils.Round(dpi / 6.8f);
 
