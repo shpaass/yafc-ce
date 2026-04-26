@@ -5,6 +5,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading;
 using SDL2;
+using Serilog;
 using Yafc.Model;
 using Yafc.Parser;
 using Yafc.UI;
@@ -12,6 +13,7 @@ using Yafc.UI;
 namespace Yafc;
 
 public static class YafcLib {
+    private static readonly ILogger logger = Logging.GetLogger(typeof(YafcLib));
     internal static Version version { get; private set; }
     internal static string initialWorkDir { get; private set; }
 
@@ -53,7 +55,13 @@ public static class YafcLib {
             libraryName = GetOsxMappedLibraryName(libraryName);
         }
 
-        return NativeLibrary.Load(libraryName, assembly, DllImportSearchPath.SafeDirectories);
+        try {
+            return NativeLibrary.Load(libraryName, assembly, DllImportSearchPath.SafeDirectories);
+        }
+        catch (DllNotFoundException) {
+            logger.Error("Failed to load native library '{LibraryName:l}'", libraryName);
+            throw;
+        }
     }
 
     public static void RegisterDefaultAnalysis() {

@@ -8,6 +8,7 @@ namespace Yafc.UI;
 
 // Main window is resizable and hardware-accelerated unless forced to render via software by caller
 public abstract class WindowMain(Padding padding, bool forceSoftwareRenderer) : Window(padding) {
+    private static readonly ILogger logger = Logging.GetLogger<WindowMain>();
     protected void Create(string title, int display, float initialWidth, float initialHeight, bool maximized) {
         if (visible) {
             return;
@@ -32,6 +33,9 @@ public abstract class WindowMain(Padding padding, bool forceSoftwareRenderer) : 
             SDL.SDL_WINDOWPOS_CENTERED_DISPLAY(display),
             initialWidthPixels, initialHeightPixels, flags
         );
+        if (window == IntPtr.Zero) {
+            logger.Error("SDL_CreateWindow failed: {Error}", SDL.SDL_GetError());
+        }
         SDL.SDL_SetWindowMinimumSize(window, minWidth, minHeight);
         WindowResize();
         surface = new MainWindowDrawingSurface(this, forceSoftwareRenderer);
@@ -160,6 +164,9 @@ internal class MainWindowDrawingSurface : DrawingSurface {
         this.window = window;
 
         renderer = SDL.SDL_CreateRenderer(window.window, PickRenderDriver(SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC, forceSoftwareRenderer), SDL.SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
+        if (renderer == IntPtr.Zero) {
+            logger.Error("SDL_CreateRenderer failed: {Error}", SDL.SDL_GetError());
+        }
         _ = SDL.SDL_GetRendererInfo(renderer, out SDL.SDL_RendererInfo info);
         logger.Information($"Driver: {SDL.SDL_GetCurrentVideoDriver()} Renderer: {Marshal.PtrToStringAnsi(info.name)}");
         circleTexture = SDL.SDL_CreateTextureFromSurface(renderer, RenderingUtils.CircleSurface);
