@@ -3,6 +3,8 @@
 # * Update Yafc version in Yafc.csproj. Update the changelog with the version and date.
 # * Update the latest version in the Discord sticky-message.
 
+# On Windows, run this script in Cygwin. MinGW does not appear to track the effects of chmod.
+
 rm -rf Build
 
 VERSION=$(grep -oPm1 "(?<=<AssemblyVersion>)[^<]+" Yafc/Yafc.csproj)
@@ -15,10 +17,12 @@ dotnet publish Yafc/Yafc.csproj -r osx-arm64 -c Release -o Build/OSX-arm64
 dotnet publish Yafc/Yafc.csproj -r linux-x64 -c Release -o Build/Linux
 dotnet publish Yafc/Yafc.csproj -r linux-x64 --self-contained -c Release -o Build/Linux-self-contained
 
-find Build -name "Yafc.I18n.Generator*" -print0 | xargs -0 rm
-
 echo "The libraries of this release were scanned on Virustotal, but we could not reproduce the checksums." > Build/OSX-arm64/_WARNING.TXT
 echo "If you want to help with the checksums, please navigate to https://github.com/Yafc-CE/yafc-ce/issues/274" >> Build/OSX-arm64/_WARNING.TXT
+
+find Build -name "Yafc.I18n.Generator*" -delete
+find Build -type f -print0 | xargs -0 chmod 644
+find Build \( -name Yafc -or -type d \) -print0 | xargs -0 chmod 755
 
 pushd Build
 tar czf Yafc-CE-Linux-$VERSION.tar.gz Linux
@@ -28,4 +32,3 @@ tar czf Yafc-CE-OSX-arm64-$VERSION.tar.gz OSX-arm64
 zip -r Yafc-CE-Windows-$VERSION.zip Windows
 zip -r Yafc-CE-Windows-self-contained-$VERSION.zip Windows-self-contained
 popd
-
