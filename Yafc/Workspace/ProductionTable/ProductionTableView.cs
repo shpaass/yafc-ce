@@ -12,6 +12,12 @@ namespace Yafc;
 
 public class ProductionTableView : ProjectPageView<ProductionTable> {
     private readonly FlatHierarchy<RecipeRow, ProductionTable> flatHierarchyBuilder;
+    private readonly RecipeRowFocusManager _focusManager = new();
+
+    public override void SetModel(ProjectPage? page) {
+        _focusManager.Clear();
+        base.SetModel(page);
+    }
 
     public ProductionTableView() {
         DataGrid<RecipeRow> grid = new DataGrid<RecipeRow>(new RecipePadColumn(this), new RecipeColumn(this), new EntityColumn(this),
@@ -165,10 +171,12 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                         }
 
                         if (recipe.subgroup != null && imgui.BuildRedButton(LSs.ProductionTableDeleteNested).WithTooltip(imgui, recipe.subgroup.expanded ? LSs.ProductionTableShortcutCollapseAndRightClick : LSs.ProductionTableShortcutRightClick) && imgui.CloseDropdown()) {
+                            view._focusManager.CancelFocus(recipe);
                             _ = recipe.owner.RecordUndo().recipes.Remove(recipe);
                         }
 
                         if (recipe.subgroup == null && imgui.BuildRedButton(LSs.ProductionTableDeleteRecipe).WithTooltip(imgui, LSs.ProductionTableShortcutRightClick) && imgui.CloseDropdown()) {
+                            view._focusManager.CancelFocus(recipe);
                             _ = recipe.owner.RecordUndo().recipes.Remove(recipe);
                         }
                     });
@@ -177,6 +185,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
                     unpackNestedTable();
                     break;
                 case Click.Right: // With collapsed or no subgroup
+                    view._focusManager.CancelFocus(recipe);
                     _ = recipe.owner.RecordUndo().recipes.Remove(recipe);
                     break;
             }
@@ -242,6 +251,7 @@ public class ProductionTableView : ProjectPageView<ProductionTable> {
             }
 
             if (gui.BuildRedButton(LSs.ProductionTableClearRecipes) && gui.CloseDropdown()) {
+                view._focusManager.Clear();
                 view.model.RecordUndo().recipes.Clear();
             }
 
@@ -339,7 +349,7 @@ goodsHaveNoProduction:;
                 if (recipe is { fixedBuildings: > 0, fixedFuel: false, fixedIngredient: null, fixedProduct: null, hierarchyEnabled: true }) {
                     DisplayAmount amount = recipe.fixedBuildings;
                     GoodsWithAmountEvent evt = gui.BuildFactorioObjectWithEditableAmount(recipe.entity, amount, ButtonDisplayStyle.ProductionTableUnscaled,
-                        setKeyboardFocus: recipe.ShouldFocusFixedCountThisTime());
+                        setKeyboardFocus: view._focusManager.ConsumeFocus(recipe, RecipeRowFocusTarget.FixedCount));
 
                     if (evt == GoodsWithAmountEvent.TextEditing && amount.Value >= 0) {
                         recipe.RecordUndo().fixedBuildings = amount.Value;
@@ -354,7 +364,7 @@ goodsHaveNoProduction:;
                 if (recipe.builtBuildings != null) {
                     DisplayAmount amount = recipe.builtBuildings.Value;
 
-                    if (gui.BuildFloatInput(amount, TextBoxDisplayStyle.FactorioObjectInput with { ColorGroup = SchemeColorGroup.Grey }, recipe.ShouldFocusBuiltCountThisTime())
+                    if (gui.BuildFloatInput(amount, TextBoxDisplayStyle.FactorioObjectInput with { ColorGroup = SchemeColorGroup.Grey }, view._focusManager.ConsumeFocus(recipe, RecipeRowFocusTarget.BuiltCount))
                         && amount.Value >= 0) {
 
                         recipe.RecordUndo().builtBuildings = (int)amount.Value;
@@ -366,7 +376,7 @@ goodsHaveNoProduction:;
                 // ignore all clicks
             }
             else if (click == Click.Left) {
-                ShowEntityDropdown(gui, recipe);
+                ShowEntityDropdown(gui, recipe, view._focusManager);
             }
             else if (click == Click.Right) {
                 // null-forgiving: We know recipe.recipe.crafters is not empty, so AutoSelect can't return null.
@@ -477,7 +487,7 @@ goodsHaveNoProduction:;
             string extraText(EntityAccumulator x) => DataUtils.FormatAmount(x.AccumulatorCapacity(accumulatorQuality), UnitOfMeasure.Megajoule);
         }
 
-        private static void ShowEntityDropdown(ImGui gui, RecipeRow recipe) {
+        private static void ShowEntityDropdown(ImGui gui, RecipeRow recipe, RecipeRowFocusManager focusManager) {
             Quality quality = recipe.entity?.quality ?? Quality.Normal;
 
             QualitySelectOptions<EntityCrafter> options = null!;
@@ -539,7 +549,7 @@ goodsHaveNoProduction:;
                             recipe.fixedFuel = false;
                             recipe.fixedIngredient = null;
                             recipe.fixedProduct = null;
-                            recipe.FocusFixedCountOnNextDraw();
+                            focusManager.RequestFocus(recipe, RecipeRowFocusTarget.FixedCount);
                         }
                     }
                 }
@@ -560,7 +570,7 @@ goodsHaveNoProduction:;
                     }
                     else if (gui.BuildButton(LSs.ProductionTableSetBuiltBuildingCount) && gui.CloseDropdown()) {
                         recipe.RecordUndo().builtBuildings = Math.Max(0, Convert.ToInt32(Math.Ceiling(recipe.buildingCount)));
-                        recipe.FocusBuiltCountOnNextDraw();
+                        focusManager.RequestFocus(recipe, RecipeRowFocusTarget.BuiltCount);
                     }
                 }
 
@@ -1195,7 +1205,7 @@ goodsHaveNoProduction:;
                                 default:
                                     break;
                             }
-                            recipe.FocusFixedCountOnNextDraw();
+                            _focusManager.RequestFocus(recipe, RecipeRowFocusTarget.FixedCount);
                             targetGui.Rebuild();
                         }
                     }
@@ -1341,7 +1351,7 @@ goodsHaveNoProduction:;
             || (dropdownType == ProductDropdownType.Product && recipe.fixedProduct == goods))) {
 
             evt = gui.BuildFactorioObjectWithEditableAmount(goods, displayAmount, ButtonDisplayStyle.ProductionTableScaled(iconColor, drawTransparent), tooltipOptions: tooltipOptions,
-                setKeyboardFocus: recipe.ShouldFocusFixedCountThisTime());
+                setKeyboardFocus: _focusManager.ConsumeFocus(recipe, RecipeRowFocusTarget.FixedCount));
         }
         else {
             evt = (GoodsWithAmountEvent)gui.BuildFactorioObjectWithAmount(goods, displayAmount, ButtonDisplayStyle.ProductionTableScaled(iconColor, drawTransparent),
