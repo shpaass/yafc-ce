@@ -41,7 +41,9 @@ public partial class MainScreen {
         /// <param name="updatePageList">The action to perform if the user updates any of the search parameters.</param>
         public void Build(ImGui gui, Action updatePageList) {
             using (gui.EnterGroup(new Padding(1f))) {
-                if (gui.BuildSearchBox(query, out query)) {
+                string queryText = query.query;
+                if (gui.BuildSearchBox(queryText, out string newQueryText)) {
+                    query = new SearchQuery(newQueryText);
                     updatePageList();
                 }
                 gui.SetTextInputFocus(gui.lastContentRect, query.query);

@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Numerics;
+using Yafc.Model;
 using Yafc.UI;
 
 namespace Yafc;
