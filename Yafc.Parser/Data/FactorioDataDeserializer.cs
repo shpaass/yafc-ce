@@ -296,9 +296,10 @@ internal partial class FactorioDataDeserializer {
                 cache[(".", digit.ToString())] = SDL_image.IMG_Load("Data/Digits/" + digit + ".png");
             }
 
-            DataUtils.NoFuelIcon = CreateSimpleIcon(cache, "fuel-icon-red");
-            DataUtils.WarningIcon = CreateSimpleIcon(cache, "warning-icon");
-            DataUtils.HandIcon = CreateSimpleIcon(cache, "hand");
+            SystemIcons.Initialize(
+                noFuelIcon: CreateSimpleIcon(cache, "fuel-icon-red"),
+                warningIcon: CreateSimpleIcon(cache, "warning-icon"),
+                handIcon: CreateSimpleIcon(cache, "hand"));
 
             Dictionary<string, Icon> simpleSpritesCache = [];
             int rendered = 0;
@@ -312,15 +313,15 @@ internal partial class FactorioDataDeserializer {
                     bool simpleSprite = o.iconSpec.Length == 1 && o.iconSpec[0].IsSimple();
 
                     if (simpleSprite && simpleSpritesCache.TryGetValue(o.iconSpec[0].path, out var icon)) {
-                        o.icon = icon;
+                        o.iconId = (int)icon;
                         continue;
                     }
 
                     try {
-                        o.icon = CreateIconFromSpec(cache, o.iconSpec);
+                        o.iconId = (int)CreateIconFromSpec(cache, o.iconSpec);
 
                         if (simpleSprite) {
-                            simpleSpritesCache[o.iconSpec[0].path] = o.icon;
+                            simpleSpritesCache[o.iconSpec[0].path] = (Icon)o.iconId;
                         }
                     }
                     catch (Exception ex) {
@@ -328,7 +329,7 @@ internal partial class FactorioDataDeserializer {
                     }
                 }
                 else if (o is Recipe recipe && recipe.mainProduct != null) {
-                    o.icon = recipe.mainProduct.icon;
+                    o.iconId = recipe.mainProduct.iconId;
                 }
             }
         }

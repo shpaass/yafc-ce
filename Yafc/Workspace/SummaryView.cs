@@ -41,7 +41,7 @@ public class SummaryView : ProjectPageView<Summary> {
                 gui.spacing = 0.2f;
 
                 if (page.icon != null) {
-                    gui.BuildIcon(page.icon.icon, FirstColumnIconSize);
+                    gui.BuildIcon(page.icon.GetIcon(), FirstColumnIconSize);
                 }
                 else {
                     _ = gui.AllocateRect(0f, FirstColumnIconSize);

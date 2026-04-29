@@ -720,7 +720,7 @@ goodsHaveNoProduction:;
             => moduleTemplateList = new VirtualScrollList<ProjectModuleTemplate>(15f, new Vector2(20f, 2.5f), ModuleTemplateDrawer, collapsible: true);
 
         private void ModuleTemplateDrawer(ImGui gui, ProjectModuleTemplate element, int index) {
-            var evt = gui.BuildContextMenuButton(element.name, icon: element.icon?.icon ?? default, disabled: !element.template.IsCompatibleWith(editingRecipeModules));
+            var evt = gui.BuildContextMenuButton(element.name, icon: element.icon?.GetIcon() ?? default, disabled: !element.template.IsCompatibleWith(editingRecipeModules));
 
             if (evt == ButtonEvent.Click && gui.CloseDropdown()) {
                 var copied = JsonUtils.Copy(element.template, editingRecipeModules, null);
